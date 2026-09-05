@@ -1,0 +1,54 @@
+BMC SmartFind — TAHAP 17D
+ENV RECOMMENDATION
+
+============================================================
+LOCAL DEVELOPMENT — HTTP
+============================================================
+
+APP_ENV=local
+APP_DEBUG=true
+
+SESSION_DRIVER=database
+SESSION_LIFETIME=60
+SESSION_ENCRYPT=true
+SESSION_HTTP_ONLY=true
+SESSION_SAME_SITE=lax
+SESSION_SECURE_COOKIE=false
+SESSION_PARTITIONED_COOKIE=false
+
+SMARTFIND_IDLE_TIMEOUT_MINUTES=60
+SMARTFIND_CSP_ENABLED=false
+SMARTFIND_HSTS_ENABLED=false
+
+
+============================================================
+PRODUCTION — HTTPS
+============================================================
+
+APP_ENV=production
+APP_DEBUG=false
+
+SESSION_DRIVER=database
+SESSION_LIFETIME=60
+SESSION_ENCRYPT=true
+SESSION_HTTP_ONLY=true
+SESSION_SAME_SITE=lax
+SESSION_SECURE_COOKIE=true
+SESSION_PARTITIONED_COOKIE=false
+
+SMARTFIND_IDLE_TIMEOUT_MINUTES=60
+
+SMARTFIND_CSP_ENABLED=true
+
+SMARTFIND_HSTS_ENABLED=true
+SMARTFIND_HSTS_MAX_AGE=31536000
+SMARTFIND_HSTS_INCLUDE_SUBDOMAINS=false
+SMARTFIND_HSTS_PRELOAD=false
+
+
+IMPORTANT:
+- Jangan aktifkan SESSION_SECURE_COOKIE=true saat masih memakai
+  http://127.0.0.1:8000 karena browser tidak akan mengirim secure cookie.
+- Jangan aktifkan HSTS sebelum deployment benar-benar HTTPS.
+- Setelah mengubah .env jalankan:
+  php artisan optimize:clear
