@@ -1,3 +1,2722 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+/* ==========================================================================
+   BMC QUALITYHUB · CONTENT UI REFRESH
+   Scope: area hasil menu / main content saja.
+   Sidebar biru, logo, navigasi biru, dan hero biru TIDAK disentuh.
+   ========================================================================== */
+
+@layer base {
+    html {
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+}
+
+
+@layer components {
+
+    /* ----------------------------------------------------------------------
+       1. WORKSPACE / CANVAS
+       ---------------------------------------------------------------------- */
+
+    .qualityhub-workspace.qualityhub-workspace {
+        background:
+            linear-gradient(
+                180deg,
+                #e9f0f8 0%,
+                #e4ecf5 48%,
+                #dfe8f2 100%
+            );
+    }
+
+    .qualityhub-content {
+        color: #172033;
+        font-size: 0.95rem;
+        line-height: 1.55;
+    }
+
+
+    /* ----------------------------------------------------------------------
+       2. TYPOGRAPHY — lebih terbaca, tidak kecil/abu-abu
+       ---------------------------------------------------------------------- */
+
+    .qualityhub-content h1 {
+        font-size: clamp(1.55rem, 2vw, 2rem);
+        font-weight: 750;
+        letter-spacing: -0.025em;
+        line-height: 1.2;
+    }
+
+    .qualityhub-content h2 {
+        font-size: clamp(1.25rem, 1.7vw, 1.55rem);
+        font-weight: 720;
+        letter-spacing: -0.018em;
+        line-height: 1.25;
+    }
+
+    .qualityhub-content h3 {
+        font-size: 1.05rem;
+        font-weight: 700;
+        line-height: 1.35;
+    }
+
+    .qualityhub-content p {
+        line-height: 1.65;
+    }
+
+    /* Naikkan helper text yang sebelumnya terlalu kecil. */
+    .qualityhub-content .text-xs {
+        font-size: 0.8125rem;
+        line-height: 1.45;
+    }
+
+    .qualityhub-content .text-sm {
+        font-size: 0.925rem;
+        line-height: 1.5;
+    }
+
+    .qualityhub-content [class*="text-[10px]"],
+    .qualityhub-content [class*="text-[11px]"] {
+        font-size: 0.75rem;
+        line-height: 1.4;
+    }
+
+    /* Kontras helper text dinaikkan tanpa mengubah status color. */
+    .qualityhub-content .text-slate-400 {
+        color: #64748b;
+    }
+
+    .qualityhub-content .text-slate-500 {
+        color: #55657a;
+    }
+
+    .qualityhub-content .text-slate-600 {
+        color: #44546a;
+    }
+
+
+    /* ----------------------------------------------------------------------
+       3. CARD / PANEL — bukan putih polos, lebih enterprise
+       ---------------------------------------------------------------------- */
+
+    .qualityhub-content.qualityhub-content
+    :is(section, article, form).bg-white,
+
+    .qualityhub-content.qualityhub-content
+    div.bg-white.rounded-2xl.border,
+
+    .qualityhub-content.qualityhub-content
+    div.bg-white.rounded-2xl.shadow-sm,
+
+    .qualityhub-content.qualityhub-content
+    div.bg-white.rounded-xl.border {
+        background: #f7f9fc;
+        border-color: #cbd8e7;
+        border-radius: 0.95rem;
+        box-shadow:
+            0 1px 2px rgba(15, 23, 42, 0.035),
+            0 8px 22px rgba(41, 62, 89, 0.055);
+    }
+
+    /*
+     * Nested surfaces dibuat sedikit lebih gelap agar hierarchy terlihat.
+     * Tidak memakai rainbow/pastel card berlebihan.
+     */
+    .qualityhub-content .bg-slate-50 {
+        background-color: #edf2f7;
+    }
+
+    .qualityhub-content .bg-gray-50 {
+        background-color: #edf2f7;
+    }
+
+    .qualityhub-content .bg-slate-100 {
+        background-color: #e5edf5;
+    }
+
+    /*
+     * Panel biru muda tetap digunakan sebagai accent,
+     * tetapi dibuat lebih kalem.
+     */
+    .qualityhub-content .bg-blue-50 {
+        background-color: #e9f2fb;
+    }
+
+    .qualityhub-content .border-slate-100,
+    .qualityhub-content .border-slate-200 {
+        border-color: #ccd8e5;
+    }
+
+
+    /* ----------------------------------------------------------------------
+       4. CARD HEADER / SECTION DIVIDER
+       ---------------------------------------------------------------------- */
+
+    .qualityhub-content
+    :is(section, article).bg-white
+    > :first-child:not(table):not(form) {
+        position: relative;
+    }
+
+    /*
+     * Hindari animasi hover "melayang" pada semua card.
+     * Tampilan enterprise lebih tenang.
+     */
+    .qualityhub-content.qualityhub-content
+    :is(section, article).bg-white.rounded-2xl:hover {
+        transform: none;
+        box-shadow:
+            0 1px 2px rgba(15, 23, 42, 0.035),
+            0 8px 22px rgba(41, 62, 89, 0.065);
+    }
+
+
+    /* ----------------------------------------------------------------------
+       5. TABLE — lebih jelas, tidak menyatu dengan background
+       ---------------------------------------------------------------------- */
+
+    .qualityhub-content table {
+        width: 100%;
+        color: #243247;
+        font-size: 0.875rem;
+    }
+
+    .qualityhub-content table thead {
+        background: #dfe9f5;
+        color: #334155;
+        box-shadow: inset 0 -1px 0 #bdccdc;
+    }
+
+    .qualityhub-content table thead th {
+        color: #34445a;
+        font-size: 0.75rem;
+        font-weight: 750;
+        letter-spacing: 0.035em;
+        padding-top: 0.8rem;
+        padding-bottom: 0.8rem;
+    }
+
+    .qualityhub-content table tbody tr {
+        background-color: #f8fafc;
+        border-color: #d9e2ec;
+    }
+
+    .qualityhub-content table tbody tr:nth-child(even) {
+        background-color: #eef3f8;
+    }
+
+    .qualityhub-content table tbody td {
+        padding-top: 0.78rem;
+        padding-bottom: 0.78rem;
+        color: #334155;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .qualityhub-content table tbody tr:hover {
+            background-color: #e7eff8;
+            box-shadow: inset 3px 0 0 #3b82f6;
+        }
+    }
+
+
+    /* ----------------------------------------------------------------------
+       6. FORMS — input tidak putih menyala
+       ---------------------------------------------------------------------- */
+
+    .qualityhub-content
+    :is(input, select, textarea)
+    :not([type="checkbox"])
+    :not([type="radio"]) {
+        min-height: 2.75rem;
+        border-color: #b9c8d9;
+        background-color: #f4f7fa;
+        color: #172033;
+        font-size: 0.925rem;
+        box-shadow: inset 0 1px 1px rgba(15, 23, 42, 0.025);
+    }
+
+    .qualityhub-content textarea {
+        min-height: 7rem;
+    }
+
+    .qualityhub-content
+    :is(input, select, textarea)::placeholder {
+        color: #7a899c;
+        opacity: 1;
+    }
+
+    .qualityhub-content
+    :is(input, select, textarea):focus {
+        border-color: #3b82f6;
+        background-color: #fbfdff;
+        box-shadow:
+            0 0 0 3px rgba(59, 130, 246, 0.12);
+    }
+
+    .qualityhub-content label {
+        color: #334155;
+        font-size: 0.875rem;
+        font-weight: 650;
+    }
+
+
+    /* ----------------------------------------------------------------------
+       7. BUTTON — lebih solid, tidak "template AI"
+       ---------------------------------------------------------------------- */
+
+    .qualityhub-content button,
+    .qualityhub-content a[class*="px-"][class*="py-"] {
+        font-weight: 650;
+    }
+
+    /*
+     * Secondary button putih diubah menjadi blue-gray yang lebih terasa.
+     * Primary button biru bawaan tidak disentuh.
+     */
+    .qualityhub-content
+    :is(button, a).bg-white.border {
+        background-color: #edf3f8;
+        border-color: #bac9d9;
+        color: #334155;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .qualityhub-content
+        :is(button, a).bg-white.border:hover {
+            background-color: #e3ebf4;
+            border-color: #a9bacd;
+        }
+    }
+
+
+    /* ----------------------------------------------------------------------
+       8. EMPTY STATE / DASHED PANEL
+       ---------------------------------------------------------------------- */
+
+    .qualityhub-content .border-dashed {
+        background-color: #edf3f8;
+        border-color: #aebfd1;
+    }
+
+
+    /* ----------------------------------------------------------------------
+       9. MODAL / DROPDOWN DI AREA CONTENT
+       ---------------------------------------------------------------------- */
+
+    .qualityhub-content [role="dialog"] .bg-white,
+    .qualityhub-content [class*="shadow-xl"].bg-white,
+    .qualityhub-content [class*="shadow-2xl"].bg-white {
+        background-color: #f8fafc;
+        border-color: #cbd8e7;
+    }
+
+
+    /* ----------------------------------------------------------------------
+       10. TOPBAR READABILITY
+       ---------------------------------------------------------------------- */
+
+    .qualityhub-topbar h2 {
+        font-size: 1.05rem;
+        letter-spacing: -0.015em;
+    }
+
+    .qualityhub-topbar h2 + p {
+        color: #5b6b7f;
+        font-size: 0.8rem;
+    }
+
+
+    /* ----------------------------------------------------------------------
+       11. SCROLLBAR — halus untuk tabel/panel panjang
+       ---------------------------------------------------------------------- */
+
+    .qualityhub-content * {
+        scrollbar-width: thin;
+        scrollbar-color: #9fb1c5 #e8eef5;
+    }
+
+    .qualityhub-content *::-webkit-scrollbar {
+        width: 9px;
+        height: 9px;
+    }
+
+    .qualityhub-content *::-webkit-scrollbar-track {
+        background: #e8eef5;
+        border-radius: 999px;
+    }
+
+    .qualityhub-content *::-webkit-scrollbar-thumb {
+        background: #9fb1c5;
+        border: 2px solid #e8eef5;
+        border-radius: 999px;
+    }
+
+    .qualityhub-content *::-webkit-scrollbar-thumb:hover {
+        background: #8095ad;
+    }
+
+
+    /* ----------------------------------------------------------------------
+       12. MOBILE / SMALL SCREEN
+       ---------------------------------------------------------------------- */
+
+    @media (max-width: 767px) {
+        .qualityhub-content {
+            font-size: 0.925rem;
+        }
+
+        .qualityhub-content h1 {
+            font-size: 1.4rem;
+        }
+
+        .qualityhub-content h2 {
+            font-size: 1.18rem;
+        }
+
+        .qualityhub-content table {
+            font-size: 0.825rem;
+        }
+    }
+
+
+    /* ----------------------------------------------------------------------
+       13. ACCESSIBILITY / REDUCED MOTION
+       ---------------------------------------------------------------------- */
+
+    @media (prefers-reduced-motion: reduce) {
+        .qualityhub-content *,
+        .qualityhub-content *::before,
+        .qualityhub-content *::after {
+            scroll-behavior: auto !important;
+            transition-duration: 0.01ms !important;
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+        }
+    }
+
+
+    /* ----------------------------------------------------------------------
+       14. BLUE SURFACE TEXT GUARD
+       ----------------------------------------------------------------------
+       Jangan paksa heading di area biru menjadi warna gelap.
+       Warna asli Tailwind seperti text-white / text-blue-* tetap dipakai.
+       Sidebar tidak termasuk .qualityhub-content sehingga tetap untouched.
+       ---------------------------------------------------------------------- */
+
+    .qualityhub-content
+    :is(
+        [class*="from-blue-"],
+        [class*="via-blue-"],
+        [class*="to-blue-"],
+        [class*="bg-blue-"],
+        [class*="bg-slate-9"],
+        [class*="bg-slate-8"]
+    )
+    :is(h1, h2, h3)[class*="text-white"] {
+        color: #ffffff;
+    }
+
+}
+
+
+/* ==========================================================================
+   DOCUMENT DETAIL · HEADER LAYOUT FIX
+   Menjaga judul dokumen tetap punya ruang baca yang layak.
+   Tombol aksi dipindahkan ke baris berikutnya pada desktop agar judul
+   tidak dipaksa menjadi kolom sempit dan tidak memotong kata.
+   ========================================================================== */
+
+@layer components {
+
+    .qualityhub-content h1.break-words {
+        overflow-wrap: normal;
+        word-break: normal;
+        hyphens: none;
+        max-width: 100%;
+    }
+
+    @media (min-width: 1280px) {
+
+        .qualityhub-content
+        > section:has(> .min-w-0 > h1.break-words) {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            align-items: start;
+            gap: 0;
+        }
+
+        .qualityhub-content
+        > section:has(> .min-w-0 > h1.break-words)
+        > .min-w-0 {
+            width: 100%;
+            max-width: 72rem;
+        }
+
+        .qualityhub-content
+        > section:has(> .min-w-0 > h1.break-words)
+        > .min-w-0
+        > h1.break-words {
+            max-width: 56rem;
+            text-wrap: balance;
+        }
+
+        .qualityhub-content
+        > section:has(> .min-w-0 > h1.break-words)
+        > div:last-child {
+            width: 100%;
+            margin-top: 1.5rem;
+            justify-content: flex-start;
+        }
+    }
+}
+
+
+/* ==========================================================================
+   BMC QUALITYHUB · BATCH 2
+   ALL DOCUMENTS POLISH
+   Hanya halaman All Documents:
+   - search/filter lebih menyatu seperti toolbar kerja
+   - document library lebih tegas
+   - tabel lebih lega dan mudah discan
+   - sidebar / hero biru / route / fungsi tidak disentuh
+   ========================================================================== */
+
+@layer components {
+
+    /* ----------------------------------------------------------------------
+       SEARCH + FILTER WORKBAR
+       ---------------------------------------------------------------------- */
+
+    #document-search + section > div.bg-white {
+        background: #edf3f8;
+        border: 1px solid #c3d1df;
+        border-radius: 1rem;
+        box-shadow:
+            0 1px 2px rgba(15, 23, 42, 0.035),
+            0 9px 22px rgba(35, 55, 80, 0.055);
+        padding: 1.15rem;
+    }
+
+    #document-search + section > div.bg-white > div:first-child {
+        margin-bottom: 0.95rem;
+        padding-bottom: 0.9rem;
+        border-bottom: 1px solid #cbd7e4;
+    }
+
+    /* Search input + filter select dibuat terasa satu toolbar. */
+    #document-search + section
+    input[type="search"],
+    #document-search + section
+    select {
+        min-height: 2.9rem;
+        background: #f8fafc;
+        border-color: #b8c8d9;
+        color: #243247;
+        box-shadow: none;
+    }
+
+    #document-search + section
+    input[type="search"]:focus,
+    #document-search + section
+    select:focus {
+        background: #ffffff;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.11);
+    }
+
+    /* Advanced filter jadi secondary work strip, bukan card putih baru. */
+    #document-search + section
+    > div.bg-white
+    > div.mt-4.grid {
+        background: #e3ebf4;
+        border: 1px solid #c8d5e2;
+        border-radius: 0.85rem;
+        padding: 0.9rem;
+    }
+
+    #document-search + section
+    > div.bg-white
+    > div.mt-4.grid
+    label {
+        color: #4b5e73;
+        font-weight: 700;
+    }
+
+    #document-search + section
+    > div.bg-white
+    > div.mt-4.grid
+    input[type="date"] {
+        background: #f7f9fc;
+    }
+
+    /* Search status lebih tenang; tetap informatif. */
+    #document-search + section
+    > div.bg-white
+    > div.mt-4.flex.flex-wrap.items-center {
+        color: #627388;
+        padding-top: 0.15rem;
+    }
+
+
+    /* ----------------------------------------------------------------------
+       DOCUMENT LIBRARY PANEL
+       ---------------------------------------------------------------------- */
+
+    #document-search + section + section {
+        background: #f3f6fa;
+        border-color: #bdccdc;
+        border-radius: 1rem;
+        box-shadow:
+            0 1px 2px rgba(15, 23, 42, 0.035),
+            0 10px 24px rgba(35, 55, 80, 0.06);
+    }
+
+    #document-search + section + section
+    > div:first-child {
+        background: #e7eef6;
+        border-bottom-color: #c5d2df;
+        padding-top: 1.05rem;
+        padding-bottom: 1.05rem;
+    }
+
+    #document-search + section + section
+    > div:first-child h2 {
+        color: #172033;
+        font-size: 1.08rem;
+        font-weight: 750;
+    }
+
+    #document-search + section + section
+    > div:first-child p {
+        color: #53657a;
+    }
+
+
+    /* ----------------------------------------------------------------------
+       DOCUMENT TABLE
+       ---------------------------------------------------------------------- */
+
+    #document-search + section + section table {
+        font-size: 0.9rem;
+        background: #f6f8fb;
+    }
+
+    #document-search + section + section table thead {
+        background: #d8e3ef;
+        box-shadow:
+            inset 0 -1px 0 #b7c7d8,
+            inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    }
+
+    #document-search + section + section table thead tr {
+        color: #32465c;
+    }
+
+    #document-search + section + section table thead th {
+        padding-top: 0.95rem;
+        padding-bottom: 0.95rem;
+        font-size: 0.75rem;
+        font-weight: 800;
+        letter-spacing: 0.045em;
+    }
+
+    #document-search + section + section table tbody {
+        border-color: #d5e0ea;
+    }
+
+    #document-search + section + section table tbody tr {
+        background: #f7f9fc;
+        border-color: #d8e1eb;
+    }
+
+    #document-search + section + section table tbody tr:nth-child(even) {
+        background: #edf2f7;
+    }
+
+    #document-search + section + section table tbody td {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+        color: #2f4054;
+        vertical-align: middle;
+    }
+
+    /* Judul dokumen sedikit lebih dominan supaya mudah discan. */
+    #document-search + section + section table tbody td:first-child a {
+        color: #172033;
+        font-size: 0.925rem;
+        font-weight: 750;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        #document-search + section + section table tbody tr:hover {
+            background: #e4edf7;
+            box-shadow:
+                inset 3px 0 0 #2563eb,
+                inset 0 1px 0 rgba(255, 255, 255, 0.45);
+        }
+
+        #document-search + section + section
+        table tbody td:first-child a:hover {
+            color: #1d4ed8;
+        }
+    }
+
+    /* File/category chips tidak terlalu pucat. */
+    #document-search + section + section table
+    .bg-blue-50 {
+        background-color: #dceafb;
+    }
+
+    #document-search + section + section table
+    .bg-slate-100 {
+        background-color: #dde6ef;
+    }
+
+    /* Tombol Lihat dibuat lebih jelas tetapi tetap kalem. */
+    #document-search + section + section table
+    a.bg-blue-50 {
+        background: #dbeafe;
+        color: #1d4ed8;
+        border: 1px solid #bfd7fb;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        #document-search + section + section table
+        a.bg-blue-50:hover {
+            background: #cfe2fb;
+        }
+    }
+
+
+    /* ----------------------------------------------------------------------
+       RESPONSIVE
+       ---------------------------------------------------------------------- */
+
+    @media (max-width: 767px) {
+        #document-search + section > div.bg-white {
+            padding: 0.95rem;
+        }
+
+        #document-search + section + section
+        > div:first-child {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+    }
+}
+
+
+/* ==========================================================================
+   BMC QUALITYHUB · BATCH 3
+   CATEGORIES + DEPARTMENTS POLISH
+   Scope hanya halaman Categories & Departments melalui class qh-*.
+   Sidebar biru, hero biru, route, controller, form, dan logic tidak disentuh.
+   ========================================================================== */
+
+@layer components {
+
+    /* ----------------------------------------------------------------------
+       1. STATISTICS — tidak lagi berupa deretan kotak putih menyala
+       ---------------------------------------------------------------------- */
+
+    .qh-categories-stats > div,
+    .qh-departments-stats > div {
+        position: relative;
+        overflow: hidden;
+        min-height: 7.4rem;
+        background: #edf3f8;
+        border: 1px solid #c4d2e0;
+        border-radius: 0.95rem;
+        box-shadow:
+            0 1px 2px rgba(15, 23, 42, 0.03),
+            0 7px 18px rgba(42, 60, 82, 0.045);
+        padding: 1.15rem 1.2rem;
+    }
+
+    .qh-categories-stats > div::before,
+    .qh-departments-stats > div::before {
+        content: "";
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 3px;
+        background: #476f9d;
+        opacity: 0.55;
+    }
+
+    .qh-categories-stats > div > p:first-child,
+    .qh-departments-stats > div > p:first-child {
+        color: #52657a;
+        font-size: 0.84rem;
+        font-weight: 700;
+        letter-spacing: 0.005em;
+    }
+
+    .qh-categories-stats > div > p:nth-child(2),
+    .qh-departments-stats > div > p:nth-child(2) {
+        margin-top: 0.65rem;
+        font-size: 1.9rem;
+        line-height: 1;
+        letter-spacing: -0.025em;
+    }
+
+
+    /* ----------------------------------------------------------------------
+       2. FILTER — satu workbar, bukan card putih terpisah
+       ---------------------------------------------------------------------- */
+
+    .qh-categories-filter,
+    .qh-departments-filter {
+        background: #e4ecf5 !important;
+        border-color: #bdcddd !important;
+        border-radius: 0.95rem !important;
+        box-shadow:
+            0 1px 2px rgba(15, 23, 42, 0.03),
+            0 8px 20px rgba(42, 60, 82, 0.045) !important;
+        padding: 1.05rem !important;
+    }
+
+    .qh-categories-filter input,
+    .qh-categories-filter select,
+    .qh-departments-filter input,
+    .qh-departments-filter select {
+        min-height: 2.85rem;
+        background: #f7f9fc !important;
+        border-color: #b7c7d8 !important;
+        color: #27364a;
+        box-shadow: none;
+    }
+
+    .qh-categories-filter input::placeholder,
+    .qh-departments-filter input::placeholder {
+        color: #718197;
+    }
+
+    .qh-categories-filter input:focus,
+    .qh-categories-filter select:focus,
+    .qh-departments-filter input:focus,
+    .qh-departments-filter select:focus {
+        background: #ffffff !important;
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.11) !important;
+    }
+
+    .qh-categories-filter > div:last-child,
+    .qh-departments-filter > div:last-child {
+        margin-top: 0.85rem;
+        padding-top: 0.85rem;
+        border-top: 1px solid #c7d4e1;
+    }
+
+    .qh-categories-filter a,
+    .qh-departments-filter a {
+        background: #edf3f8;
+        border-color: #b6c6d7;
+        color: #3f5369;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .qh-categories-filter a:hover,
+        .qh-departments-filter a:hover {
+            background: #dbe5ef;
+        }
+    }
+
+
+    /* ----------------------------------------------------------------------
+       3. TABLE CONTAINER + HEADER
+       ---------------------------------------------------------------------- */
+
+    .qh-categories-table,
+    .qh-departments-table {
+        background: #f3f6fa !important;
+        border-color: #bdccdc !important;
+        border-radius: 0.95rem !important;
+        box-shadow:
+            0 1px 2px rgba(15, 23, 42, 0.03),
+            0 9px 22px rgba(42, 60, 82, 0.05) !important;
+    }
+
+    .qh-categories-table > div:first-child,
+    .qh-departments-table > div:first-child {
+        background: #e5edf6;
+        border-bottom-color: #c4d1df;
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+
+    .qh-categories-table > div:first-child h2,
+    .qh-departments-table > div:first-child h2 {
+        color: #172033;
+        font-size: 1.06rem;
+        font-weight: 750;
+    }
+
+    .qh-categories-table > div:first-child p,
+    .qh-departments-table > div:first-child p,
+    .qh-departments-table > div:first-child > div:last-child {
+        color: #53667b;
+    }
+
+
+    /* ----------------------------------------------------------------------
+       4. TABLE READABILITY
+       ---------------------------------------------------------------------- */
+
+    .qh-categories-table table,
+    .qh-departments-table table {
+        background: #f6f8fb;
+        font-size: 0.9rem;
+    }
+
+    .qh-categories-table table thead,
+    .qh-departments-table table thead {
+        background: #d7e3ef !important;
+        box-shadow:
+            inset 0 -1px 0 #b6c7d8,
+            inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    }
+
+    .qh-categories-table table thead tr,
+    .qh-departments-table table thead tr {
+        color: #33485f;
+    }
+
+    .qh-categories-table table thead th,
+    .qh-departments-table table thead th {
+        padding-top: 0.9rem;
+        padding-bottom: 0.9rem;
+        color: #33485f;
+        font-size: 0.75rem;
+        font-weight: 800;
+        letter-spacing: 0.045em;
+    }
+
+    .qh-categories-table table tbody tr,
+    .qh-departments-table table tbody tr {
+        background: #f7f9fc;
+        border-color: #d6e0ea;
+    }
+
+    .qh-categories-table table tbody tr:nth-child(even),
+    .qh-departments-table table tbody tr:nth-child(even) {
+        background: #edf2f7;
+    }
+
+    .qh-categories-table table tbody td,
+    .qh-departments-table table tbody td {
+        padding-top: 0.95rem;
+        padding-bottom: 0.95rem;
+        vertical-align: middle;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .qh-categories-table table tbody tr:hover,
+        .qh-departments-table table tbody tr:hover {
+            background: #e4edf7 !important;
+            box-shadow: inset 3px 0 0 #2f6fb4;
+        }
+    }
+
+
+    /* ----------------------------------------------------------------------
+       5. CHIP / ICON SURFACES — sedikit lebih tegas, tetap kalem
+       ---------------------------------------------------------------------- */
+
+    .qh-categories-table .bg-blue-50,
+    .qh-departments-table .bg-blue-50 {
+        background-color: #dce9f7;
+    }
+
+    .qh-categories-table .bg-slate-100,
+    .qh-departments-table .bg-slate-100 {
+        background-color: #dde6ef;
+    }
+
+    /* Status semantic tetap hijau/abu/amber. Hanya saturasinya dinaikkan tipis. */
+    .qh-categories-table .bg-emerald-50,
+    .qh-departments-table .bg-emerald-50 {
+        background-color: #e1f4eb;
+    }
+
+    .qh-categories-table .bg-amber-50,
+    .qh-departments-table .bg-amber-50 {
+        background-color: #f7ecd1;
+    }
+
+
+    /* ----------------------------------------------------------------------
+       6. ACTION BUTTONS — tetap fungsi dan warna status yang sama
+       ---------------------------------------------------------------------- */
+
+    .qh-categories-table a.bg-blue-50,
+    .qh-departments-table a.bg-blue-50 {
+        border: 1px solid #bdd2e8;
+        background: #dce9f7;
+        color: #215a9a;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .qh-categories-table a.bg-blue-50:hover,
+        .qh-departments-table a.bg-blue-50:hover {
+            background: #cfe0f1;
+        }
+    }
+
+
+    /* ----------------------------------------------------------------------
+       7. EMPTY STATE / PAGINATION
+       ---------------------------------------------------------------------- */
+
+    .qh-categories-table > div.py-16,
+    .qh-departments-table > div.px-6.py-16 {
+        background: #edf3f8;
+    }
+
+    .qh-categories-table > div.border-t,
+    .qh-departments-table > div.border-t {
+        border-top-color: #c8d4e0;
+        background: #edf3f8;
+    }
+
+
+    /* ----------------------------------------------------------------------
+       8. MOBILE
+       ---------------------------------------------------------------------- */
+
+    @media (max-width: 767px) {
+        .qh-categories-filter,
+        .qh-departments-filter {
+            padding: 0.9rem !important;
+        }
+
+        .qh-categories-stats > div,
+        .qh-departments-stats > div {
+            min-height: auto;
+        }
+
+        .qh-categories-table > div:first-child,
+        .qh-departments-table > div:first-child {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+    }
+}
+
+
+/* ==========================================================================
+   BMC QUALITYHUB · BATCH 4
+   USERS + ACTIVITY LOG POLISH
+   Scope hanya User Management & Activity Log.
+   Blade, route, controller, form action, role/status logic, dan sidebar
+   tidak disentuh.
+   ========================================================================== */
+
+@layer components {
+
+    /* ----------------------------------------------------------------------
+       PAGE SCOPES
+       ---------------------------------------------------------------------- */
+
+    /* Filter utama User Management */
+    .qualityhub-content form[action$="/users"] {
+        background: #e4ecf5 !important;
+        border-color: #bdcddd !important;
+        border-radius: 0.95rem !important;
+        box-shadow:
+            0 1px 2px rgba(15, 23, 42, 0.03),
+            0 8px 20px rgba(42, 60, 82, 0.045) !important;
+        padding: 1.05rem !important;
+    }
+
+    /* Filter utama Activity Log */
+    .qualityhub-content form[action*="activity-logs"] {
+        background: #e4ecf5 !important;
+        border-color: #bdcddd !important;
+        border-radius: 0.95rem !important;
+        box-shadow:
+            0 1px 2px rgba(15, 23, 42, 0.03),
+            0 8px 20px rgba(42, 60, 82, 0.045) !important;
+        padding: 1.05rem !important;
+    }
+
+
+    /* ----------------------------------------------------------------------
+       1. STATISTICS — lebih compact, tidak putih menyala
+       ---------------------------------------------------------------------- */
+
+    .qualityhub-content
+    section:has(+ form[action$="/users"])
+    > div,
+
+    .qualityhub-content
+    section:has(+ form[action*="activity-logs"])
+    > div {
+        position: relative;
+        overflow: hidden;
+        min-height: 7.3rem;
+        background: #edf3f8 !important;
+        border-color: #c4d2e0 !important;
+        border-radius: 0.95rem !important;
+        box-shadow:
+            0 1px 2px rgba(15, 23, 42, 0.03),
+            0 7px 18px rgba(42, 60, 82, 0.045) !important;
+        padding: 1.15rem 1.2rem !important;
+    }
+
+    .qualityhub-content
+    section:has(+ form[action$="/users"])
+    > div::before,
+
+    .qualityhub-content
+    section:has(+ form[action*="activity-logs"])
+    > div::before {
+        content: "";
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 3px;
+        background: #476f9d;
+        opacity: 0.55;
+    }
+
+    .qualityhub-content
+    section:has(+ form[action$="/users"])
+    > div p:first-of-type,
+
+    .qualityhub-content
+    section:has(+ form[action*="activity-logs"])
+    > div p:first-of-type {
+        color: #52657a;
+        font-size: 0.84rem;
+        font-weight: 700;
+    }
+
+    .qualityhub-content
+    section:has(+ form[action$="/users"])
+    > div p.text-3xl,
+
+    .qualityhub-content
+    section:has(+ form[action*="activity-logs"])
+    > div p.text-3xl {
+        font-size: 1.9rem;
+        line-height: 1;
+        letter-spacing: -0.025em;
+    }
+
+
+    /* ----------------------------------------------------------------------
+       2. FILTER WORKBAR — input/select lebih menyatu
+       ---------------------------------------------------------------------- */
+
+    .qualityhub-content
+    form[action$="/users"]
+    :is(input, select),
+
+    .qualityhub-content
+    form[action*="activity-logs"]
+    :is(input, select) {
+        min-height: 2.85rem;
+        background: #f7f9fc !important;
+        border-color: #b7c7d8 !important;
+        color: #27364a;
+        box-shadow: none;
+    }
+
+    .qualityhub-content
+    form[action$="/users"]
+    input::placeholder,
+
+    .qualityhub-content
+    form[action*="activity-logs"]
+    input::placeholder {
+        color: #718197;
+    }
+
+    .qualityhub-content
+    form[action$="/users"]
+    :is(input, select):focus,
+
+    .qualityhub-content
+    form[action*="activity-logs"]
+    :is(input, select):focus {
+        background: #ffffff !important;
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.11) !important;
+    }
+
+    .qualityhub-content
+    form[action$="/users"]
+    > div:last-child,
+
+    .qualityhub-content
+    form[action*="activity-logs"]
+    > div:last-child {
+        padding-top: 0.9rem;
+        border-top: 1px solid #c7d4e1;
+    }
+
+    /* Activity Log punya header filter; beri pemisahan lebih jelas. */
+    .qualityhub-content
+    form[action*="activity-logs"]
+    > div:first-child {
+        padding-bottom: 0.9rem;
+        border-bottom: 1px solid #c7d4e1;
+    }
+
+    .qualityhub-content
+    form[action*="activity-logs"]
+    > div:first-child h2 {
+        color: #172033;
+        font-size: 1.05rem;
+        font-weight: 750;
+    }
+
+    .qualityhub-content
+    form[action*="activity-logs"]
+    label {
+        color: #4b5e73;
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+
+    /* Reset secondary buttons */
+    .qualityhub-content
+    form[action$="/users"]
+    a.bg-white,
+
+    .qualityhub-content
+    form[action*="activity-logs"]
+    a.bg-white {
+        background: #edf3f8 !important;
+        border-color: #b6c6d7 !important;
+        color: #3f5369;
+    }
+
+
+    /* ----------------------------------------------------------------------
+       3. USER / ACTIVITY TABLE CONTAINER
+       ---------------------------------------------------------------------- */
+
+    .qualityhub-content
+    form[action$="/users"] + section,
+
+    .qualityhub-content
+    form[action*="activity-logs"] + section {
+        background: #f3f6fa !important;
+        border-color: #bdccdc !important;
+        border-radius: 0.95rem !important;
+        box-shadow:
+            0 1px 2px rgba(15, 23, 42, 0.03),
+            0 9px 22px rgba(42, 60, 82, 0.05) !important;
+    }
+
+    .qualityhub-content
+    form[action$="/users"] + section
+    > div:first-child,
+
+    .qualityhub-content
+    form[action*="activity-logs"] + section
+    > div:first-child {
+        background: #e5edf6;
+        border-bottom-color: #c4d1df;
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+
+    .qualityhub-content
+    form[action$="/users"] + section
+    > div:first-child h2,
+
+    .qualityhub-content
+    form[action*="activity-logs"] + section
+    > div:first-child h2 {
+        color: #172033;
+        font-size: 1.06rem;
+        font-weight: 750;
+    }
+
+    .qualityhub-content
+    form[action$="/users"] + section
+    > div:first-child p,
+
+    .qualityhub-content
+    form[action*="activity-logs"] + section
+    > div:first-child p,
+
+    .qualityhub-content
+    form[action*="activity-logs"] + section
+    > div:first-child > div:last-child {
+        color: #53667b;
+    }
+
+
+    /* ----------------------------------------------------------------------
+       4. TABLE READABILITY
+       ---------------------------------------------------------------------- */
+
+    .qualityhub-content
+    form[action$="/users"] + section table,
+
+    .qualityhub-content
+    form[action*="activity-logs"] + section table {
+        background: #f6f8fb;
+        font-size: 0.9rem;
+    }
+
+    .qualityhub-content
+    form[action$="/users"] + section table thead,
+
+    .qualityhub-content
+    form[action*="activity-logs"] + section table thead {
+        background: #d7e3ef !important;
+        box-shadow:
+            inset 0 -1px 0 #b6c7d8,
+            inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    }
+
+    .qualityhub-content
+    form[action$="/users"] + section table thead th,
+
+    .qualityhub-content
+    form[action*="activity-logs"] + section table thead th {
+        padding-top: 0.9rem;
+        padding-bottom: 0.9rem;
+        color: #33485f;
+        font-size: 0.75rem;
+        font-weight: 800;
+        letter-spacing: 0.045em;
+    }
+
+    .qualityhub-content
+    form[action$="/users"] + section table tbody tr,
+
+    .qualityhub-content
+    form[action*="activity-logs"] + section table tbody tr {
+        background: #f7f9fc;
+        border-color: #d6e0ea;
+    }
+
+    .qualityhub-content
+    form[action$="/users"] + section table tbody tr:nth-child(even),
+
+    .qualityhub-content
+    form[action*="activity-logs"] + section table tbody tr:nth-child(even) {
+        background: #edf2f7;
+    }
+
+    .qualityhub-content
+    form[action$="/users"] + section table tbody td,
+
+    .qualityhub-content
+    form[action*="activity-logs"] + section table tbody td {
+        padding-top: 0.95rem;
+        padding-bottom: 0.95rem;
+        vertical-align: middle;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .qualityhub-content
+        form[action$="/users"] + section table tbody tr:hover,
+
+        .qualityhub-content
+        form[action*="activity-logs"] + section table tbody tr:hover {
+            background: #e4edf7 !important;
+            box-shadow: inset 3px 0 0 #2f6fb4;
+        }
+    }
+
+
+    /* ----------------------------------------------------------------------
+       5. USER MANAGEMENT — role/status/chip
+       ---------------------------------------------------------------------- */
+
+    .qualityhub-content
+    form[action$="/users"] + section
+    .bg-blue-100 {
+        background-color: #d7e6f6;
+    }
+
+    .qualityhub-content
+    form[action$="/users"] + section
+    .bg-blue-50 {
+        background-color: #dce9f7;
+    }
+
+    .qualityhub-content
+    form[action$="/users"] + section
+    .bg-slate-100 {
+        background-color: #dde6ef;
+    }
+
+    .qualityhub-content
+    form[action$="/users"] + section
+    .bg-emerald-50 {
+        background-color: #e1f4eb;
+    }
+
+    .qualityhub-content
+    form[action$="/users"] + section
+    .bg-amber-50 {
+        background-color: #f7ecd1;
+    }
+
+    .qualityhub-content
+    form[action$="/users"] + section
+    .bg-red-50 {
+        background-color: #f8e3e3;
+    }
+
+    /* Nama user + metadata lebih mudah dibaca. */
+    .qualityhub-content
+    form[action$="/users"] + section
+    table tbody td:first-child p:first-of-type {
+        font-size: 0.925rem;
+        font-weight: 750;
+        color: #172033;
+    }
+
+    .qualityhub-content
+    form[action$="/users"] + section
+    table tbody td:first-child p + p {
+        color: #607186;
+        font-size: 0.8rem;
+    }
+
+
+    /* ----------------------------------------------------------------------
+       6. ACTIVITY LOG — audit trail lebih profesional
+       ---------------------------------------------------------------------- */
+
+    /* Avatar surface */
+    .qualityhub-content
+    form[action*="activity-logs"] + section
+    .bg-blue-100 {
+        background-color: #d7e6f6;
+    }
+
+    /* Action badge backgrounds sedikit lebih kuat tetapi tetap semantic. */
+    .qualityhub-content
+    form[action*="activity-logs"] + section
+    .bg-blue-50,
+    .qualityhub-content
+    form[action*="activity-logs"] + section
+    .bg-indigo-50,
+    .qualityhub-content
+    form[action*="activity-logs"] + section
+    .bg-violet-50,
+    .qualityhub-content
+    form[action*="activity-logs"] + section
+    .bg-cyan-50 {
+        background-color: #dce9f7;
+    }
+
+    .qualityhub-content
+    form[action*="activity-logs"] + section
+    .bg-emerald-50 {
+        background-color: #e1f4eb;
+    }
+
+    .qualityhub-content
+    form[action*="activity-logs"] + section
+    .bg-amber-50 {
+        background-color: #f7ecd1;
+    }
+
+    .qualityhub-content
+    form[action*="activity-logs"] + section
+    .bg-red-50,
+    .qualityhub-content
+    form[action*="activity-logs"] + section
+    .bg-rose-50 {
+        background-color: #f8e3e3;
+    }
+
+    .qualityhub-content
+    form[action*="activity-logs"] + section
+    .bg-slate-100 {
+        background-color: #dde6ef;
+    }
+
+    /* User/email/description tidak terlalu kecil. */
+    .qualityhub-content
+    form[action*="activity-logs"] + section
+    table tbody td:first-child p:first-of-type {
+        color: #172033;
+        font-size: 0.925rem;
+        font-weight: 750;
+    }
+
+    .qualityhub-content
+    form[action*="activity-logs"] + section
+    table tbody td:first-child p + p {
+        color: #607186;
+        font-size: 0.8rem;
+    }
+
+    .qualityhub-content
+    form[action*="activity-logs"] + section
+    table tbody td:nth-child(2) p {
+        max-width: 22rem;
+        color: #53667b;
+        font-size: 0.8rem;
+        line-height: 1.55;
+    }
+
+    /* Waktu/IP/helper text jangan terlalu pucat. */
+    .qualityhub-content
+    form[action*="activity-logs"] + section
+    table .text-slate-400 {
+        color: #67788c;
+    }
+
+
+    /* ----------------------------------------------------------------------
+       7. PAGINATION / EMPTY STATE
+       ---------------------------------------------------------------------- */
+
+    .qualityhub-content
+    form[action$="/users"] + section
+    > div.border-t,
+
+    .qualityhub-content
+    form[action*="activity-logs"] + section
+    > div.border-t {
+        border-top-color: #c8d4e0;
+        background: #edf3f8;
+    }
+
+
+    /* ----------------------------------------------------------------------
+       8. MOBILE
+       ---------------------------------------------------------------------- */
+
+    @media (max-width: 767px) {
+
+        .qualityhub-content
+        form[action$="/users"],
+
+        .qualityhub-content
+        form[action*="activity-logs"] {
+            padding: 0.9rem !important;
+        }
+
+        .qualityhub-content
+        section:has(+ form[action$="/users"])
+        > div,
+
+        .qualityhub-content
+        section:has(+ form[action*="activity-logs"])
+        > div {
+            min-height: auto;
+        }
+
+        .qualityhub-content
+        form[action$="/users"] + section
+        > div:first-child,
+
+        .qualityhub-content
+        form[action*="activity-logs"] + section
+        > div:first-child {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+    }
+}
+
+
+/* ==========================================================================
+   BMC QUALITYHUB · BATCH 5
+   FAVORITES + ARCHIVED DOCUMENTS + REVISION HISTORY
+   Visual only. Blade, route, controller, variables, favorite/archive/revision
+   logic, analytics, open/download, dan sidebar tidak disentuh.
+   ========================================================================== */
+
+@layer components {
+
+    /* ======================================================================
+       A. FAVORITES
+       ====================================================================== */
+
+    /* Filter jadi workbar, summary biru di atasnya tetap utuh. */
+    .qualityhub-content form[action$="/favorites"] {
+        background: #e4ecf5 !important;
+        border-color: #bdcddd !important;
+        border-radius: 0.95rem !important;
+        box-shadow:
+            0 1px 2px rgba(15, 23, 42, 0.03),
+            0 8px 20px rgba(42, 60, 82, 0.045) !important;
+        padding: 1.05rem !important;
+    }
+
+    .qualityhub-content
+    form[action$="/favorites"]
+    :is(input, select) {
+        min-height: 2.85rem;
+        background: #f7f9fc !important;
+        border-color: #b7c7d8 !important;
+        color: #27364a;
+        box-shadow: none;
+    }
+
+    .qualityhub-content
+    form[action$="/favorites"]
+    input::placeholder {
+        color: #718197;
+    }
+
+    .qualityhub-content
+    form[action$="/favorites"]
+    :is(input, select):focus {
+        background: #ffffff !important;
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.11) !important;
+    }
+
+    .qualityhub-content
+    form[action$="/favorites"]
+    > div:last-child {
+        margin-top: 0.85rem;
+        padding-top: 0.85rem;
+        border-top: 1px solid #c7d4e1;
+    }
+
+    .qualityhub-content
+    form[action$="/favorites"]
+    a.bg-white {
+        background: #edf3f8 !important;
+        border-color: #b6c6d7 !important;
+        color: #3f5369;
+    }
+
+    /* Card favorit: lebih solid, tidak putih polos. */
+    .qualityhub-content
+    form[action$="/favorites"] + section
+    > article {
+        background: #f1f5f9 !important;
+        border-color: #c4d2e0 !important;
+        border-radius: 0.95rem !important;
+        box-shadow:
+            0 1px 2px rgba(15, 23, 42, 0.03),
+            0 7px 18px rgba(42, 60, 82, 0.045) !important;
+        transition:
+            border-color 160ms ease,
+            box-shadow 160ms ease,
+            background-color 160ms ease;
+    }
+
+    .qualityhub-content
+    form[action$="/favorites"] + section
+    > article
+    .bg-blue-50 {
+        background-color: #dce9f7;
+    }
+
+    .qualityhub-content
+    form[action$="/favorites"] + section
+    > article
+    .bg-slate-100 {
+        background-color: #dde6ef;
+    }
+
+    /* Metadata section dibuat lebih terstruktur. */
+    .qualityhub-content
+    form[action$="/favorites"] + section
+    > article
+    .space-y-2 {
+        background: #e8eef5;
+        border: 1px solid #ced9e5;
+        border-radius: 0.8rem;
+        padding: 0.8rem;
+    }
+
+    .qualityhub-content
+    form[action$="/favorites"] + section
+    > article
+    .space-y-2
+    span:first-child {
+        color: #5d6f83;
+    }
+
+    /* Footer card lebih tegas. */
+    .qualityhub-content
+    form[action$="/favorites"] + section
+    > article
+    > div:last-child {
+        background: #e6edf5 !important;
+        border-top-color: #c9d5e1 !important;
+    }
+
+    .qualityhub-content
+    form[action$="/favorites"] + section
+    > article
+    > div:last-child
+    a.bg-white {
+        background: #f4f7fa !important;
+        border-color: #b9c8d8 !important;
+        color: #3f5369;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .qualityhub-content
+        form[action$="/favorites"] + section
+        > article:hover {
+            background: #edf3f8 !important;
+            border-color: #aebfd0 !important;
+            box-shadow:
+                0 1px 2px rgba(15, 23, 42, 0.03),
+                0 9px 20px rgba(42, 60, 82, 0.06) !important;
+            transform: none !important;
+        }
+    }
+
+
+    /* ======================================================================
+       B. ARCHIVED DOCUMENTS
+       ====================================================================== */
+
+    .qualityhub-content form[action*="archived"] {
+        background: #e4ecf5 !important;
+        border-color: #bdcddd !important;
+        border-radius: 0.95rem !important;
+        box-shadow:
+            0 1px 2px rgba(15, 23, 42, 0.03),
+            0 8px 20px rgba(42, 60, 82, 0.045) !important;
+        padding: 1.05rem !important;
+    }
+
+    .qualityhub-content
+    form[action*="archived"]
+    :is(input, select) {
+        min-height: 2.85rem;
+        background: #f7f9fc !important;
+        border-color: #b7c7d8 !important;
+        color: #27364a;
+        box-shadow: none;
+    }
+
+    .qualityhub-content
+    form[action*="archived"]
+    input::placeholder {
+        color: #718197;
+    }
+
+    .qualityhub-content
+    form[action*="archived"]
+    :is(input, select):focus {
+        background: #ffffff !important;
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.11) !important;
+    }
+
+    .qualityhub-content
+    form[action*="archived"]
+    > div:last-child {
+        margin-top: 0.85rem;
+        padding-top: 0.85rem;
+        border-top: 1px solid #c7d4e1;
+    }
+
+    /* Arsip table container */
+    .qualityhub-content
+    form[action*="archived"] + section {
+        background: #f3f6fa !important;
+        border-color: #bdccdc !important;
+        border-radius: 0.95rem !important;
+        box-shadow:
+            0 1px 2px rgba(15, 23, 42, 0.03),
+            0 9px 22px rgba(42, 60, 82, 0.05) !important;
+    }
+
+    .qualityhub-content
+    form[action*="archived"] + section
+    > div:first-child {
+        background: #e5edf6;
+        border-bottom-color: #c4d1df;
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+
+    .qualityhub-content
+    form[action*="archived"] + section
+    > div:first-child h2 {
+        color: #172033;
+        font-size: 1.06rem;
+        font-weight: 750;
+    }
+
+    .qualityhub-content
+    form[action*="archived"] + section
+    table {
+        background: #f6f8fb;
+        font-size: 0.9rem;
+    }
+
+    .qualityhub-content
+    form[action*="archived"] + section
+    table thead {
+        background: #d7e3ef !important;
+        box-shadow:
+            inset 0 -1px 0 #b6c7d8,
+            inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    }
+
+    .qualityhub-content
+    form[action*="archived"] + section
+    table thead th {
+        padding-top: 0.9rem;
+        padding-bottom: 0.9rem;
+        color: #33485f;
+        font-size: 0.75rem;
+        font-weight: 800;
+        letter-spacing: 0.045em;
+    }
+
+    .qualityhub-content
+    form[action*="archived"] + section
+    table tbody tr {
+        background: #f7f9fc;
+        border-color: #d6e0ea;
+    }
+
+    .qualityhub-content
+    form[action*="archived"] + section
+    table tbody tr:nth-child(even) {
+        background: #edf2f7;
+    }
+
+    .qualityhub-content
+    form[action*="archived"] + section
+    table tbody td {
+        padding-top: 0.95rem;
+        padding-bottom: 0.95rem;
+        vertical-align: middle;
+    }
+
+    .qualityhub-content
+    form[action*="archived"] + section
+    table tbody td:first-child p:first-child {
+        color: #172033;
+        font-size: 0.925rem;
+        font-weight: 750;
+    }
+
+    .qualityhub-content
+    form[action*="archived"] + section
+    .bg-blue-50 {
+        background-color: #dce9f7;
+    }
+
+    .qualityhub-content
+    form[action*="archived"] + section
+    .bg-slate-100 {
+        background-color: #dde6ef;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .qualityhub-content
+        form[action*="archived"] + section
+        table tbody tr:hover {
+            background: #e4edf7 !important;
+            box-shadow: inset 3px 0 0 #2f6fb4;
+        }
+    }
+
+
+    /* ======================================================================
+       C. REVISION HISTORY
+       ====================================================================== */
+
+    /*
+     * Summary revision dideteksi sebagai section yang tepat sebelum
+     * timeline revision. Tidak perlu menambah class ke Blade.
+     */
+    .qualityhub-content
+    section:has(+ section > div.divide-y a[href*="/revisions/"])
+    > div {
+        position: relative;
+        overflow: hidden;
+        min-height: 7.2rem;
+        background: #edf3f8 !important;
+        border-color: #c4d2e0 !important;
+        border-radius: 0.95rem !important;
+        box-shadow:
+            0 1px 2px rgba(15, 23, 42, 0.03),
+            0 7px 18px rgba(42, 60, 82, 0.045) !important;
+    }
+
+    .qualityhub-content
+    section:has(+ section > div.divide-y a[href*="/revisions/"])
+    > div::before {
+        content: "";
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 3px;
+        background: #476f9d;
+        opacity: 0.55;
+    }
+
+    /* Perlindungan revisi tetap hijau semantic, tapi tidak terlalu terang. */
+    .qualityhub-content
+    section:has(+ section > div.divide-y a[href*="/revisions/"])
+    > div.bg-emerald-50 {
+        background: #e1f4eb !important;
+        border-color: #b9ddcb !important;
+    }
+
+    /*
+     * Timeline revision: section yang memiliki direct child .divide-y
+     * berisi link revisi.
+     */
+    .qualityhub-content
+    section:has(> div.divide-y a[href*="/revisions/"]) {
+        background: #f3f6fa !important;
+        border-color: #bdccdc !important;
+        border-radius: 0.95rem !important;
+        box-shadow:
+            0 1px 2px rgba(15, 23, 42, 0.03),
+            0 9px 22px rgba(42, 60, 82, 0.05) !important;
+    }
+
+    .qualityhub-content
+    section:has(> div.divide-y a[href*="/revisions/"])
+    > div:first-child {
+        background: #e5edf6;
+        border-bottom-color: #c4d1df;
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+
+    .qualityhub-content
+    section:has(> div.divide-y a[href*="/revisions/"])
+    > div:first-child h2 {
+        color: #172033;
+        font-size: 1.06rem;
+        font-weight: 750;
+    }
+
+    .qualityhub-content
+    section:has(> div.divide-y a[href*="/revisions/"])
+    > div.divide-y {
+        border-color: #d0dbe6;
+    }
+
+    .qualityhub-content
+    section:has(> div.divide-y a[href*="/revisions/"])
+    article {
+        background: #f6f8fb !important;
+        border-color: #d5e0ea;
+        padding-top: 1.15rem;
+        padding-bottom: 1.15rem;
+    }
+
+    .qualityhub-content
+    section:has(> div.divide-y a[href*="/revisions/"])
+    article:nth-child(even) {
+        background: #edf2f7 !important;
+    }
+
+    /*
+     * Current revision yang sebelumnya blue-50/40 tetap ditonjolkan
+     * dengan surface biru lembut dan left accent.
+     */
+    .qualityhub-content
+    section:has(> div.divide-y a[href*="/revisions/"])
+    article[class*="bg-blue"] {
+        background: #e1ebf6 !important;
+        box-shadow: inset 3px 0 0 #2563eb;
+    }
+
+    /* File icon / badge surfaces */
+    .qualityhub-content
+    section:has(> div.divide-y a[href*="/revisions/"])
+    .bg-blue-100 {
+        background-color: #d2e2f4;
+    }
+
+    .qualityhub-content
+    section:has(> div.divide-y a[href*="/revisions/"])
+    .bg-slate-100 {
+        background-color: #dde6ef;
+    }
+
+    .qualityhub-content
+    section:has(> div.divide-y a[href*="/revisions/"])
+    .bg-emerald-50 {
+        background-color: #e1f4eb;
+    }
+
+    .qualityhub-content
+    section:has(> div.divide-y a[href*="/revisions/"])
+    .bg-amber-50 {
+        background-color: #f7ecd1;
+    }
+
+    .qualityhub-content
+    section:has(> div.divide-y a[href*="/revisions/"])
+    .bg-red-50 {
+        background-color: #f8e3e3;
+    }
+
+    .qualityhub-content
+    section:has(> div.divide-y a[href*="/revisions/"])
+    .bg-indigo-50 {
+        background-color: #dfe7f6;
+    }
+
+    /* Catatan revisi lebih terasa sebagai information panel. */
+    .qualityhub-content
+    section:has(> div.divide-y a[href*="/revisions/"])
+    article
+    .rounded-xl.bg-slate-50 {
+        background: #e7edf4 !important;
+        border: 1px solid #cbd7e3;
+    }
+
+    .qualityhub-content
+    section:has(> div.divide-y a[href*="/revisions/"])
+    article
+    .rounded-xl.bg-slate-50
+    p:last-child {
+        color: #465a70;
+        font-size: 0.875rem;
+        line-height: 1.6;
+    }
+
+    /* Secondary action button putih tidak menyala. */
+    .qualityhub-content
+    section:has(> div.divide-y a[href*="/revisions/"])
+    a.bg-white {
+        background: #edf3f8 !important;
+        border-color: #b7c7d8 !important;
+        color: #3f5369;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .qualityhub-content
+        section:has(> div.divide-y a[href*="/revisions/"])
+        article:hover {
+            background: #e8eff7 !important;
+        }
+    }
+
+
+    /* ======================================================================
+       D. MOBILE
+       ====================================================================== */
+
+    @media (max-width: 767px) {
+        .qualityhub-content form[action$="/favorites"],
+        .qualityhub-content form[action*="archived"] {
+            padding: 0.9rem !important;
+        }
+
+        .qualityhub-content
+        form[action$="/favorites"] + section
+        > article {
+            border-radius: 0.9rem !important;
+        }
+
+        .qualityhub-content
+        section:has(> div.divide-y a[href*="/revisions/"])
+        article {
+            padding: 1rem;
+        }
+    }
+}
+
+
+/* ==========================================================================
+   BMC QUALITYHUB · BATCH 6
+   DOCUMENT FORMS
+   Add Document + Edit Document + Upload New Revision.
+   Visual only. Blade, route, @csrf, method spoofing, validation, upload,
+   storage, revision logic, controller, dan sidebar tidak disentuh.
+   ========================================================================== */
+
+@layer components {
+
+    /* ======================================================================
+       A. ADD DOCUMENT
+       ====================================================================== */
+
+    /*
+     * Resource store form:
+     * POST multipart ke /documents.
+     * Selector enctype mencegah bentrok dengan GET search form /documents.
+     */
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action$="/documents"] {
+        align-items: start;
+    }
+
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action$="/documents"]
+    section.bg-white {
+        background: #f1f5f9 !important;
+        border-color: #c4d2e0 !important;
+        border-radius: 0.95rem !important;
+        box-shadow:
+            0 1px 2px rgba(15, 23, 42, 0.03),
+            0 8px 20px rgba(42, 60, 82, 0.045) !important;
+    }
+
+    /* Header section */
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action$="/documents"]
+    section.bg-white
+    > div:first-child {
+        background: #e5edf6;
+        border-bottom-color: #c4d1df;
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action$="/documents"]
+    section.bg-white
+    > div:first-child h2 {
+        color: #172033;
+        font-size: 1.06rem;
+        font-weight: 750;
+    }
+
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action$="/documents"]
+    section.bg-white
+    > div:first-child p {
+        color: #53667b;
+    }
+
+    /* Icon surface */
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action$="/documents"]
+    section.bg-white
+    .bg-blue-50 {
+        background-color: #dce9f7;
+    }
+
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action$="/documents"]
+    section.bg-white
+    .bg-slate-50 {
+        background-color: #e8eef5;
+    }
+
+    /* Input / select / textarea / file */
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action$="/documents"]
+    :is(input, select, textarea) {
+        background: #f7f9fc !important;
+        border-color: #b7c7d8 !important;
+        color: #27364a;
+        box-shadow: none;
+    }
+
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action$="/documents"]
+    :is(input, select, textarea)::placeholder {
+        color: #718197;
+    }
+
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action$="/documents"]
+    :is(input, select, textarea):focus {
+        background: #ffffff !important;
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.11) !important;
+    }
+
+    /* File picker dibuat seperti upload control yang jelas */
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action$="/documents"]
+    input[type="file"] {
+        min-height: 3.25rem;
+        padding: 0.65rem;
+        background: #e8eef5 !important;
+        border: 1px dashed #a9bbcd !important;
+        border-radius: 0.75rem;
+    }
+
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action$="/documents"]
+    input[type="file"]::file-selector-button {
+        margin-right: 0.8rem;
+        border: 1px solid #b7c7d8;
+        border-radius: 0.6rem;
+        background: #f7f9fc;
+        padding: 0.55rem 0.8rem;
+        color: #33485f;
+        font-size: 0.82rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    /* Helper text */
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action$="/documents"]
+    .text-slate-400 {
+        color: #66788d;
+    }
+
+    /* Footer action panel */
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action$="/documents"]
+    section.bg-white
+    > div:last-child.bg-slate-50 {
+        background: #e6edf5 !important;
+        border-top-color: #c9d5e1;
+    }
+
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action$="/documents"]
+    a.bg-white {
+        background: #edf3f8 !important;
+        border-color: #b6c6d7 !important;
+        color: #3f5369;
+    }
+
+
+    /* ======================================================================
+       B. EDIT DOCUMENT
+       ====================================================================== */
+
+    /*
+     * Edit metadata form:
+     * action /documents/{id}, bukan /revisions.
+     * :has(title + category) menghindari form kecil lain pada halaman dokumen.
+     */
+    .qualityhub-content
+    form[action*="/documents/"]
+    :is(input, select, textarea) {
+        transition:
+            border-color 150ms ease,
+            box-shadow 150ms ease,
+            background-color 150ms ease;
+    }
+
+    .qualityhub-content
+    form[action*="/documents/"]
+    :is(input, select, textarea) {
+        background: #f7f9fc;
+        border-color: #b7c7d8;
+    }
+
+    .qualityhub-content
+    form[action*="/documents/"]
+    :is(input, select, textarea):focus {
+        background: #ffffff;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.11);
+    }
+
+    /*
+     * Card form edit utama.
+     * Exclude revision forms dengan :not([action*="/revisions"]).
+     */
+    .qualityhub-content
+    form.bg-white[action*="/documents/"]:not([action*="/revisions"]) {
+        background: #f1f5f9 !important;
+        border-color: #c4d2e0 !important;
+        border-radius: 0.95rem !important;
+        box-shadow:
+            0 1px 2px rgba(15, 23, 42, 0.03),
+            0 8px 20px rgba(42, 60, 82, 0.045) !important;
+    }
+
+    .qualityhub-content
+    form.bg-white[action*="/documents/"]:not([action*="/revisions"])
+    > div:first-of-type {
+        background: #e5edf6;
+        border-bottom-color: #c4d1df;
+    }
+
+    .qualityhub-content
+    form.bg-white[action*="/documents/"]:not([action*="/revisions"])
+    > div:first-of-type h2 {
+        color: #172033;
+        font-size: 1.06rem;
+        font-weight: 750;
+    }
+
+    .qualityhub-content
+    form.bg-white[action*="/documents/"]:not([action*="/revisions"])
+    .text-slate-400 {
+        color: #66788d;
+    }
+
+    /* Side info panels pada grid Edit Document */
+    .qualityhub-content
+    div.grid:has(> form.bg-white[action*="/documents/"]:not([action*="/revisions"]))
+    > :not(form) {
+        --qh-edit-side-surface: #edf3f8;
+    }
+
+    .qualityhub-content
+    div.grid:has(> form.bg-white[action*="/documents/"]:not([action*="/revisions"]))
+    > :not(form)
+    :is(section, article).bg-white {
+        background: var(--qh-edit-side-surface) !important;
+        border-color: #c4d2e0 !important;
+    }
+
+
+    /* ======================================================================
+       C. UPLOAD NEW REVISION
+       ====================================================================== */
+
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action*="/revisions"] {
+        background: #f1f5f9 !important;
+        border-color: #c4d2e0 !important;
+        border-radius: 0.95rem !important;
+        box-shadow:
+            0 1px 2px rgba(15, 23, 42, 0.03),
+            0 8px 20px rgba(42, 60, 82, 0.045) !important;
+    }
+
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action*="/revisions"]
+    > div:first-child {
+        background: #e5edf6;
+        border-bottom-color: #c4d1df;
+    }
+
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action*="/revisions"]
+    > div:first-child h2 {
+        color: #172033;
+        font-size: 1.06rem;
+        font-weight: 750;
+    }
+
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action*="/revisions"]
+    > div:first-child p {
+        color: #53667b;
+    }
+
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action*="/revisions"]
+    :is(input, textarea, select) {
+        background: #f7f9fc !important;
+        border-color: #b7c7d8 !important;
+        color: #27364a;
+        box-shadow: none;
+    }
+
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action*="/revisions"]
+    :is(input, textarea, select)::placeholder {
+        color: #718197;
+    }
+
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action*="/revisions"]
+    :is(input, textarea, select):focus {
+        background: #ffffff !important;
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.11) !important;
+    }
+
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action*="/revisions"]
+    input[type="file"] {
+        min-height: 3.25rem;
+        padding: 0.65rem;
+        background: #e8eef5 !important;
+        border: 1px dashed #a9bbcd !important;
+        border-radius: 0.75rem;
+    }
+
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action*="/revisions"]
+    input[type="file"]::file-selector-button {
+        margin-right: 0.8rem;
+        border: 1px solid #b7c7d8;
+        border-radius: 0.6rem;
+        background: #f7f9fc;
+        padding: 0.55rem 0.8rem;
+        color: #33485f;
+        font-size: 0.82rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    /* Revision note dibuat seperti proper work field. */
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action*="/revisions"]
+    textarea[name="revision_note"] {
+        min-height: 9rem;
+        line-height: 1.6;
+    }
+
+    /* Footer revision */
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action*="/revisions"]
+    > div:last-child {
+        background: #e6edf5 !important;
+        border-top-color: #c9d5e1 !important;
+    }
+
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action*="/revisions"]
+    > div:last-child
+    a.bg-white {
+        background: #edf3f8 !important;
+        border-color: #b6c6d7 !important;
+        color: #3f5369;
+    }
+
+    /* Side info panel pada halaman upload revision */
+    .qualityhub-content
+    div.grid:has(> form[enctype="multipart/form-data"][action*="/revisions"])
+    > :not(form)
+    :is(section, article).bg-white {
+        background: #edf3f8 !important;
+        border-color: #c4d2e0 !important;
+    }
+
+    /*
+     * Current revision badge di header dipertahankan biru,
+     * hanya surface dibuat sedikit lebih padat.
+     */
+    .qualityhub-content
+    section
+    > div.bg-blue-50.border-blue-200 {
+        background-color: #dce9f7;
+        border-color: #b8cee5;
+    }
+
+
+    /* ======================================================================
+       D. FORM LABELS / REQUIRED / ERROR READABILITY
+       ====================================================================== */
+
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action$="/documents"]
+    label,
+
+    .qualityhub-content
+    form.bg-white[action*="/documents/"]:not([action*="/revisions"])
+    label,
+
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action*="/revisions"]
+    label {
+        color: #33485f;
+        font-size: 0.875rem;
+        font-weight: 700;
+    }
+
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action$="/documents"]
+    label .text-red-500,
+
+    .qualityhub-content
+    form.bg-white[action*="/documents/"]:not([action*="/revisions"])
+    label .text-red-500,
+
+    .qualityhub-content
+    form[enctype="multipart/form-data"][action*="/revisions"]
+    label .text-red-500 {
+        color: #dc2626;
+        font-weight: 800;
+    }
+
+
+    /* ======================================================================
+       E. MOBILE
+       ====================================================================== */
+
+    @media (max-width: 767px) {
+
+        .qualityhub-content
+        form[enctype="multipart/form-data"][action$="/documents"]
+        section.bg-white
+        > div,
+
+        .qualityhub-content
+        form[enctype="multipart/form-data"][action*="/revisions"]
+        > div,
+
+        .qualityhub-content
+        form.bg-white[action*="/documents/"]:not([action*="/revisions"])
+        > div {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        .qualityhub-content
+        form[enctype="multipart/form-data"][action$="/documents"]
+        input[type="file"],
+
+        .qualityhub-content
+        form[enctype="multipart/form-data"][action*="/revisions"]
+        input[type="file"] {
+            font-size: 0.8rem;
+        }
+    }
+}
+
+
+/* ==========================================================================
+   BMC QUALITYHUB · BATCH 7
+   MY PROFILE
+   Scope visual khusus profile page. Profile/password/delete logic,
+   route, CSRF, method spoofing, validation, auth/session, dan sidebar
+   tidak disentuh.
+   ========================================================================== */
+
+@layer components {
+
+    /* ----------------------------------------------------------------------
+       PAGE HEADER + IDENTITY
+       ---------------------------------------------------------------------- */
+
+    .qh-profile-page {
+        max-width: 88rem;
+        margin-inline: auto;
+    }
+
+    .qh-profile-identity {
+        width: min(100%, 22rem);
+        background: #e5edf6;
+        border-color: #c4d2e0;
+        box-shadow:
+            0 1px 2px rgba(15, 23, 42, 0.03),
+            0 7px 18px rgba(42, 60, 82, 0.045);
+    }
+
+
+    /* ----------------------------------------------------------------------
+       MAIN PANELS
+       ---------------------------------------------------------------------- */
+
+    .qh-profile-panel {
+        background: #f1f5f9;
+        border-color: #c4d2e0;
+        box-shadow:
+            0 1px 2px rgba(15, 23, 42, 0.03),
+            0 8px 20px rgba(42, 60, 82, 0.05);
+    }
+
+    .qh-profile-section-header {
+        background: #e5edf6;
+        border-bottom: 1px solid #c7d4e1;
+    }
+
+    .qh-profile-section-header .bg-blue-100 {
+        background-color: #d6e5f5;
+    }
+
+    .qh-profile-form {
+        background: #f1f5f9;
+    }
+
+
+    /* ----------------------------------------------------------------------
+       LABELS + INPUTS
+       ---------------------------------------------------------------------- */
+
+    .qh-profile-label {
+        color: #33485f !important;
+        font-size: 0.875rem !important;
+        font-weight: 700 !important;
+    }
+
+    .qh-profile-input {
+        min-height: 2.9rem;
+        border-color: #b7c7d8 !important;
+        background: #f7f9fc !important;
+        color: #27364a !important;
+        box-shadow: none !important;
+    }
+
+    .qh-profile-input:focus {
+        border-color: #3b82f6 !important;
+        background: #ffffff !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.11) !important;
+    }
+
+    .qh-profile-primary {
+        border-radius: 0.75rem !important;
+        background: #1e40af !important;
+        padding: 0.72rem 1.1rem !important;
+        font-size: 0.875rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0 !important;
+        text-transform: none !important;
+        box-shadow: 0 5px 12px rgba(30, 64, 175, 0.14);
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .qh-profile-primary:hover {
+            background: #1e3a8a !important;
+        }
+    }
+
+
+    /* ----------------------------------------------------------------------
+       DANGER ZONE — merah hanya sebagai semantic warning
+       ---------------------------------------------------------------------- */
+
+    .qh-profile-danger-zone {
+        background: #f3f5f7;
+        border-color: #d8c5c5;
+        box-shadow:
+            0 1px 2px rgba(15, 23, 42, 0.025),
+            0 7px 18px rgba(71, 44, 44, 0.035);
+    }
+
+    .qh-profile-danger-zone > section {
+        padding: 1.25rem 1.4rem;
+        background: #f3f5f7;
+    }
+
+    .qh-profile-danger-zone > section > header {
+        padding-bottom: 0.95rem;
+        margin-bottom: 0.15rem;
+        border-bottom: 1px solid #ddd1d1;
+    }
+
+    .qh-profile-danger-zone > section > header h2 {
+        color: #7f1d1d !important;
+        font-size: 1rem !important;
+        font-weight: 750 !important;
+    }
+
+    .qh-profile-danger-zone > section > header p {
+        color: #665c5c !important;
+        font-size: 0.875rem !important;
+        line-height: 1.6 !important;
+    }
+
+    /* Modal delete tetap readable */
+    .qh-profile-danger-zone form[action*="/profile"] {
+        background: #f8fafc;
+    }
+
+    .qh-profile-danger-zone form[action*="/profile"]
+    input[type="password"] {
+        border-color: #c7b8b8;
+        background: #ffffff;
+    }
+
+    .qh-profile-danger-zone form[action*="/profile"]
+    input[type="password"]:focus {
+        border-color: #dc2626;
+        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.08);
+    }
+
+
+    /* ----------------------------------------------------------------------
+       MOBILE
+       ---------------------------------------------------------------------- */
+
+    @media (max-width: 767px) {
+
+        .qh-profile-identity {
+            width: 100%;
+        }
+
+        .qh-profile-section-header,
+        .qh-profile-form {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        .qh-profile-danger-zone > section {
+            padding: 1rem;
+        }
+    }
+}
+
+
+/* ==========================================================================
+   BMC QUALITYHUB · BATCH 8
+   UI STABILIZATION & CLEANUP
+   Canonical UI rules now live in app.css.
+   Migrated from the old inline layout style ONLY where the rule still
+   contributes to the approved current visual experience.
+   ========================================================================== */
+
+@layer components {
+
+    /* ----------------------------------------------------------------------
+       1. WORKSPACE DETAIL — subtle grid retained from approved UI
+       ---------------------------------------------------------------------- */
+
+    .qualityhub-workspace::before {
+        content: "";
+        position: fixed;
+        inset: 5rem 0 0 18rem;
+        z-index: -1;
+        pointer-events: none;
+        opacity: 0.55;
+        background-image:
+            linear-gradient(
+                rgba(148, 163, 184, 0.055) 1px,
+                transparent 1px
+            ),
+            linear-gradient(
+                90deg,
+                rgba(148, 163, 184, 0.045) 1px,
+                transparent 1px
+            );
+        background-size: 32px 32px;
+        mask-image:
+            linear-gradient(
+                to bottom,
+                rgba(0, 0, 0, 0.38),
+                transparent 62%
+            );
+    }
+
+
+    /* ----------------------------------------------------------------------
+       2. TOPBAR DEPTH — retained exactly, sidebar/blue surfaces untouched
+       ---------------------------------------------------------------------- */
+
+    .qualityhub-topbar {
+        box-shadow:
+            0 1px 0 rgba(148, 163, 184, 0.16),
+            0 8px 24px rgba(15, 23, 42, 0.035);
+    }
+
+
+    /* ----------------------------------------------------------------------
+       3. TABLE INTERACTION — retain subtle transition, no extra lift
+       ---------------------------------------------------------------------- */
+
+    .qualityhub-content table tbody tr {
+        transition:
+            background-color 160ms ease,
+            box-shadow 160ms ease;
+    }
+
+
+    /* ----------------------------------------------------------------------
+       4. KEYBOARD FOCUS — accessibility retained
+       ---------------------------------------------------------------------- */
+
+    .qualityhub-content
+    :is(a, button, input, select, textarea):focus-visible {
+        outline: 2px solid rgba(37, 99, 235, 0.7);
+        outline-offset: 2px;
+    }
+
+
+    /* ----------------------------------------------------------------------
+       5. RESPONSIVE GRID OFFSET
+       ---------------------------------------------------------------------- */
+
+    @media (max-width: 1023px) {
+        .qualityhub-workspace::before {
+            left: 0;
+        }
+    }
+}

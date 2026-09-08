@@ -190,7 +190,8 @@
     {{-- ========================================================= --}}
 
     <section
-        class="grid
+        class="qh-departments-stats
+               grid
                grid-cols-1
                sm:grid-cols-3
                gap-5
@@ -261,7 +262,8 @@
         method="GET"
         action="{{ route('departments.index') }}"
 
-        class="mb-6
+        class="qh-departments-filter
+               mb-6
                rounded-2xl
                border
                border-slate-200
@@ -381,7 +383,8 @@
     {{-- ========================================================= --}}
 
     <section
-        class="overflow-hidden
+        class="qh-departments-table
+               overflow-hidden
                rounded-2xl
                border
                border-slate-200

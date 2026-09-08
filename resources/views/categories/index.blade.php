@@ -166,7 +166,8 @@
 
     {{-- STATISTICS --}}
     <section
-        class="grid
+        class="qh-categories-stats
+               grid
                grid-cols-1
                sm:grid-cols-2
                xl:grid-cols-4
@@ -225,7 +226,8 @@
         method="GET"
         action="{{ route('categories.index') }}"
 
-        class="mb-6
+        class="qh-categories-filter
+               mb-6
                bg-white
                rounded-2xl
                border
@@ -370,7 +372,8 @@
 
     {{-- TABLE --}}
     <section
-        class="bg-white
+        class="qh-categories-table
+               bg-white
                rounded-2xl
                border
                border-slate-200
