@@ -25,7 +25,6 @@ class DocumentScanMetadata extends Model
 
     protected $casts = [
         'scan_date' => 'date',
-        'scan_time' => 'datetime:H:i',
     ];
 
     public function document(): BelongsTo
