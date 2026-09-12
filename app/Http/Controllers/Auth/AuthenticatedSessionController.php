@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Services\SessionSecurityService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -22,17 +23,42 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request): RedirectResponse
-    {
+    public function store(
+        LoginRequest $request,
+        SessionSecurityService $sessionSecurity
+    ): RedirectResponse {
         $request->authenticate();
 
+        /*
+        | Session fixation protection: rotate ID immediately after login.
+        */
         $request->session()->regenerate();
 
-        $request->user()->update([
+        $user = $request->user();
+
+        $sessionSecurity->initialize(
+            $request,
+            $user
+        );
+
+        /*
+        | Database sessions: keep at most N active sessions per user.
+        */
+        $sessionSecurity->pruneConcurrentSessions(
+            $user,
+            $request->session()->getId()
+        );
+
+        $user->update([
             'last_login_at' => now(),
         ]);
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        return redirect()->intended(
+            route(
+                'dashboard',
+                absolute: false
+            )
+        );
     }
 
     /**
@@ -43,7 +69,6 @@ class AuthenticatedSessionController extends Controller
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
-
         $request->session()->regenerateToken();
 
         return redirect()->route('login');

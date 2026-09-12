@@ -1689,7 +1689,7 @@
                                                                bg-gradient-to-r
                                                                from-blue-600
                                                                to-cyan-500"
-                                                        style="width: {{ $columnCompleteness }}%;"
+                                                        data-qh-width="{{ $columnCompleteness }}"
                                                     ></div>
                                                 </div>
 
@@ -1974,7 +1974,7 @@
                                                                        bg-gradient-to-r
                                                                        from-violet-500
                                                                        to-blue-500"
-                                                                style="width: {{ $topPercent }}%;"
+                                                                data-qh-width="{{ $topPercent }}"
                                                             ></div>
                                                         </div>
 
@@ -2284,7 +2284,7 @@
 
     @if($documentAnalytics?->status === 'ready')
 
-        <script
+        <script nonce="{{ $cspNonce }}"
             id="document-analytics-chart-data"
             type="application/json"
         >@json($sheetChartPayload)</script>
@@ -2296,7 +2296,7 @@
     {{-- STYLE / ANIMATION --}}
     {{-- ========================================================= --}}
 
-    <style>
+    <style nonce="{{ $cspNonce }}">
         /*
         |--------------------------------------------------------------------------
         | TAHAP 16G — MOTION SYSTEM
@@ -2972,7 +2972,7 @@
     {{-- INTERACTION + NATIVE SVG CHART --}}
     {{-- ========================================================= --}}
 
-    <script>
+    <script nonce="{{ $cspNonce }}">
         (() => {
             'use strict';
 
@@ -3776,10 +3776,7 @@
                                                    w-2.5
                                                    flex-shrink-0
                                                    rounded-full"
-                                            style="
-                                                background:
-                                                    ${colors[index % colors.length]};
-                                            "
+                                            data-qh-background="${colors[index % colors.length]}"
                                         ></span>
 
                                         <span
@@ -4148,7 +4145,7 @@
                             <div class="analytics-range-track">
                                 <span
                                     class="analytics-range-marker"
-                                    style="left:${averagePosition}%"
+                                    data-qh-left="${averagePosition}"
                                     title="Rata-rata: ${formatNumber(average)}"
                                 ></span>
                             </div>
@@ -4255,7 +4252,7 @@
 
     @if(in_array($analyticsStatus, ['pending', 'processing'], true))
 
-        <script>
+        <script nonce="{{ $cspNonce }}">
             (() => {
                 'use strict';
 
@@ -4297,7 +4294,7 @@
 
     @elseif($analyticsStatus === 'ready' || $analyticsStatus === 'failed')
 
-        <script>
+        <script nonce="{{ $cspNonce }}">
             (() => {
                 'use strict';
 
@@ -4316,3 +4313,5 @@
     @endif
 
 </section>
+
+

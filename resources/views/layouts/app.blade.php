@@ -23,6 +23,8 @@
             Upload Revision · {{ config('app.name', 'BMC QualityHub') }}
         @elseif(request()->routeIs('documents.revisions.*'))
             Revision History · {{ config('app.name', 'BMC QualityHub') }}
+        @elseif(request()->routeIs('documents.scan.*'))
+            Scan / Capture · {{ config('app.name', 'BMC QualityHub') }}
         @elseif(request()->routeIs('documents.archived'))
             Archived Documents · {{ config('app.name', 'BMC QualityHub') }}
         @elseif(request()->routeIs('documents.edit'))
@@ -94,7 +96,7 @@
 
                lg:hidden"
 
-        style="display: none;"
+        x-cloak
     ></div>
 
 
@@ -601,6 +603,57 @@
 
                 @endif
 
+
+
+                {{-- ================================================= --}}
+                {{-- SCAN / CAPTURE --}}
+                {{-- ADMIN + SUPER ADMIN --}}
+                {{-- ================================================= --}}
+
+                @if(
+                    Auth::user()->isAdmin()
+                    && Route::has('documents.scan.create')
+                )
+
+                    <a
+                        href="{{ route('documents.scan.create') }}"
+                        @click="sidebarOpen = false"
+
+                        @if(request()->routeIs('documents.scan.*'))
+                            aria-current="page"
+                        @endif
+
+                        class="
+                            flex items-center gap-3
+                            px-4 py-3
+                            rounded-xl
+                            transition duration-200
+                            {{
+                                request()->routeIs('documents.scan.*')
+                                    ? 'bg-white/10 text-white shadow-sm'
+                                    : 'text-blue-100 hover:bg-white/10 hover:text-white'
+                            }}
+                        "
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="19" height="19"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <rect x="3" y="4" width="18" height="16" rx="2"/>
+                            <path d="M7 8h10"/>
+                            <path d="M7 12h10"/>
+                            <path d="M7 16h6"/>
+                        </svg>
+                        <span>Scan / Capture</span>
+                    </a>
+
+                @endif
 
 
                 {{-- ================================================= --}}
@@ -1404,6 +1457,11 @@
                                 Add Document
 
 
+                            @elseif(request()->routeIs('documents.scan.*'))
+
+                                Scan / Capture
+
+
                             @elseif(request()->routeIs('documents.archived'))
 
                                 Archived Documents
@@ -1512,6 +1570,11 @@
                             @elseif(request()->routeIs('documents.create'))
 
                                 Daftarkan dokumen internal baru
+
+
+                            @elseif(request()->routeIs('documents.scan.*'))
+
+                                Scan / Capture dan simpan berkas Quality Control
 
 
                             @elseif(request()->routeIs('documents.show'))
@@ -1766,7 +1829,7 @@
 
                                    overflow-hidden"
 
-                            style="display: none;"
+                            x-cloak
                         >
 
 

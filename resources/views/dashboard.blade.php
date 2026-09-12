@@ -358,7 +358,7 @@
                         <select
                             id="dashboard-period"
                             name="period"
-                            onchange="this.form.submit()"
+                            data-auto-submit
                             class="w-full
                                    rounded-xl
                                    border-white/10
@@ -1709,7 +1709,7 @@
     {{-- DATA SOURCE UNTUK CHART — DIBUAT LANGSUNG DARI DATABASE --}}
     {{-- ============================================================= --}}
 
-    <script
+    <script nonce="{{ $cspNonce }}"
         id="dashboard-chart-data"
         type="application/json"
     >@json($chartData)</script>
@@ -1719,7 +1719,7 @@
     {{-- DASHBOARD ANIMATION + NATIVE SVG CHART ENGINE --}}
     {{-- ============================================================= --}}
 
-    <style>
+    <style nonce="{{ $cspNonce }}">
         #analytics-dashboard .analytics-enter {
             opacity: 0;
             transform: translateY(12px);
@@ -1821,7 +1821,7 @@
     </style>
 
 
-    <script>
+    <script nonce="{{ $cspNonce }}">
         (() => {
             'use strict';
 
@@ -2374,7 +2374,7 @@
                                 width="${plotWidth}"
                                 height="${plotHeight}"
                                 fill="transparent"
-                                style="cursor: crosshair;"
+                                data-qh-cursor="crosshair"
                             />
 
                         </svg>
@@ -2546,11 +2546,11 @@
 
                         tooltip.innerHTML = `
                             <div>${escapeHtml(labels[index] ?? '')}</div>
-                            <div style="margin-top:4px;color:#bfdbfe">
+                            <div data-qh-margin-top="4" data-qh-color="#bfdbfe">
                                 Dokumen:
                                 ${numberFormatter.format(documentValues[index] ?? 0)}
                             </div>
-                            <div style="color:#a5f3fc">
+                            <div data-qh-color="#a5f3fc">
                                 Aktivitas:
                                 ${numberFormatter.format(activityValues[index] ?? 0)}
                             </div>
@@ -2771,7 +2771,7 @@
                                                 class="h-2.5 w-2.5
                                                        rounded-full
                                                        flex-shrink-0"
-                                                style="background:${colors[index % colors.length]}"
+                                                data-qh-background="${colors[index % colors.length]}"
                                             ></span>
 
                                             <span
@@ -2907,11 +2907,7 @@
                                                 class="smartfind-chart-bar
                                                        h-full
                                                        rounded-full"
-                                                style="
-                                                    width:${width}%;
-                                                    background:${color};
-                                                    animation-delay:${index * 70}ms;
-                                                "
+                                                data-qh-width="${width}" data-qh-background="${color}" data-qh-animation-delay="${index * 70}"
                                             ></div>
                                         </div>
                                     </div>
@@ -2981,3 +2977,5 @@
     </script>
 
 </x-app-layout>
+
+

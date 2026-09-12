@@ -21,66 +21,116 @@ class LoginRequest extends FormRequest
     }
 
     /**
+     * Normalize credential input before validation and authentication.
+     */
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'email' => Str::lower(
+                trim((string) $this->input('email'))
+            ),
+        ]);
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
+        $passwordMax = max(
+            64,
+            (int) config(
+                'smartfind_security.auth.password_max_length',
+                128
+            )
+        );
+
         return [
-            'email' => ['required', 'string', 'email'],
-            'password' => ['required', 'string'],
+            'email' => [
+                'required',
+                'string',
+                'lowercase',
+                'email',
+                'max:255',
+            ],
+            'password' => [
+                'required',
+                'string',
+                'max:'.$passwordMax,
+            ],
+            'remember' => [
+                'nullable',
+                'boolean',
+            ],
         ];
     }
 
     /**
      * Attempt to authenticate the request's credentials.
      *
+     * Dua limiter digunakan:
+     * - email + IP: melindungi satu akun dari brute force;
+     * - IP global: mengurangi credential spraying ke banyak akun.
+     *
      * @throws ValidationException
      */
     public function authenticate(): void
-{
-    $this->ensureIsNotRateLimited();
+    {
+        $this->ensureIsNotRateLimited();
 
-    if (! Auth::attempt(
-        $this->only('email', 'password'),
-        $this->boolean('remember')
-    )) {
+        $rememberAllowed =
+            config(
+                'smartfind_security.auth.remember_login_enabled',
+                false
+            ) === true;
 
-        RateLimiter::hit($this->throttleKey());
+        $remember =
+            $rememberAllowed
+            && $this->boolean('remember');
 
-        throw ValidationException::withMessages([
-            'email' => trans('auth.failed'),
-        ]);
-    }
-
-
-    $user = Auth::user();
-
-
-    if ($user->account_status !== 'active') {
-
-        $status = $user->account_status;
-
-        Auth::logout();
-
-        if ($status === 'pending') {
+        if (! Auth::attempt(
+            [
+                'email' => (string) $this->input('email'),
+                'password' => (string) $this->input('password'),
+            ],
+            $remember
+        )) {
+            $this->hitRateLimiters();
 
             throw ValidationException::withMessages([
-                'email' =>
-                    'Akun Anda masih menunggu persetujuan administrator. Silakan hubungi administrator untuk informasi lebih lanjut.',
+                'email' => trans('auth.failed'),
             ]);
         }
 
-        throw ValidationException::withMessages([
-            'email' =>
-                'Akun Anda saat ini tidak aktif. Silakan hubungi administrator.',
-        ]);
+        $user = Auth::user();
+
+        if (
+            $user === null
+            || strtolower((string) $user->account_status) !== 'active'
+        ) {
+            $status =
+                $user?->account_status
+                ?? 'inactive';
+
+            Auth::guard('web')->logout();
+
+            if ($status === 'pending') {
+                throw ValidationException::withMessages([
+                    'email' =>
+                        'Akun Anda masih menunggu persetujuan administrator. Silakan hubungi administrator untuk informasi lebih lanjut.',
+                ]);
+            }
+
+            throw ValidationException::withMessages([
+                'email' =>
+                    'Akun Anda saat ini tidak aktif. Silakan hubungi administrator.',
+            ]);
+        }
+
+        $this->clearRateLimiters();
     }
-
-
-    RateLimiter::clear($this->throttleKey());
-}
 
     /**
      * Ensure the login request is not rate limited.
@@ -89,27 +139,107 @@ class LoginRequest extends FormRequest
      */
     public function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        $accountAttempts = max(
+            1,
+            (int) config(
+                'smartfind_security.auth.login_max_attempts',
+                5
+            )
+        );
+
+        $ipAttempts = max(
+            1,
+            (int) config(
+                'smartfind_security.auth.login_ip_max_attempts',
+                20
+            )
+        );
+
+        $accountLimited = RateLimiter::tooManyAttempts(
+            $this->throttleKey(),
+            $accountAttempts
+        );
+
+        $ipLimited = RateLimiter::tooManyAttempts(
+            $this->ipThrottleKey(),
+            $ipAttempts
+        );
+
+        if (! $accountLimited && ! $ipLimited) {
             return;
         }
 
         event(new Lockout($this));
 
-        $seconds = RateLimiter::availableIn($this->throttleKey());
+        $seconds = max(
+            RateLimiter::availableIn($this->throttleKey()),
+            RateLimiter::availableIn($this->ipThrottleKey())
+        );
 
         throw ValidationException::withMessages([
             'email' => trans('auth.throttle', [
                 'seconds' => $seconds,
-                'minutes' => ceil($seconds / 60),
+                'minutes' => (int) ceil($seconds / 60),
             ]),
         ]);
     }
 
     /**
-     * Get the rate limiting throttle key for the request.
+     * Get the account + IP rate limiting key.
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+        $identity = Str::lower(
+            trim((string) $this->input('email'))
+        );
+
+        return 'qualityhub-login-account:'
+            . hash(
+                'sha256',
+                $identity.'|'.$this->ip()
+            );
+    }
+
+    /**
+     * Get the IP-wide credential spraying limiter key.
+     */
+    public function ipThrottleKey(): string
+    {
+        return 'qualityhub-login-ip:'
+            . hash(
+                'sha256',
+                (string) $this->ip()
+            );
+    }
+
+    private function hitRateLimiters(): void
+    {
+        RateLimiter::hit(
+            $this->throttleKey(),
+            max(
+                60,
+                (int) config(
+                    'smartfind_security.auth.login_decay_seconds',
+                    300
+                )
+            )
+        );
+
+        RateLimiter::hit(
+            $this->ipThrottleKey(),
+            max(
+                60,
+                (int) config(
+                    'smartfind_security.auth.login_ip_decay_seconds',
+                    300
+                )
+            )
+        );
+    }
+
+    private function clearRateLimiters(): void
+    {
+        RateLimiter::clear($this->throttleKey());
+        RateLimiter::clear($this->ipThrottleKey());
     }
 }

@@ -6,7 +6,7 @@
 
     <title>Akses Ditolak · {{ config('app.name', 'BMC QualityHub') }}</title>
 
-    <style>
+    <style nonce="{{ $cspNonce }}">
         :root {
             color-scheme: light;
             --blue-950: #172554;
@@ -430,3 +430,4 @@
     </main>
 </body>
 </html>
+

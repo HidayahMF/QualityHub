@@ -334,52 +334,73 @@
                 </div>
 
 
-                {{-- REMEMBER --}}
-                <div
-                    class="flex
-                           items-center
-                           justify-between
-                           gap-3"
-                >
-
-                    <label
-                        for="remember_me"
-                        class="inline-flex
-                               cursor-pointer
+                {{-- PERSISTENT LOGIN POLICY --}}
+                @if (config('smartfind_security.auth.remember_login_enabled', false))
+                    <div
+                        class="flex
                                items-center
-                               gap-2.5
-                               text-sm
-                               text-slate-600"
+                               justify-between
+                               gap-3"
                     >
-
-                        <input
-                            id="remember_me"
-                            type="checkbox"
-                            name="remember"
-                            class="rounded
-                                   border-slate-300
-                                   text-blue-700
-                                   shadow-sm
-                                   focus:ring-blue-500"
+                        <label
+                            for="remember_me"
+                            class="inline-flex
+                                   cursor-pointer
+                                   items-center
+                                   gap-2.5
+                                   text-sm
+                                   text-slate-600"
                         >
+                            <input
+                                id="remember_me"
+                                type="checkbox"
+                                name="remember"
+                                value="1"
+                                class="rounded
+                                       border-slate-300
+                                       text-blue-700
+                                       shadow-sm
+                                       focus:ring-blue-500"
+                            >
+                            <span>Ingat saya</span>
+                        </label>
 
-                        <span>Ingat saya</span>
-
-                    </label>
-
-
-                    <span
-                        class="inline-flex
-                               items-center
-                               gap-1.5
-                               text-[11px]
-                               text-slate-400"
+                        <span
+                            class="inline-flex
+                                   items-center
+                                   gap-1.5
+                                   text-[11px]
+                                   text-slate-400"
+                        >
+                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                            Sesi aman
+                        </span>
+                    </div>
+                @else
+                    <div
+                        class="flex items-center gap-2.5 rounded-xl
+                               border border-blue-100 bg-blue-50/70
+                               px-3.5 py-2.5 text-xs text-blue-700"
                     >
-                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-                        Sesi aman
-                    </span>
-
-                </div>
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="shrink-0"
+                            aria-hidden="true"
+                        >
+                            <rect width="18" height="11" x="3" y="11" rx="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                        <span>Login persisten dinonaktifkan untuk keamanan perangkat internal.</span>
+                    </div>
+                @endif
 
 
                 {{-- BUTTON --}}
@@ -500,7 +521,7 @@
     </section>
 
 
-    <script>
+    <script nonce="{{ $cspNonce }}">
         (() => {
             'use strict';
 
@@ -532,3 +553,4 @@
     </script>
 
 </x-guest-layout>
+

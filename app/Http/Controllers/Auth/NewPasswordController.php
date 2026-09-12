@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\SessionSecurityService;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,7 +22,12 @@ class NewPasswordController extends Controller
      */
     public function create(Request $request): View
     {
-        return view('auth.reset-password', ['request' => $request]);
+        return view(
+            'auth.reset-password',
+            [
+                'request' => $request,
+            ]
+        );
     }
 
     /**
@@ -29,35 +35,90 @@ class NewPasswordController extends Controller
      *
      * @throws ValidationException
      */
-    public function store(Request $request): RedirectResponse
-    {
-        $request->validate([
-            'token' => ['required'],
-            'email' => ['required', 'email'],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+    public function store(
+        Request $request,
+        SessionSecurityService $sessionSecurity
+    ): RedirectResponse {
+        $request->merge([
+            'email' => Str::lower(
+                trim((string) $request->input('email'))
+            ),
         ]);
 
-        // Here we will attempt to reset the user's password. If it is successful we
-        // will update the password on an actual user model and persist it to the
-        // database. Otherwise we will parse the error and return the response.
+        $passwordMax = max(
+            64,
+            (int) config(
+                'smartfind_security.auth.password_max_length',
+                128
+            )
+        );
+
+        $validated = $request->validate([
+            'token' => [
+                'required',
+                'string',
+            ],
+            'email' => [
+                'required',
+                'string',
+                'lowercase',
+                'email',
+                'max:255',
+            ],
+            'password' => [
+                'required',
+                'string',
+                'max:'.$passwordMax,
+                'confirmed',
+                Rules\Password::defaults(),
+            ],
+        ]);
+
         $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function (User $user) use ($request) {
+            [
+                'email' => $validated['email'],
+                'password' => $validated['password'],
+                'password_confirmation' =>
+                    (string) $request->input('password_confirmation'),
+                'token' => $validated['token'],
+            ],
+            function (User $user) use (
+                $validated,
+                $sessionSecurity
+            ) {
                 $user->forceFill([
-                    'password' => Hash::make($request->password),
+                    'password' => Hash::make(
+                        $validated['password']
+                    ),
                     'remember_token' => Str::random(60),
                 ])->save();
+
+                /*
+                | Password reset is a security boundary: revoke every existing
+                | database session belonging to this account.
+                */
+                $sessionSecurity
+                    ->revokeDatabaseSessionsForUser(
+                        $user
+                    );
 
                 event(new PasswordReset($user));
             }
         );
 
-        // If the password was successfully reset, we will redirect the user back to
-        // the application's home authenticated view. If there is an error we can
-        // redirect them back to where they came from with their error message.
-        return $status == Password::PASSWORD_RESET
-                    ? redirect()->route('login')->with('status', __($status))
-                    : back()->withInput($request->only('email'))
-                        ->withErrors(['email' => __($status)]);
+        return $status === Password::PASSWORD_RESET
+            ? redirect()
+                ->route('login')
+                ->with(
+                    'status',
+                    __($status)
+                )
+            : back()
+                ->withInput([
+                    'email' => $validated['email'],
+                ])
+                ->withErrors([
+                    'email' => __($status),
+                ]);
     }
 }

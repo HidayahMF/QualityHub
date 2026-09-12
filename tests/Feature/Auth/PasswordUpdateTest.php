@@ -11,6 +11,9 @@ class PasswordUpdateTest extends TestCase
 {
     use RefreshDatabase;
 
+    private const NEW_PASSWORD =
+        'NewQualityHub#2026Pass';
+
     public function test_password_can_be_updated(): void
     {
         $user = User::factory()->create();
@@ -20,15 +23,20 @@ class PasswordUpdateTest extends TestCase
             ->from('/profile')
             ->put('/password', [
                 'current_password' => 'password',
-                'password' => 'new-password',
-                'password_confirmation' => 'new-password',
+                'password' => self::NEW_PASSWORD,
+                'password_confirmation' => self::NEW_PASSWORD,
             ]);
 
         $response
             ->assertSessionHasNoErrors()
             ->assertRedirect('/profile');
 
-        $this->assertTrue(Hash::check('new-password', $user->refresh()->password));
+        $this->assertTrue(
+            Hash::check(
+                self::NEW_PASSWORD,
+                $user->refresh()->password
+            )
+        );
     }
 
     public function test_correct_password_must_be_provided_to_update_password(): void
@@ -40,12 +48,15 @@ class PasswordUpdateTest extends TestCase
             ->from('/profile')
             ->put('/password', [
                 'current_password' => 'wrong-password',
-                'password' => 'new-password',
-                'password_confirmation' => 'new-password',
+                'password' => self::NEW_PASSWORD,
+                'password_confirmation' => self::NEW_PASSWORD,
             ]);
 
         $response
-            ->assertSessionHasErrorsIn('updatePassword', 'current_password')
+            ->assertSessionHasErrorsIn(
+                'updatePassword',
+                'current_password'
+            )
             ->assertRedirect('/profile');
     }
 }

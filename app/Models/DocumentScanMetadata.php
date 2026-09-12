@@ -14,17 +14,24 @@ class DocumentScanMetadata extends Model
         'source_type',
         'scan_type',
         'scan_date',
+        'production_date',
         'shift',
         'line',
         'from_type',
         'to_type',
         'scan_time',
+        'axle_assy_type',
+        'axle_side',
+        'brake_part_prefix',
+        'brake_part_variant',
+        'brake_part_number',
         'image_format',
         'capture_source',
     ];
 
     protected $casts = [
         'scan_date' => 'date',
+        'production_date' => 'date',
     ];
 
     public function document(): BelongsTo

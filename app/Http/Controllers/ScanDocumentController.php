@@ -7,6 +7,9 @@ use App\Models\Category;
 use App\Models\Document;
 use App\Models\DocumentScanMetadata;
 use App\Models\DocumentVersion;
+use App\Services\MultiPageScanPdfService;
+use App\Services\PrivateDocumentStorageService;
+use App\Services\ScanImageSecurityService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,14 +18,19 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Throwable;
 
 class ScanDocumentController extends Controller
 {
-    /**
-     * Menampilkan workflow Scan / Capture QC.
-     */
+    private const SCAN_RETOOLING = 'Retooling';
+    private const SCAN_AXLE = 'Laporan Hasil Produksi - Axle Assy';
+    private const SCAN_BRAKE = 'Laporan Hasil Produksi - Brake Assy';
+    private const SCAN_OTHER = 'Lainnya';
+
+    private const BRAKE_PART_PREFIX = 'A 4304200';
+
     public function create(): View
     {
         $this->ensureAdmin();
@@ -41,14 +49,44 @@ class ScanDocumentController extends Controller
     }
 
     /**
-     * Menyimpan hasil scan/capture sebagai dokumen baru.
+     * Menyimpan hasil Scan / Capture QC.
      *
-     * File gambar disimpan di private disk dan metadata khusus scan
-     * disimpan terpisah dari tabel documents.
+     * - 1 foto  -> disimpan sebagai gambar seperti workflow lama.
+     * - 2+ foto -> seluruh foto diverifikasi satu per satu lalu digabung server-side
+     *              menjadi satu PDF multi-halaman.
      */
-    public function store(Request $request): RedirectResponse
-    {
+    public function store(
+        Request $request,
+        ScanImageSecurityService $imageSecurity,
+        MultiPageScanPdfService $pdfService,
+        PrivateDocumentStorageService $privateStorage
+    ): RedirectResponse {
         $this->ensureAdmin();
+
+        /*
+         * Backward compatibility untuk client lama yang masih mengirim `file`.
+         */
+        if (! $request->hasFile('files') && $request->hasFile('file')) {
+            $legacyFile = $request->file('file');
+
+            if ($legacyFile !== null) {
+                $request->files->set('files', [$legacyFile]);
+            }
+        }
+
+        $maxFiles = max(
+            1,
+            (int) config('smartfind_scan_security.max_files', 10)
+        );
+        $maxFileKilobytes = max(
+            1,
+            (int) floor(
+                (int) config(
+                    'smartfind_scan_security.max_file_size_bytes',
+                    20 * 1024 * 1024
+                ) / 1024
+            )
+        );
 
         $validated = $request->validate([
             'category_id' => [
@@ -60,20 +98,186 @@ class ScanDocumentController extends Controller
             ],
             'title' => ['required', 'string', 'max:255'],
             'file_name' => ['required', 'string', 'max:180'],
-            'scan_type' => ['nullable', 'string', 'max:50'],
-            'scan_date' => ['required', 'date'],
+            'scan_type' => [
+                'required',
+                'string',
+                Rule::in([
+                    self::SCAN_RETOOLING,
+                    self::SCAN_AXLE,
+                    self::SCAN_BRAKE,
+                    self::SCAN_OTHER,
+                ]),
+            ],
+            'scan_type_other' => [
+                Rule::requiredIf(
+                    fn () => $request->input('scan_type') === self::SCAN_OTHER
+                ),
+                'nullable',
+                'string',
+                'max:50',
+            ],
+            'scan_date' => ['required', 'date_format:Y-m-d'],
             'shift' => ['nullable', 'string', 'max:20'],
             'line' => ['nullable', 'string', 'max:100'],
             'from_type' => ['nullable', 'string', 'max:150'],
             'to_type' => ['nullable', 'string', 'max:150'],
             'scan_time' => ['nullable', 'date_format:H:i'],
-            'file' => [
+
+            'axle_assy_type' => [
+                Rule::requiredIf(
+                    fn () => $request->input('scan_type') === self::SCAN_AXLE
+                ),
+                'nullable',
+                Rule::in(['Module Assy', 'Axle Assy']),
+            ],
+            'axle_side' => [
+                Rule::requiredIf(
+                    fn () => $request->input('scan_type') === self::SCAN_AXLE
+                ),
+                'nullable',
+                Rule::in(['LH', 'RH']),
+            ],
+            'brake_part_variant' => [
+                Rule::requiredIf(
+                    fn () => $request->input('scan_type') === self::SCAN_BRAKE
+                ),
+                'nullable',
+                Rule::in([
+                    '402 / 502',
+                    '201 / 301',
+                    '202 / 302',
+                ]),
+            ],
+
+            'capture_source' => [
+                'nullable',
+                Rule::in(['upload', 'camera', 'mixed']),
+            ],
+
+            'files' => [
+                'required',
+                'array',
+                'min:1',
+                'max:' . $maxFiles,
+            ],
+            'files.*' => [
                 'required',
                 'file',
-                'max:20480',
+                'max:' . $maxFileKilobytes,
                 'mimes:jpg,jpeg,png,webp,gif,bmp,tif,tiff',
             ],
         ]);
+
+        foreach ([
+            'title',
+            'file_name',
+            'scan_type_other',
+            'shift',
+            'line',
+            'from_type',
+            'to_type',
+        ] as $field) {
+            if (array_key_exists($field, $validated)) {
+                $validated[$field] = $this->normalizePlainText(
+                    $validated[$field]
+                );
+            }
+        }
+
+        if ($validated['title'] === null) {
+            throw ValidationException::withMessages([
+                'title' => 'Judul dokumen tidak boleh kosong.',
+            ]);
+        }
+
+        if ($validated['file_name'] === null) {
+            throw ValidationException::withMessages([
+                'file_name' => 'Nama file tidak boleh kosong.',
+            ]);
+        }
+
+        $originalScanType = $validated['scan_type'];
+
+        if ($originalScanType === self::SCAN_OTHER) {
+            $otherScanType = $validated['scan_type_other'] ?? null;
+
+            if ($otherScanType === null) {
+                throw ValidationException::withMessages([
+                    'scan_type_other' => 'Jenis dokumen lainnya tidak boleh kosong.',
+                ]);
+            }
+
+            $reservedScanTypes = array_map(
+                'strtolower',
+                [
+                    self::SCAN_RETOOLING,
+                    self::SCAN_AXLE,
+                    self::SCAN_BRAKE,
+                    self::SCAN_OTHER,
+                ]
+            );
+
+            if (in_array(strtolower($otherScanType), $reservedScanTypes, true)) {
+                throw ValidationException::withMessages([
+                    'scan_type_other' => 'Gunakan pilihan jenis dokumen yang sudah tersedia.',
+                ]);
+            }
+
+            $validated['scan_type'] = $otherScanType;
+        }
+
+        unset($validated['scan_type_other']);
+
+        $isRetooling = $originalScanType === self::SCAN_RETOOLING;
+        $isAxle = $originalScanType === self::SCAN_AXLE;
+        $isBrake = $originalScanType === self::SCAN_BRAKE;
+
+        $productionDate = ($isAxle || $isBrake)
+            ? $validated['scan_date']
+            : null;
+
+        if (! $isAxle) {
+            $validated['axle_assy_type'] = null;
+            $validated['axle_side'] = null;
+        }
+
+        if (! $isBrake) {
+            $validated['brake_part_variant'] = null;
+        }
+
+        if ($isAxle || $isBrake) {
+            $validated['shift'] = null;
+            $validated['line'] = null;
+            $validated['from_type'] = null;
+            $validated['to_type'] = null;
+            $validated['scan_time'] = null;
+        }
+
+        $brakePartPrefix = $isBrake
+            ? self::BRAKE_PART_PREFIX
+            : null;
+
+        $brakePartNumber = $isBrake
+            ? self::BRAKE_PART_PREFIX . ' ' . $validated['brake_part_variant']
+            : null;
+
+        if ($isRetooling) {
+            $validated['title'] = 'INSTRUKSI PERUBAHAN TYPE ( RETOOLING )';
+        } elseif ($isAxle) {
+            $validated['title'] = 'LAPORAN HASIL PRODUKSI - AXLE ASSY - '
+                . $validated['axle_assy_type']
+                . ' - '
+                . $validated['axle_side']
+                . ' - '
+                . $validated['scan_date'];
+        } elseif ($isBrake) {
+            $validated['title'] = 'LAPORAN HASIL PRODUKSI - BRAKE ASSY - '
+                . $brakePartNumber
+                . ' - '
+                . $validated['scan_date'];
+        }
+
+        $captureSource = $validated['capture_source'] ?? 'upload';
 
         $category = Category::query()
             ->with('department')
@@ -92,20 +296,82 @@ class ScanDocumentController extends Controller
                 ]);
         }
 
-        $file = $request->file('file');
+        /** @var array<int, \Illuminate\Http\UploadedFile> $files */
+        $files = array_values(
+            array_filter(
+                (array) $request->file('files'),
+                fn ($file) => $file !== null
+            )
+        );
 
-        if ($file === null || ! $file->isValid()) {
-            return back()
-                ->withInput()
-                ->withErrors([
-                    'file' => 'Foto/berkas gambar yang dipilih tidak valid.',
-                ]);
+        if ($files === []) {
+            throw ValidationException::withMessages([
+                'files' => 'Minimal satu foto Scan / Capture wajib dipilih.',
+            ]);
         }
 
-        $extension = strtolower($file->getClientOriginalExtension());
-        $safeBaseName = Str::slug($validated['file_name']);
+        $securityResults = [];
+        $sourceTotalBytes = 0;
+
+        foreach ($files as $index => $file) {
+            if (! $file->isValid()) {
+                throw ValidationException::withMessages([
+                    "files.{$index}" => 'Salah satu foto yang dipilih tidak valid.',
+                ]);
+            }
+
+            $security = $imageSecurity->validate($file);
+            $securityResults[] = $security;
+            $sourceTotalBytes += (int) $security['file_size'];
+        }
+
+        $maxTotalSourceBytes = max(
+            1,
+            (int) config(
+                'smartfind_scan_security.max_total_source_bytes',
+                60 * 1024 * 1024
+            )
+        );
+
+        if ($sourceTotalBytes > $maxTotalSourceBytes) {
+            throw ValidationException::withMessages([
+                'files' => 'Total ukuran seluruh foto terlalu besar. Kurangi jumlah atau ukuran foto.',
+            ]);
+        }
+
+        $sourceCount = count($files);
+        $isMultiPhoto = $sourceCount > 1;
+        $generatedPdfPath = null;
+
+        if ($isMultiPhoto) {
+            $pdfResult = $pdfService->build(
+                $files,
+                $securityResults,
+                $validated['title']
+            );
+
+            $generatedPdfPath = $pdfResult['path'];
+            $extension = 'pdf';
+            $mimeType = $pdfResult['mime_type'];
+            $verifiedFileSize = $pdfResult['file_size'];
+            $outputSignature = $pdfResult['signature'];
+        } else {
+            $singleSecurity = $securityResults[0];
+            $extension = $singleSecurity['extension'];
+            $mimeType = $singleSecurity['mime_type'];
+            $verifiedFileSize = $singleSecurity['file_size'];
+            $outputSignature = $singleSecurity['signature'];
+        }
+
+        $baseNameSource = ($isRetooling || $isAxle || $isBrake)
+            ? $validated['title']
+            : $validated['file_name'];
+
+        $safeBaseName = Str::slug((string) $baseNameSource);
 
         if ($safeBaseName === '') {
+            $pdfService->cleanup($generatedPdfPath);
+
             return back()
                 ->withInput()
                 ->withErrors([
@@ -115,37 +381,85 @@ class ScanDocumentController extends Controller
 
         $displayFileName = $safeBaseName . '.' . $extension;
 
-        $departmentSlug = Str::slug($category->department->name);
-        $categorySlug = $category->slug;
-        $year = now()->format('Y');
-        $month = now()->format('m');
-
         $directory = implode('/', [
-            $departmentSlug,
-            $categorySlug,
-            $year,
-            $month,
+            Str::slug($category->department->name),
+            $category->slug,
+            now()->format('Y'),
+            now()->format('m'),
             'scans',
         ]);
 
-        // Nama fisik memakai UUID agar nama asli tidak menjadi path storage.
         $storedFileName = Str::uuid()->toString() . '.' . $extension;
-
-        $storedPath = $file->storeAs(
-            $directory,
-            $storedFileName,
-            'bmc_documents'
-        );
-
-        if (! $storedPath) {
-            return back()
-                ->withInput()
-                ->withErrors([
-                    'file' => 'Berkas scan gagal disimpan ke penyimpanan internal.',
-                ]);
-        }
+        $storedPath = $directory . '/' . $storedFileName;
+        $stored = false;
 
         try {
+            if ($isMultiPhoto) {
+                $stream = fopen((string) $generatedPdfPath, 'rb');
+
+                if ($stream === false) {
+                    throw new \RuntimeException('PDF temporary tidak dapat dibaca.');
+                }
+
+                try {
+                    $stored = Storage::disk('bmc_documents')->writeStream(
+                        $storedPath,
+                        $stream
+                    );
+                } finally {
+                    fclose($stream);
+                }
+            } else {
+                $result = $files[0]->storeAs(
+                    $directory,
+                    $storedFileName,
+                    'bmc_documents'
+                );
+
+                $stored = is_string($result) && $result !== '';
+                if ($stored) {
+                    $storedPath = $result;
+                }
+            }
+
+            if (! $stored) {
+                throw new \RuntimeException('Berkas scan gagal disimpan ke penyimpanan internal.');
+            }
+
+            if ($privateStorage->resolveExistingFile($storedPath) === null) {
+                Storage::disk('bmc_documents')->delete($storedPath);
+
+                throw ValidationException::withMessages([
+                    'files' => 'Berkas scan gagal melewati verifikasi penyimpanan private.',
+                ]);
+            }
+
+            $sourceImageMetadata = array_map(
+                static fn (array $security): array => [
+                    'extension' => $security['extension'],
+                    'mime_type' => $security['mime_type'],
+                    'server_mime' => $security['server_mime'],
+                    'file_size' => $security['file_size'],
+                    'width' => $security['width'],
+                    'height' => $security['height'],
+                    'pixels' => $security['pixels'],
+                    'signature' => $security['signature'],
+                ],
+                $securityResults
+            );
+
+            $scanSecurityMetadata = [
+                'mode' => $isMultiPhoto ? 'multi_photo_pdf' : 'single_image',
+                'page_count' => $sourceCount,
+                'source_image_count' => $sourceCount,
+                'source_total_bytes' => $sourceTotalBytes,
+                'output_extension' => $extension,
+                'output_mime' => $mimeType,
+                'output_size' => $verifiedFileSize,
+                'output_signature' => $outputSignature,
+                'source_images' => $sourceImageMetadata,
+            ];
+
             $document = DB::transaction(function () use (
                 $request,
                 $validated,
@@ -153,28 +467,57 @@ class ScanDocumentController extends Controller
                 $displayFileName,
                 $extension,
                 $storedPath,
-                $file
+                $mimeType,
+                $verifiedFileSize,
+                $scanSecurityMetadata,
+                $brakePartPrefix,
+                $brakePartNumber,
+                $productionDate,
+                $captureSource,
+                $isAxle,
+                $isBrake,
+                $isMultiPhoto,
+                $sourceCount
             ) {
+                $keywords = implode(', ', array_filter([
+                    $validated['scan_type'] ?? null,
+                    $validated['shift'] ?? null,
+                    $validated['line'] ?? null,
+                    $validated['from_type'] ?? null,
+                    $validated['to_type'] ?? null,
+                    $validated['axle_assy_type'] ?? null,
+                    $validated['axle_side'] ?? null,
+                    $validated['brake_part_variant'] ?? null,
+                    $brakePartPrefix,
+                    $brakePartNumber,
+                    $productionDate,
+                    $isAxle ? 'Axle Assy' : null,
+                    $isBrake ? 'Brake Assy' : null,
+                    $isMultiPhoto ? 'multi photo' : null,
+                ]));
+
+                $description = 'Dokumen hasil Scan / Capture QC - '
+                    . $validated['scan_type'] . '.';
+
+                if ($isMultiPhoto) {
+                    $description .= ' ' . $sourceCount
+                        . ' foto digabung menjadi satu PDF.';
+                }
+
                 $document = Document::create([
                     'category_id' => $category->id,
                     'uploaded_by' => Auth::id(),
                     'title' => $validated['title'],
                     'document_code' => null,
-                    'part_number' => null,
+                    'part_number' => $brakePartNumber,
                     'file_name' => $displayFileName,
                     'file_path' => $storedPath,
                     'file_extension' => $extension,
-                    'mime_type' => $file->getMimeType(),
-                    'file_size' => $file->getSize(),
+                    'mime_type' => $mimeType,
+                    'file_size' => $verifiedFileSize,
                     'document_date' => $validated['scan_date'],
-                    'description' => 'Dokumen hasil Scan / Capture QC.',
-                    'keywords' => implode(', ', array_filter([
-                        $validated['scan_type'] ?? null,
-                        $validated['shift'] ?? null,
-                        $validated['line'] ?? null,
-                        $validated['from_type'] ?? null,
-                        $validated['to_type'] ?? null,
-                    ])),
+                    'description' => $description,
+                    'keywords' => $keywords,
                     'is_active' => true,
                     'archived_at' => null,
                     'archived_by' => null,
@@ -182,7 +525,8 @@ class ScanDocumentController extends Controller
                     'current_revision' => 0,
                 ]);
 
-                DocumentScanMetadata::create([
+                $scanMetadata = new DocumentScanMetadata();
+                $scanMetadata->forceFill([
                     'document_id' => $document->id,
                     'source_type' => 'scan',
                     'scan_type' => $validated['scan_type'] ?? null,
@@ -192,9 +536,15 @@ class ScanDocumentController extends Controller
                     'from_type' => $validated['from_type'] ?? null,
                     'to_type' => $validated['to_type'] ?? null,
                     'scan_time' => $validated['scan_time'] ?? null,
+                    'production_date' => $productionDate,
+                    'axle_assy_type' => $validated['axle_assy_type'] ?? null,
+                    'axle_side' => $validated['axle_side'] ?? null,
+                    'brake_part_prefix' => $brakePartPrefix,
+                    'brake_part_variant' => $validated['brake_part_variant'] ?? null,
+                    'brake_part_number' => $brakePartNumber,
                     'image_format' => $extension,
-                    'capture_source' => 'upload',
-                ]);
+                    'capture_source' => $captureSource,
+                ])->save();
 
                 DocumentVersion::create([
                     'document_id' => $document->id,
@@ -205,7 +555,9 @@ class ScanDocumentController extends Controller
                     'file_extension' => $document->file_extension,
                     'mime_type' => $document->mime_type,
                     'file_size' => $document->file_size,
-                    'revision_note' => 'Hasil Scan / Capture QC.',
+                    'revision_note' => $isMultiPhoto
+                        ? "Hasil Scan / Capture QC ({$sourceCount} foto menjadi 1 PDF)."
+                        : 'Hasil Scan / Capture QC.',
                     'metadata_snapshot' => [
                         'title' => $document->title,
                         'category_id' => $category->id,
@@ -213,6 +565,7 @@ class ScanDocumentController extends Controller
                         'department_id' => $category->department?->id,
                         'department_name' => $category->department?->name,
                         'document_date' => $document->document_date?->format('Y-m-d'),
+                        'part_number' => $brakePartNumber,
                         'scan_metadata' => [
                             'scan_type' => $validated['scan_type'] ?? null,
                             'shift' => $validated['shift'] ?? null,
@@ -220,9 +573,17 @@ class ScanDocumentController extends Controller
                             'from_type' => $validated['from_type'] ?? null,
                             'to_type' => $validated['to_type'] ?? null,
                             'scan_time' => $validated['scan_time'] ?? null,
+                            'production_date' => $productionDate,
+                            'axle_assy_type' => $validated['axle_assy_type'] ?? null,
+                            'axle_side' => $validated['axle_side'] ?? null,
+                            'brake_part_prefix' => $brakePartPrefix,
+                            'brake_part_variant' => $validated['brake_part_variant'] ?? null,
+                            'brake_part_number' => $brakePartNumber,
                             'image_format' => $extension,
-                            'capture_source' => 'upload',
+                            'capture_source' => $captureSource,
+                            'photo_count' => $sourceCount,
                         ],
+                        'scan_security' => $scanSecurityMetadata,
                     ],
                 ]);
 
@@ -233,35 +594,87 @@ class ScanDocumentController extends Controller
                     'description' => Auth::user()->name
                         . ' menyimpan hasil Scan / Capture QC "'
                         . $document->title
-                        . '" sebagai Revisi 0.',
+                        . '" sebagai Revisi 0'
+                        . ($isMultiPhoto
+                            ? " ({$sourceCount} foto menjadi 1 PDF)."
+                            : '.'),
                     'ip_address' => $request->ip(),
                     'user_agent' => $request->userAgent(),
                     'metadata' => [
                         'source_type' => 'scan',
+                        'capture_source' => $captureSource,
                         'file_name' => $document->file_name,
                         'image_format' => $extension,
+                        'verified_mime' => $mimeType,
+                        'photo_count' => $sourceCount,
+                        'multi_photo_pdf' => $isMultiPhoto,
                         'scan_type' => $validated['scan_type'] ?? null,
+                        'scan_date' => $validated['scan_date'],
+                        'production_date' => $productionDate,
                         'shift' => $validated['shift'] ?? null,
                         'line' => $validated['line'] ?? null,
+                        'axle_assy_type' => $validated['axle_assy_type'] ?? null,
+                        'axle_side' => $validated['axle_side'] ?? null,
+                        'brake_part_prefix' => $brakePartPrefix,
+                        'brake_part_variant' => $validated['brake_part_variant'] ?? null,
+                        'brake_part_number' => $brakePartNumber,
                     ],
                 ]);
 
                 return $document;
             });
+        } catch (ValidationException $exception) {
+            if ($stored) {
+                Storage::disk('bmc_documents')->delete($storedPath);
+            }
+
+            throw $exception;
         } catch (Throwable $exception) {
-            Storage::disk('bmc_documents')->delete($storedPath);
+            if ($stored) {
+                Storage::disk('bmc_documents')->delete($storedPath);
+            }
+
             report($exception);
 
             return back()
                 ->withInput()
                 ->withErrors([
-                    'file' => 'Berkas scan tidak dapat disimpan. Proses dibatalkan dengan aman.',
+                    'files' => 'Berkas scan tidak dapat disimpan. Proses dibatalkan dengan aman.',
                 ]);
+        } finally {
+            $pdfService->cleanup($generatedPdfPath);
         }
 
         return redirect()
-            ->route('documents.show', $document)
-            ->with('success', 'Berkas hasil Scan / Capture berhasil disimpan ke BMC QualityHub.');
+            ->route('documents.scan.create')
+            ->with(
+                'success',
+                $isMultiPhoto
+                    ? "{$sourceCount} foto berhasil digabung menjadi 1 PDF dan disimpan ke BMC QualityHub."
+                    : 'Dokumen berhasil disimpan ke BMC QualityHub.'
+            )
+            ->with('saved_document_id', $document->id)
+            ->with('saved_document_title', $document->title);
+    }
+
+    private function normalizePlainText(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $text = (string) $value;
+
+        $text = preg_replace(
+            '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\x{202A}-\x{202E}\x{2066}-\x{2069}]/u',
+            '',
+            $text
+        ) ?? '';
+
+        $text = preg_replace('/\s+/u', ' ', $text) ?? '';
+        $text = trim($text);
+
+        return $text === '' ? null : $text;
     }
 
     private function ensureAdmin(): void

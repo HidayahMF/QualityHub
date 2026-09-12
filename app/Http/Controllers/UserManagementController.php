@@ -4,21 +4,72 @@ namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
 use App\Models\User;
+use App\Services\InputSanitizationService;
+use App\Services\SessionSecurityService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class UserManagementController extends Controller
 {
     /**
-     * Menampilkan seluruh user BMC SmartFind.
+     * Menampilkan seluruh user BMC QualityHub.
      */
-    public function index(Request $request): View
-    {
-        abort_unless(Auth::user()->isAdmin(), 403);
+    public function index(
+        Request $request,
+        InputSanitizationService $input
+    ): View {
+        $this->ensureAdmin();
 
-        $query = User::with('department')
+        /*
+        |--------------------------------------------------------------------------
+        | Query Input Hardening
+        |--------------------------------------------------------------------------
+        |
+        | Search dinormalisasi sebagai plain text. Status dan role hanya boleh
+        | berasal dari whitelist backend, jadi manipulasi query string tidak dapat
+        | memasukkan nilai arbitrary ke filter account management.
+        |
+        */
+        $request->merge([
+            'search' =>
+                $input->search(
+                    $request->input('search')
+                ),
+        ]);
+
+        $validated = $request->validate([
+            'search' => [
+                'nullable',
+                'string',
+                'max:160',
+            ],
+            'status' => [
+                'nullable',
+                Rule::in([
+                    'pending',
+                    'active',
+                    'inactive',
+                    'rejected',
+                ]),
+            ],
+            'role' => [
+                'nullable',
+                Rule::in([
+                    'super_admin',
+                    'admin',
+                    'user',
+                    'viewer',
+                ]),
+            ],
+        ]);
+
+        $query = User::query()
+            ->with('department')
             ->orderByRaw("
                 CASE
                     WHEN account_status = 'pending' THEN 1
@@ -30,45 +81,60 @@ class UserManagementController extends Controller
             ")
             ->latest('id');
 
-        /*
-        |--------------------------------------------------------------------------
-        | Search
-        |--------------------------------------------------------------------------
-        */
-        if ($request->filled('search')) {
-            $search = trim($request->search);
+        if (($validated['search'] ?? '') !== '') {
+            $search = $input->escapeLike(
+                (string) $validated['search']
+            );
 
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('employee_id', 'like', "%{$search}%")
-                    ->orWhereHas('department', function ($department) use ($search) {
-                        $department->where('name', 'like', "%{$search}%");
-                    });
-            });
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Status Filter
-        |--------------------------------------------------------------------------
-        */
-        if ($request->filled('status')) {
             $query->where(
-                'account_status',
-                $request->status
+                function (Builder $query) use ($search) {
+                    $query
+                        ->where(
+                            'name',
+                            'like',
+                            "%{$search}%"
+                        )
+                        ->orWhere(
+                            'email',
+                            'like',
+                            "%{$search}%"
+                        )
+                        ->orWhere(
+                            'employee_id',
+                            'like',
+                            "%{$search}%"
+                        )
+                        ->orWhereHas(
+                            'department',
+                            function (Builder $department) use ($search) {
+                                $department
+                                    ->where(
+                                        'name',
+                                        'like',
+                                        "%{$search}%"
+                                    )
+                                    ->orWhere(
+                                        'code',
+                                        'like',
+                                        "%{$search}%"
+                                    );
+                            }
+                        );
+                }
             );
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Role Filter
-        |--------------------------------------------------------------------------
-        */
-        if ($request->filled('role')) {
+        if (! empty($validated['status'])) {
+            $query->where(
+                'account_status',
+                $validated['status']
+            );
+        }
+
+        if (! empty($validated['role'])) {
             $query->where(
                 'role',
-                $request->role
+                $validated['role']
             );
         }
 
@@ -77,22 +143,26 @@ class UserManagementController extends Controller
             ->withQueryString();
 
         $statistics = [
-            'total' => User::count(),
+            'total' =>
+                User::count(),
 
-            'active' => User::where(
-                'account_status',
-                'active'
-            )->count(),
+            'active' =>
+                User::where(
+                    'account_status',
+                    'active'
+                )->count(),
 
-            'pending' => User::where(
-                'account_status',
-                'pending'
-            )->count(),
+            'pending' =>
+                User::where(
+                    'account_status',
+                    'pending'
+                )->count(),
 
-            'inactive' => User::whereIn(
-                'account_status',
-                ['inactive', 'rejected']
-            )->count(),
+            'inactive' =>
+                User::whereIn(
+                    'account_status',
+                    ['inactive', 'rejected']
+                )->count(),
         ];
 
         return view(
@@ -104,7 +174,6 @@ class UserManagementController extends Controller
         );
     }
 
-
     /**
      * Approve akun pending.
      */
@@ -112,14 +181,16 @@ class UserManagementController extends Controller
         Request $request,
         User $user
     ): RedirectResponse {
-
-        abort_unless(Auth::user()->isAdmin(), 403);
+        $this->ensureAdmin();
+        $this->ensureTargetCanBeManaged($user);
 
         abort_if(
             $user->account_status !== 'pending',
             422,
-            'Only pending accounts can be approved.'
+            'Hanya akun pending yang dapat disetujui.'
         );
+
+        $beforeStatus = $user->account_status;
 
         $user->update([
             'account_status' => 'active',
@@ -131,43 +202,44 @@ class UserManagementController extends Controller
             action: 'approve_user',
             description:
                 Auth::user()->name
-                . ' approved account '
+                . ' menyetujui akun '
                 . $user->name
-                . '.'
+                . '.',
+            beforeStatus: $beforeStatus
         );
 
         return back()->with(
             'success',
-            'Account '.$user->name.' successfully approved.'
+            'Akun '.$user->name.' berhasil disetujui.'
         );
     }
-
 
     /**
      * Reject akun pending.
      */
     public function reject(
         Request $request,
-        User $user
+        User $user,
+        SessionSecurityService $sessionSecurity
     ): RedirectResponse {
-
-        abort_unless(Auth::user()->isAdmin(), 403);
-
-        abort_if(
-            $user->isSuperAdmin(),
-            403,
-            'Super Admin account cannot be rejected.'
-        );
+        $this->ensureAdmin();
+        $this->ensureTargetCanBeManaged($user);
 
         abort_if(
             $user->account_status !== 'pending',
             422,
-            'Only pending accounts can be rejected.'
+            'Hanya akun pending yang dapat ditolak.'
         );
 
-        $user->update([
+        $beforeStatus = $user->account_status;
+
+        $user->forceFill([
             'account_status' => 'rejected',
-        ]);
+            'remember_token' => Str::random(60),
+        ])->save();
+
+        // Revoke persisted sessions immediately, not only on the next request.
+        $sessionSecurity->revokeDatabaseSessionsForUser($user);
 
         $this->logUserActivity(
             request: $request,
@@ -175,43 +247,50 @@ class UserManagementController extends Controller
             action: 'reject_user',
             description:
                 Auth::user()->name
-                . ' rejected account '
+                . ' menolak akun '
                 . $user->name
-                . '.'
+                . '.',
+            beforeStatus: $beforeStatus
         );
 
         return back()->with(
             'success',
-            'Account '.$user->name.' has been rejected.'
+            'Akun '.$user->name.' telah ditolak.'
         );
     }
 
-
     /**
-     * Nonaktifkan user.
+     * Nonaktifkan user aktif.
      */
     public function deactivate(
         Request $request,
-        User $user
+        User $user,
+        SessionSecurityService $sessionSecurity
     ): RedirectResponse {
-
-        abort_unless(Auth::user()->isAdmin(), 403);
-
-        abort_if(
-            $user->isSuperAdmin(),
-            403,
-            'Super Admin account cannot be disabled.'
-        );
+        $this->ensureAdmin();
+        $this->ensureTargetCanBeManaged($user);
 
         abort_if(
             $user->id === Auth::id(),
             403,
-            'You cannot disable your own account.'
+            'Anda tidak dapat menonaktifkan akun sendiri.'
         );
 
-        $user->update([
+        abort_if(
+            $user->account_status !== 'active',
+            422,
+            'Hanya akun aktif yang dapat dinonaktifkan.'
+        );
+
+        $beforeStatus = $user->account_status;
+
+        $user->forceFill([
             'account_status' => 'inactive',
-        ]);
+            'remember_token' => Str::random(60),
+        ])->save();
+
+        // Revoke persisted sessions immediately, not only on the next request.
+        $sessionSecurity->revokeDatabaseSessionsForUser($user);
 
         $this->logUserActivity(
             request: $request,
@@ -219,33 +298,39 @@ class UserManagementController extends Controller
             action: 'deactivate_user',
             description:
                 Auth::user()->name
-                . ' disabled account '
+                . ' menonaktifkan akun '
                 . $user->name
-                . '.'
+                . '.',
+            beforeStatus: $beforeStatus
         );
 
         return back()->with(
             'success',
-            'Account '.$user->name.' has been disabled.'
+            'Akun '.$user->name.' telah dinonaktifkan.'
         );
     }
 
-
     /**
-     * Aktifkan kembali user.
+     * Aktifkan kembali akun inactive / rejected.
      */
     public function activate(
         Request $request,
         User $user
     ): RedirectResponse {
+        $this->ensureAdmin();
+        $this->ensureTargetCanBeManaged($user);
 
-        abort_unless(Auth::user()->isAdmin(), 403);
-
-        abort_if(
-            $user->account_status === 'pending',
+        abort_unless(
+            in_array(
+                $user->account_status,
+                ['inactive', 'rejected'],
+                true
+            ),
             422,
-            'Pending accounts must use the approval process.'
+            'Hanya akun inactive atau rejected yang dapat diaktifkan kembali.'
         );
+
+        $beforeStatus = $user->account_status;
 
         $user->update([
             'account_status' => 'active',
@@ -257,17 +342,40 @@ class UserManagementController extends Controller
             action: 'activate_user',
             description:
                 Auth::user()->name
-                . ' activated account '
+                . ' mengaktifkan akun '
                 . $user->name
-                . '.'
+                . '.',
+            beforeStatus: $beforeStatus
         );
 
         return back()->with(
             'success',
-            'Account '.$user->name.' is now active.'
+            'Akun '.$user->name.' sekarang aktif.'
         );
     }
 
+    private function ensureAdmin(): void
+    {
+        abort_unless(
+            Auth::check()
+            && Auth::user()->isAdmin(),
+            403
+        );
+    }
+
+    /**
+     * UI sudah menandai Super Admin sebagai "Dilindungi".
+     * Backend juga wajib memaksakan aturan yang sama karena tombol UI dapat
+     * dilewati dengan request manual / DevTools.
+     */
+    private function ensureTargetCanBeManaged(User $user): void
+    {
+        abort_if(
+            $user->isSuperAdmin(),
+            403,
+            'Akun Super Admin dilindungi dari perubahan status.'
+        );
+    }
 
     /**
      * Catat aktivitas administrasi user.
@@ -276,28 +384,23 @@ class UserManagementController extends Controller
         Request $request,
         User $targetUser,
         string $action,
-        string $description
+        string $description,
+        string $beforeStatus
     ): void {
-
         ActivityLog::create([
             'user_id' => Auth::id(),
-
             'document_id' => null,
-
             'action' => $action,
-
             'description' => $description,
-
             'ip_address' => $request->ip(),
-
             'user_agent' => $request->userAgent(),
-
             'metadata' => [
                 'target_user_id' => $targetUser->id,
                 'target_employee_id' => $targetUser->employee_id,
                 'target_name' => $targetUser->name,
                 'target_email' => $targetUser->email,
-                'target_status' => $targetUser->account_status,
+                'before_status' => $beforeStatus,
+                'after_status' => $targetUser->account_status,
             ],
         ]);
     }

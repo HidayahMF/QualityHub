@@ -893,7 +893,7 @@
                         <div
                             x-show="fileName"
 
-                            style="display: none;"
+                            x-cloak
                         >
 
                             <p

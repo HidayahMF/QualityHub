@@ -10,6 +10,17 @@
    ========================================================================== */
 
 @layer base {
+    html,
+    body {
+        margin: 0;
+        padding: 0;
+        min-height: 100%;
+    }
+
+    body {
+        min-height: 100vh;
+    }
+
     html {
         text-rendering: optimizeLegibility;
         -webkit-font-smoothing: antialiased;
@@ -2719,4 +2730,13 @@
             left: 0;
         }
     }
+}
+
+/*
+|--------------------------------------------------------------------------
+| QualityHub - Alpine cloak (CSP-safe)
+|--------------------------------------------------------------------------
+*/
+[x-cloak] {
+    display: none !important;
 }

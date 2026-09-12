@@ -6,6 +6,7 @@
             request()->filled('department') ||
             request()->filled('category') ||
             request()->filled('extension') ||
+            request()->filled('document_type') ||
             request()->filled('date_from') ||
             request()->filled('date_to');
     @endphp
@@ -724,7 +725,7 @@
     {{-- ========================================================= --}}
 
     <section
-        x-data="documentSearch()"
+        x-data="documentSearch"
 
         class="mb-6"
     >
@@ -919,7 +920,7 @@
                     <input
                         x-model="search"
 
-                        @input.debounce.350ms="performSearch()"
+                        @input.debounce.180ms="performSearch()"
 
                         @focus="
                             if (hasLiveCriteria()) {
@@ -935,7 +936,7 @@
 
                         autocomplete="off"
 
-                        placeholder="Cari judul, nama file, kode dokumen, nomor part, kata kunci..."
+                        placeholder="Contoh: Axle Assy, RH, Brake 402 / 502, Instruksi Perubahan..."
 
                         class="w-full
 
@@ -969,7 +970,7 @@
                                top-1/2
                                -translate-y-1/2"
 
-                        style="display: none;"
+                        x-cloak
                     >
 
                         <svg
@@ -1045,7 +1046,7 @@
 
                                overflow-hidden"
 
-                        style="display: none;"
+                        x-cloak
                     >
 
 
@@ -1120,7 +1121,7 @@
                                    text-xs
                                    text-red-700"
 
-                            style="display: none;"
+                            x-cloak
                         >
                             <span x-text="error"></span>
                         </div>
@@ -1313,6 +1314,29 @@
                                         ></p>
 
 
+                                        <template x-if="document.qc_type_label || document.qc_detail">
+                                            <div class="mt-2 flex flex-wrap items-center gap-1.5">
+                                                <span
+                                                    x-show="document.qc_type_label"
+                                                    class="rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700"
+                                                    x-text="document.qc_type_label"
+                                                ></span>
+
+                                                <span
+                                                    x-show="document.qc_detail"
+                                                    class="text-[11px] font-medium text-slate-600"
+                                                    x-text="document.qc_detail"
+                                                ></span>
+
+                                                <span
+                                                    x-show="document.production_date"
+                                                    class="text-[11px] text-slate-400"
+                                                    x-text="'• Produksi ' + document.production_date"
+                                                ></span>
+                                            </div>
+                                        </template>
+
+
 
                                         {{-- CATEGORY INFORMATION --}}
 
@@ -1420,7 +1444,7 @@
                                        py-10
                                        text-center"
 
-                                style="display: none;"
+                                x-cloak
                             >
 
                                 <div
@@ -1495,7 +1519,7 @@
 
                                    p-3"
 
-                            style="display: none;"
+                            x-cloak
                         >
 
                             <button
@@ -1658,6 +1682,68 @@
 
 
             {{-- ================================================= --}}
+            {{-- QUICK FIND — DOKUMEN QC --}}
+            {{-- ================================================= --}}
+
+            <div class="mt-4 rounded-xl border border-blue-100 bg-blue-50/50 p-3">
+                <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                        <p class="text-xs font-bold text-slate-700">
+                            Temukan Cepat
+                        </p>
+                        <p class="mt-0.5 text-[11px] text-slate-500">
+                            Klik jenis atau metadata QC tanpa perlu menebak kata pencarian.
+                        </p>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button"
+                            @click="quickType('Retooling')"
+                            class="rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100">
+                            Instruksi Perubahan
+                        </button>
+
+                        <button type="button"
+                            @click="quickType('Laporan Hasil Produksi - Axle Assy')"
+                            class="rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100">
+                            Axle Assy
+                        </button>
+
+                        <button type="button"
+                            @click="quickType('Laporan Hasil Produksi - Brake Assy')"
+                            class="rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100">
+                            Brake Assy
+                        </button>
+
+                        <button type="button"
+                            @click="quickSearch('Module Assy')"
+                            class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+                            Module Assy
+                        </button>
+
+                        <button type="button"
+                            @click="quickSearch('LH')"
+                            class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+                            LH
+                        </button>
+
+                        <button type="button"
+                            @click="quickSearch('RH')"
+                            class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+                            RH
+                        </button>
+
+                        <button type="button"
+                            @click="quickSearch('402 / 502')"
+                            class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+                            402 / 502
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+
+            {{-- ================================================= --}}
             {{-- ADVANCED FILTER --}}
             {{-- ================================================= --}}
 
@@ -1666,10 +1752,37 @@
 
                        grid
                        sm:grid-cols-2
-                       xl:grid-cols-4
+                       xl:grid-cols-5
 
                        gap-3"
             >
+
+
+                {{-- DOCUMENT TYPE QC --}}
+
+                <div>
+                    <label
+                        for="smartfind-document-type"
+                        class="block mb-1.5 text-xs font-semibold text-slate-500"
+                    >
+                        Jenis Dokumen QC
+                    </label>
+
+                    <select
+                        id="smartfind-document-type"
+                        x-model="documentType"
+                        @change="performSearch()"
+                        class="w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-700 focus:border-blue-500 focus:ring-blue-500"
+                    >
+                        <option value="">Semua Jenis Dokumen</option>
+
+                        @foreach($scanTypes as $scanTypeValue => $scanTypeLabel)
+                            <option value="{{ $scanTypeValue }}">
+                                {{ $scanTypeLabel }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
 
 
                 {{-- DATE FROM --}}
@@ -1910,7 +2023,7 @@
                        font-medium
                        text-red-700"
 
-                style="display: none;"
+                x-cloak
             >
                 <span x-text="error"></span>
             </div>
@@ -1964,6 +2077,12 @@
 
                 <span>
                     Nomor Part
+                </span>
+
+                <span>•</span>
+
+                <span>
+                    Jenis QC / Type / Posisi / Varian
                 </span>
 
                 <span>•</span>
@@ -2150,13 +2269,206 @@
 
         @if($documents->count())
 
-            <div class="overflow-x-auto">
+            <div class="hidden lg:flex items-center justify-between gap-3 px-6 py-3 border-b border-slate-100 bg-slate-50/40">
+                <p class="text-[11px] text-slate-400">
+                    Tampilan tabel dioptimalkan agar judul dokumen tetap terbaca. Geser horizontal hanya jika layar lebih sempit.
+                </p>
+                <span class="inline-flex flex-shrink-0 items-center gap-1.5 text-[11px] font-medium text-slate-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14"/>
+                        <path d="m15 8 4 4-4 4"/>
+                        <path d="m9 16-4-4 4-4"/>
+                    </svg>
+                    Responsive Table
+                </span>
+            </div>
 
+            {{-- MOBILE / TABLET CARD VIEW --}}
+            <div class="lg:hidden divide-y divide-slate-100">
+                @foreach($documents as $document)
+                    @php
+                        $extension = strtolower($document->file_extension ?? '');
+                        $scanMetadata = $scanMetadataByDocument->get($document->id);
+                        $scanType = $scanMetadata?->scan_type;
+
+                        $qcTypeLabel = match($scanType) {
+                            'Retooling' => 'Instruksi Perubahan',
+                            'Laporan Hasil Produksi - Axle Assy' => 'Axle Assy',
+                            'Laporan Hasil Produksi - Brake Assy' => 'Brake Assy',
+                            default => null,
+                        };
+
+                        $qcDetail = match($scanType) {
+                            'Retooling' => implode(' → ', array_filter([
+                                $scanMetadata?->from_type,
+                                $scanMetadata?->to_type,
+                            ])) ?: null,
+                            'Laporan Hasil Produksi - Axle Assy' => implode(' • ', array_filter([
+                                $scanMetadata?->axle_assy_type,
+                                $scanMetadata?->axle_side,
+                            ])) ?: null,
+                            'Laporan Hasil Produksi - Brake Assy' =>
+                                $scanMetadata?->brake_part_number
+                                ?: implode(' ', array_filter([
+                                    $scanMetadata?->brake_part_prefix,
+                                    $scanMetadata?->brake_part_variant,
+                                ]))
+                                ?: null,
+                            default => null,
+                        };
+
+                        $productionDate = $scanMetadata?->production_date
+                            ? \Carbon\Carbon::parse($scanMetadata->production_date)
+                                ->locale('id')
+                                ->translatedFormat('d M Y')
+                            : null;
+
+                        $fileIconStyle = match($extension) {
+                            'pdf' => 'bg-red-50 text-red-700',
+                            'xls', 'xlsx', 'csv' => 'bg-emerald-50 text-emerald-700',
+                            'doc', 'docx' => 'bg-blue-50 text-blue-700',
+                            'txt' => 'bg-slate-100 text-slate-600',
+                            default => 'bg-indigo-50 text-indigo-700',
+                        };
+                    @endphp
+
+                    <article class="p-4 sm:p-5 hover:bg-blue-50/30 transition">
+                        <div class="flex items-start gap-3">
+                            <div class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 {{ $fileIconStyle }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5Z"/>
+                                    <polyline points="14 2 14 8 20 8"/>
+                                </svg>
+                            </div>
+
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-start gap-2">
+                                    <a
+                                        href="{{ route('documents.show', $document) }}"
+                                        class="min-w-0 flex-1 text-sm font-bold leading-snug text-slate-900 hover:text-blue-700 transition"
+                                    >
+                                        {{ $document->title }}
+                                    </a>
+
+                                    @if((bool) $document->is_favorited)
+                                        <span class="mt-0.5 flex-shrink-0 text-amber-500" title="Tersimpan di Favorit">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
+                                                <path d="m12 17.27 5.18 3.04-1.4-5.89 4.58-3.96-6.03-.52L12 4.38 9.67 9.94l-6.03.52 4.58 3.96-1.4 5.89Z"/>
+                                            </svg>
+                                        </span>
+                                    @endif
+                                </div>
+
+                                <p class="mt-1 text-xs text-slate-400">
+                                    {{ $document->document_code ?? 'Tidak ada kode dokumen' }}
+                                </p>
+
+                                <div class="mt-3 flex flex-wrap items-center gap-2">
+                                    <span class="inline-flex rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
+                                        {{ $document->category?->name ?? 'Tanpa Kategori' }}
+                                    </span>
+                                    <span class="text-xs text-slate-400">
+                                        {{ $document->category?->department?->name ?? '-' }}
+                                    </span>
+                                    @if($qcTypeLabel)
+                                        <span class="inline-flex rounded-lg bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700">
+                                            {{ $qcTypeLabel }}
+                                        </span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 grid grid-cols-2 gap-3">
+                            <div class="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
+                                <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Detail QC</p>
+                                <p class="mt-1 text-xs font-semibold text-slate-700 break-words">
+                                    {{ $qcDetail ?? 'Dokumen Umum' }}
+                                </p>
+                                @if($productionDate)
+                                    <p class="mt-1 text-[11px] text-slate-400">Produksi: {{ $productionDate }}</p>
+                                @endif
+                            </div>
+
+                            <div class="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
+                                <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Nomor Part</p>
+                                <p class="mt-1 text-xs font-semibold text-slate-700 break-words">
+                                    {{ $document->part_number ?? '-' }}
+                                </p>
+                            </div>
+
+                            <div class="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
+                                <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Tanggal Dokumen</p>
+                                <p class="mt-1 text-xs font-semibold text-slate-700">
+                                    {{ $document->document_date ? $document->document_date->locale('id')->translatedFormat('d M Y') : '-' }}
+                                </p>
+                            </div>
+
+                            <div class="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
+                                <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">File</p>
+                                <div class="mt-1 flex items-center gap-2">
+                                    <span class="inline-flex rounded-md bg-white px-2 py-0.5 text-[10px] font-bold uppercase text-slate-600 shadow-sm">
+                                        {{ $document->file_extension ?: 'FILE' }}
+                                    </span>
+                                    @if($document->file_size)
+                                        <span class="text-[11px] text-slate-400">
+                                            @if($document->file_size >= 1048576)
+                                                {{ number_format($document->file_size / 1048576, 2) }} MB
+                                            @elseif($document->file_size >= 1024)
+                                                {{ number_format($document->file_size / 1024, 1) }} KB
+                                            @else
+                                                {{ number_format($document->file_size) }} B
+                                            @endif
+                                        </span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 flex items-center justify-end gap-2">
+                            @if(Route::has('favorites.store') && Route::has('favorites.destroy'))
+                                <x-favorite-button
+                                    :document="$document"
+                                    :favorited="(bool) $document->is_favorited"
+                                    :compact="true"
+                                />
+                            @endif
+
+                            <a
+                                href="{{ route('documents.show', $document) }}"
+                                class="inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-50 px-4 py-2.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition"
+                            >
+                                Lihat
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="m9 18 6-6-6-6"/>
+                                </svg>
+                            </a>
+                        </div>
+                    </article>
+                @endforeach
+            </div>
+
+            {{-- DESKTOP TABLE VIEW --}}
+            <div
+                id="document-library-table-scroll"
+                class="hidden lg:block overflow-x-auto overscroll-x-contain"
+            >
                 <table
                     class="w-full
-                           min-w-[1050px]
+                           min-w-[1040px]
+                           xl:min-w-0
+                           table-fixed
                            text-left"
                 >
+                    <colgroup>
+                        <col data-qh-width="27">
+                        <col data-qh-width="12">
+                        <col data-qh-width="18">
+                        <col data-qh-width="12">
+                        <col data-qh-width="10">
+                        <col data-qh-width="14">
+                        <col data-qh-width="7">
+                    </colgroup>
 
 
                     {{-- TABLE HEAD --}}
@@ -2171,9 +2483,11 @@
                         >
 
                             <th
-                                class="px-6
-                                       py-4
-                                       font-semibold"
+                                class="sticky left-0 z-20
+                                       bg-slate-50
+                                       px-5 py-4
+                                       font-semibold
+                                       shadow-[1px_0_0_0_rgba(226,232,240,0.8)]"
                             >
                                 Dokumen
                             </th>
@@ -2185,6 +2499,15 @@
                                        font-semibold"
                             >
                                 Kategori
+                            </th>
+
+
+                            <th
+                                class="px-6
+                                       py-4
+                                       font-semibold"
+                            >
+                                Jenis / Detail QC
                             </th>
 
 
@@ -2216,10 +2539,12 @@
 
 
                             <th
-                                class="px-6
-                                       py-4
+                                class="sticky right-0 z-20
+                                       bg-slate-50
+                                       px-4 py-4
                                        font-semibold
-                                       text-right"
+                                       text-right
+                                       shadow-[-1px_0_0_0_rgba(226,232,240,0.8)]"
                             >
                                 Aksi
                             </th>
@@ -2245,6 +2570,60 @@
                                     $document->file_extension
                                     ?? ''
                                 );
+
+                                $scanMetadata =
+                                    $scanMetadataByDocument->get($document->id);
+
+                                $scanType =
+                                    $scanMetadata?->scan_type;
+
+                                $qcTypeLabel = match($scanType) {
+                                    'Retooling' =>
+                                        'Instruksi Perubahan',
+
+                                    'Laporan Hasil Produksi - Axle Assy' =>
+                                        'Axle Assy',
+
+                                    'Laporan Hasil Produksi - Brake Assy' =>
+                                        'Brake Assy',
+
+                                    default =>
+                                        null,
+                                };
+
+                                $qcDetail = match($scanType) {
+                                    'Retooling' =>
+                                        implode(' → ', array_filter([
+                                            $scanMetadata?->from_type,
+                                            $scanMetadata?->to_type,
+                                        ])) ?: null,
+
+                                    'Laporan Hasil Produksi - Axle Assy' =>
+                                        implode(' • ', array_filter([
+                                            $scanMetadata?->axle_assy_type,
+                                            $scanMetadata?->axle_side,
+                                        ])) ?: null,
+
+                                    'Laporan Hasil Produksi - Brake Assy' =>
+                                        $scanMetadata?->brake_part_number
+                                        ?: implode(' ', array_filter([
+                                            $scanMetadata?->brake_part_prefix,
+                                            $scanMetadata?->brake_part_variant,
+                                        ]))
+                                        ?: null,
+
+                                    default =>
+                                        null,
+                                };
+
+                                $productionDate =
+                                    $scanMetadata?->production_date
+                                        ? \Carbon\Carbon::parse(
+                                            $scanMetadata->production_date
+                                        )
+                                            ->locale('id')
+                                            ->translatedFormat('d M Y')
+                                        : null;
 
                                 $fileIconStyle = match($extension) {
                                     'pdf' =>
@@ -2280,7 +2659,7 @@
                                 {{-- DOCUMENT --}}
                                 {{-- ========================================= --}}
 
-                                <td class="px-6 py-4">
+                                <td class="sticky left-0 z-10 bg-white px-5 py-4 group-hover:bg-blue-50/70 transition shadow-[1px_0_0_0_rgba(241,245,249,0.95)]">
 
                                     <div
                                         class="flex
@@ -2349,13 +2728,11 @@
 
                                                     class="font-semibold
                                                            text-sm
+                                                           leading-snug
                                                            text-slate-900
-
-                                                           max-w-[300px]
-                                                           truncate
-
+                                                           whitespace-normal
+                                                           break-words
                                                            hover:text-blue-700
-
                                                            transition"
                                                 >
                                                     {{ $document->title }}
@@ -2412,7 +2789,7 @@
                                                        text-xs
                                                        text-slate-400
 
-                                                       max-w-[300px]
+                                                       max-w-full
                                                        truncate"
                                             >
                                                 {{
@@ -2433,7 +2810,7 @@
                                 {{-- CATEGORY --}}
                                 {{-- ========================================= --}}
 
-                                <td class="px-6 py-4">
+                                <td class="px-4 py-4">
 
                                     <span
                                         class="inline-flex
@@ -2475,10 +2852,45 @@
 
 
                                 {{-- ========================================= --}}
+                                {{-- JENIS / DETAIL QC --}}
+                                {{-- ========================================= --}}
+
+                                <td class="px-4 py-4">
+                                    @if($qcTypeLabel)
+                                        <span
+                                            class="inline-flex rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700"
+                                        >
+                                            {{ $qcTypeLabel }}
+                                        </span>
+
+                                        @if($qcDetail)
+                                            <p
+                                                class="mt-1 max-w-full whitespace-normal break-words text-xs font-medium text-slate-600"
+                                                title="{{ $qcDetail }}"
+                                            >
+                                                {{ $qcDetail }}
+                                            </p>
+                                        @endif
+
+                                        @if($productionDate)
+                                            <p class="mt-1 text-[11px] text-slate-400">
+                                                Produksi: {{ $productionDate }}
+                                            </p>
+                                        @endif
+                                    @else
+                                        <span class="text-xs text-slate-400">
+                                            Dokumen Umum
+                                        </span>
+                                    @endif
+                                </td>
+
+
+
+                                {{-- ========================================= --}}
                                 {{-- PART NUMBER --}}
                                 {{-- ========================================= --}}
 
-                                <td class="px-6 py-4">
+                                <td class="px-4 py-4">
 
                                     <span
                                         class="text-sm
@@ -2496,7 +2908,7 @@
                                 {{-- DATE --}}
                                 {{-- ========================================= --}}
 
-                                <td class="px-6 py-4">
+                                <td class="px-4 py-4">
 
                                     <p
                                         class="text-sm
@@ -2517,7 +2929,7 @@
                                 {{-- FILE --}}
                                 {{-- ========================================= --}}
 
-                                <td class="px-6 py-4">
+                                <td class="px-4 py-4">
 
                                     <div
                                         class="flex
@@ -2600,7 +3012,7 @@
                                     <p
                                         class="mt-1
 
-                                               max-w-[200px]
+                                               max-w-full
                                                truncate
 
                                                text-xs
@@ -2620,9 +3032,13 @@
                                 {{-- ========================================= --}}
 
                                 <td
-                                    class="px-6
-                                           py-4
-                                           text-right"
+                                    class="sticky right-0 z-10
+                                           bg-white
+                                           px-4 py-4
+                                           text-right
+                                           group-hover:bg-blue-50/70
+                                           transition
+                                           shadow-[-1px_0_0_0_rgba(241,245,249,0.95)]"
                                 >
 
                                     <div
@@ -2974,7 +3390,7 @@
     {{-- SMART SEARCH JAVASCRIPT --}}
     {{-- ========================================================= --}}
 
-    <script>
+    <script nonce="{{ $cspNonce }}">
         function documentSearch() {
 
             return {
@@ -2996,6 +3412,9 @@
 
                 extension:
                     @js(request('extension', '')),
+
+                documentType:
+                    @js(request('document_type', '')),
 
                 dateFrom:
                     @js(request('date_from', '')),
@@ -3049,6 +3468,7 @@
                         || this.category
                         || this.department
                         || this.extension
+                        || this.documentType
                         || this.dateFrom
                         || this.dateTo
                     );
@@ -3233,6 +3653,16 @@
                             params.set(
                                 'extension',
                                 this.extension
+                            );
+
+                        }
+
+
+                        if (this.documentType) {
+
+                            params.set(
+                                'document_type',
+                                this.documentType
                             );
 
                         }
@@ -3460,6 +3890,30 @@
 
                 /*
                 |--------------------------------------------------------------------------
+                | QUICK FIND HELPERS
+                |--------------------------------------------------------------------------
+                */
+
+                quickType(type) {
+
+                    this.search = '';
+                    this.documentType = type;
+                    this.performSearch();
+
+                },
+
+
+                quickSearch(term) {
+
+                    this.documentType = '';
+                    this.search = term;
+                    this.performSearch();
+
+                },
+
+
+                /*
+                |--------------------------------------------------------------------------
                 | APPLY FILTERS TO DOCUMENT LIBRARY
                 |--------------------------------------------------------------------------
                 */
@@ -3518,6 +3972,16 @@
                         params.set(
                             'extension',
                             this.extension
+                        );
+
+                    }
+
+
+                    if (this.documentType) {
+
+                        params.set(
+                            'document_type',
+                            this.documentType
                         );
 
                     }
@@ -3584,6 +4048,8 @@
 
                     this.extension = '';
 
+                    this.documentType = '';
+
                     this.dateFrom = '';
 
                     this.dateTo = '';
@@ -3612,6 +4078,19 @@
             };
 
         }
-    </script>
+    
+        /*
+        |--------------------------------------------------------------------------
+        | CSP-SAFE ALPINE REGISTRATION
+        |--------------------------------------------------------------------------
+        |
+        | @alpinejs/csp tidak membaca arbitrary global function dari x-data.
+        | Register provider secara resmi sebelum Alpine.start().
+        |
+        */
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('documentSearch', documentSearch);
+        });
+</script>
 
-</x-app-layout>
+</x-app-layout>e

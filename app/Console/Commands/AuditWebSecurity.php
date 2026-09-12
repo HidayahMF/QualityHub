@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Http\Middleware\EnforceSameOrigin;
 use App\Http\Middleware\EnsureSessionFreshness;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Console\Command;
@@ -302,6 +303,123 @@ class AuditWebSecurity extends Command
                 true
             ),
             'ERROR'
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Same-Origin / CORS
+        |--------------------------------------------------------------------------
+        */
+
+        $sameOriginEnabled =
+            config(
+                'smartfind_security.same_origin.enabled'
+            ) === true;
+
+        $this->check(
+            $checks,
+            'Same-origin protection aktif',
+            ! $isProduction || $sameOriginEnabled,
+            $isProduction
+                ? 'ERROR'
+                : 'INFO',
+            $sameOriginEnabled
+                ? 'Unsafe web request diperiksa terhadap Origin / Referer.'
+                : 'Local development: guard tambahan boleh OFF. Production PT BMC wajib ON setelah hostname / HTTPS final.'
+        );
+
+        /*
+        | Laravel 12 dapat mengompilasi middleware yang dikonfigurasi melalui
+        | bootstrap/app.php ke pipeline HTTP tanpa mengekspos hasil prepend itu
+        | kembali melalui Router::getMiddlewareGroups() pada proses Artisan CLI.
+        | Karena itu audit CLI memverifikasi sumber konfigurasi bootstrap secara
+        | langsung. Perilaku runtime tetap diverifikasi oleh feature test
+        | SameOriginHardeningTest / EnforceSameOriginTest.
+        */
+
+        $bootstrapAppPath =
+            base_path(
+                'bootstrap/app.php'
+            );
+
+        $bootstrapAppSource =
+            is_file(
+                $bootstrapAppPath
+            )
+                ? (string) file_get_contents(
+                    $bootstrapAppPath
+                )
+                : '';
+
+        $sameOriginInWebGroup =
+            $bootstrapAppSource !== ''
+            && str_contains(
+                $bootstrapAppSource,
+                'EnforceSameOrigin::class'
+            )
+            && preg_match(
+                '/\$middleware\s*->\s*web\s*\(.*?prepend\s*:\s*\[.*?EnforceSameOrigin::class.*?\].*?\)/s',
+                $bootstrapAppSource
+            ) === 1;
+
+        $this->check(
+            $checks,
+            'Same-origin middleware dikonfigurasi di web group',
+            $sameOriginInWebGroup,
+            'ERROR',
+            $sameOriginInWebGroup
+                ? 'bootstrap/app.php memasang EnforceSameOrigin melalui web prepend.'
+                : 'bootstrap/app.php belum memasang EnforceSameOrigin melalui web prepend.'
+        );
+
+        $corsPaths =
+            array_values(
+                (array) config(
+                    'cors.paths',
+                    []
+                )
+            );
+
+        $corsOrigins =
+            array_values(
+                (array) config(
+                    'cors.allowed_origins',
+                    []
+                )
+            );
+
+        $corsPatterns =
+            array_values(
+                (array) config(
+                    'cors.allowed_origins_patterns',
+                    []
+                )
+            );
+
+        $corsHasWildcard =
+            in_array(
+                '*',
+                $corsOrigins,
+                true
+            );
+
+        $corsConfigurationSafe =
+            $corsPaths === []
+            || (
+                $corsOrigins !== []
+                && ! $corsHasWildcard
+                && $corsPatterns === []
+            );
+
+        $this->check(
+            $checks,
+            'CORS closed-by-default / explicit origin',
+            $corsConfigurationSafe,
+            'ERROR',
+            $corsPaths === []
+                ? 'Tidak ada path CORS dibuka; BMC QualityHub berjalan same-origin.'
+                : 'Path CORS aktif harus memakai origin eksplisit tanpa wildcard (*).'
         );
 
 

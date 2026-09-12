@@ -43,6 +43,26 @@ return [
             'SMARTFIND_MYSQLDUMP_PATH'
         ),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Dedicated Backup Database Credentials
+    |--------------------------------------------------------------------------
+    |
+    | Jangan pakai credential runtime Laravel untuk mysqldump.
+    | Akun backup hanya memiliki privilege yang diperlukan untuk logical backup.
+    |
+    */
+
+    'database_username' =>
+        env(
+            'SMARTFIND_BACKUP_DB_USERNAME'
+        ),
+
+    'database_password' =>
+        env(
+            'SMARTFIND_BACKUP_DB_PASSWORD'
+        ),
+
     'database_timeout_seconds' =>
         (int) env(
             'SMARTFIND_BACKUP_DB_TIMEOUT',

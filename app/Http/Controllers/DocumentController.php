@@ -8,7 +8,11 @@ use App\Models\Category;
 use App\Models\Department;
 use App\Models\Document;
 use App\Models\DocumentAnalytics;
+use App\Models\DocumentScanMetadata;
 use App\Models\DocumentVersion;
+use App\Services\DocumentUploadSecurityService;
+use App\Services\InputSanitizationService;
+use App\Services\PrivateDocumentStorageService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -89,6 +93,28 @@ class DocumentController extends Controller
 
         /*
         |--------------------------------------------------------------------------
+        | Scan / Production Metadata For Current Page
+        |--------------------------------------------------------------------------
+        |
+        | Metadata scan diambil dalam satu query tambahan (bukan query per baris),
+        | sehingga Pustaka Dokumen dapat menampilkan Retooling, Axle Assy, dan
+        | Brake Assy dengan tetap ringan.
+        |
+        */
+
+        $pageDocumentIds = $documents
+            ->getCollection()
+            ->pluck('id');
+
+        $scanMetadataByDocument = $pageDocumentIds->isEmpty()
+            ? collect()
+            : DocumentScanMetadata::query()
+                ->whereIn('document_id', $pageDocumentIds)
+                ->get()
+                ->keyBy('document_id');
+
+        /*
+        |--------------------------------------------------------------------------
         | Filter Options
         |--------------------------------------------------------------------------
         */
@@ -120,13 +146,26 @@ class DocumentController extends Controller
             ->orderBy('file_extension')
             ->pluck('file_extension');
 
+        $scanTypes = [
+            'Retooling' =>
+                'Instruksi Perubahan Type / Retooling',
+
+            'Laporan Hasil Produksi - Axle Assy' =>
+                'Laporan Hasil Produksi - Axle Assy',
+
+            'Laporan Hasil Produksi - Brake Assy' =>
+                'Laporan Hasil Produksi - Brake Assy',
+        ];
+
         return view(
             'documents.index',
             compact(
                 'documents',
                 'categories',
                 'departments',
-                'extensions'
+                'extensions',
+                'scanMetadataByDocument',
+                'scanTypes'
             )
         );
     }
@@ -178,9 +217,51 @@ class DocumentController extends Controller
      * Tahap 15:
      * Setiap dokumen baru otomatis menjadi REV 0.
      */
-    public function store(Request $request): RedirectResponse
+    public function store(
+        Request $request,
+        DocumentUploadSecurityService $uploadSecurity,
+        PrivateDocumentStorageService $privateStorage,
+        InputSanitizationService $input
+    ): RedirectResponse
     {
         $this->ensureAdmin();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Plain-text Input Normalization
+        |--------------------------------------------------------------------------
+        |
+        | Browser / DevTools bukan trust boundary. Semua metadata teks
+        | dinormalisasi di server sebelum Laravel validation dijalankan.
+        |
+        */
+
+        $request->merge([
+            'title' =>
+                $input->singleLine(
+                    $request->input('title')
+                ),
+
+            'document_code' =>
+                $input->singleLine(
+                    $request->input('document_code')
+                ),
+
+            'part_number' =>
+                $input->singleLine(
+                    $request->input('part_number')
+                ),
+
+            'description' =>
+                $input->multiline(
+                    $request->input('description')
+                ),
+
+            'keywords' =>
+                $input->singleLine(
+                    $request->input('keywords')
+                ),
+        ]);
 
         /*
         |--------------------------------------------------------------------------
@@ -301,6 +382,35 @@ class DocumentController extends Controller
                 ]);
         }
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | File Security Inspection
+        |--------------------------------------------------------------------------
+        |
+        | Laravel mimes validation tetap dipertahankan sebagai first layer.
+        | Service ini menambahkan server MIME + magic bytes + structure check.
+        |
+        */
+
+        $security =
+            $uploadSecurity->validate(
+                $file
+            );
+
+        $extension =
+            $security['extension'];
+
+        $safeOriginalName =
+            $security['original_name'];
+
+        $serverMime =
+            $security['server_mime'];
+
+        $verifiedFileSize =
+            $security['file_size'];
+
+
         /*
         |--------------------------------------------------------------------------
         | Storage Directory
@@ -351,10 +461,6 @@ class DocumentController extends Controller
         |
         */
 
-        $extension = strtolower(
-            $file->getClientOriginalExtension()
-        );
-
         $storedFileName =
             Str::uuid()->toString()
             . '.'
@@ -380,6 +486,34 @@ class DocumentController extends Controller
                         'Dokumen gagal disimpan ke penyimpanan internal.',
                 ]);
         }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Private Storage Boundary Verification
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $privateStorage->resolveExistingFile(
+                $storedPath
+            ) === null
+        ) {
+
+            Storage::disk(
+                'bmc_documents'
+            )->delete(
+                $storedPath
+            );
+
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'file' =>
+                        'Dokumen gagal melewati verifikasi penyimpanan private.',
+                ]);
+        }
+
 
         /*
         |--------------------------------------------------------------------------
@@ -408,6 +542,10 @@ class DocumentController extends Controller
                     $category,
                     $file,
                     $extension,
+                    $safeOriginalName,
+                    $serverMime,
+                    $verifiedFileSize,
+                    $security,
                     $storedPath
                 ) {
 
@@ -442,7 +580,7 @@ class DocumentController extends Controller
                         */
 
                         'file_name' =>
-                            $file->getClientOriginalName(),
+                            $safeOriginalName,
 
                         /*
                         |--------------------------------------------------------------------------
@@ -457,10 +595,10 @@ class DocumentController extends Controller
                             $extension,
 
                         'mime_type' =>
-                            $file->getMimeType(),
+                            $serverMime,
 
                         'file_size' =>
-                            $file->getSize(),
+                            $verifiedFileSize,
 
                         'document_date' =>
                             $validated['document_date']
@@ -609,6 +747,26 @@ class DocumentController extends Controller
 
                             'initial_revision_created' =>
                                 true,
+
+                            'security_validation' => [
+                                'extension' =>
+                                    $security['extension'],
+
+                                'server_mime' =>
+                                    $security['server_mime'],
+
+                                'mime_status' =>
+                                    $security['mime_status'],
+
+                                'signature' =>
+                                    $security['signature'],
+
+                                'structure' =>
+                                    $security['structure'],
+
+                                'macro_check' =>
+                                    $security['macro_check'],
+                            ],
                         ]
                     );
 
@@ -697,11 +855,21 @@ class DocumentController extends Controller
     {
         $this->ensureAdmin();
 
+        $input =
+            app(InputSanitizationService::class);
+
+        $request->merge([
+            'search' =>
+                $input->search(
+                    $request->input('search')
+                ),
+        ]);
+
         $request->validate([
             'search' => [
                 'nullable',
                 'string',
-                'max:255',
+                'max:160',
             ],
 
             'category' => [
@@ -742,11 +910,10 @@ class DocumentController extends Controller
 
         if ($request->filled('search')) {
 
-            $search = trim(
-                (string) $request->input(
-                    'search'
-                )
-            );
+            $search =
+                $input->escapeLike(
+                    (string) $request->input('search')
+                );
 
             $query->where(
                 function (Builder $query) use ($search) {
@@ -1043,6 +1210,36 @@ class DocumentController extends Controller
     ): RedirectResponse {
 
         $this->ensureAdmin();
+
+        $input =
+            app(InputSanitizationService::class);
+
+        $request->merge([
+            'title' =>
+                $input->singleLine(
+                    $request->input('title')
+                ),
+
+            'document_code' =>
+                $input->singleLine(
+                    $request->input('document_code')
+                ),
+
+            'part_number' =>
+                $input->singleLine(
+                    $request->input('part_number')
+                ),
+
+            'description' =>
+                $input->multiline(
+                    $request->input('description')
+                ),
+
+            'keywords' =>
+                $input->singleLine(
+                    $request->input('keywords')
+                ),
+        ]);
 
         /*
         |--------------------------------------------------------------------------
@@ -1354,6 +1551,16 @@ class DocumentController extends Controller
                     'Dokumen sudah diarsipkan.'
                 );
         }
+
+        $input =
+            app(InputSanitizationService::class);
+
+        $request->merge([
+            'archive_reason' =>
+                $input->multiline(
+                    $request->input('archive_reason')
+                ),
+        ]);
 
         /*
         |--------------------------------------------------------------------------
@@ -1974,6 +2181,14 @@ class DocumentController extends Controller
         */
 
         $previewableExtensions = [
+            'jpg',
+            'jpeg',
+            'png',
+            'webp',
+            'gif',
+            'bmp',
+            'tif',
+            'tiff',
             'pdf',
             'txt',
             'csv',
@@ -2173,12 +2388,6 @@ class DocumentController extends Controller
             $request
         );
 
-        /*
-        |--------------------------------------------------------------------------
-        | Base Query
-        |--------------------------------------------------------------------------
-        */
-
         $query = Document::query()
             ->with([
                 'category.department',
@@ -2196,45 +2405,84 @@ class DocumentController extends Controller
                 true
             );
 
-        /*
-        |--------------------------------------------------------------------------
-        | Search + Filters
-        |--------------------------------------------------------------------------
-        */
-
         $this->applySearchFilters(
             $query,
             $request
         );
 
-        /*
-        |--------------------------------------------------------------------------
-        | Total Matching Results
-        |--------------------------------------------------------------------------
-        */
-
         $total =
             (clone $query)->count();
-
-        /*
-        |--------------------------------------------------------------------------
-        | Live Dropdown Maximum 20
-        |--------------------------------------------------------------------------
-        */
 
         $documents = $query
             ->latest('created_at')
             ->limit(20)
             ->get();
 
-        /*
-        |--------------------------------------------------------------------------
-        | JSON Results
-        |--------------------------------------------------------------------------
-        */
+        $documentIds = $documents->pluck('id');
+
+        $scanMetadataByDocument = $documentIds->isEmpty()
+            ? collect()
+            : DocumentScanMetadata::query()
+                ->whereIn('document_id', $documentIds)
+                ->get()
+                ->keyBy('document_id');
 
         $results = $documents->map(
-            function (Document $document) {
+            function (Document $document) use ($scanMetadataByDocument) {
+
+                $scanMetadata =
+                    $scanMetadataByDocument->get($document->id);
+
+                $scanType =
+                    $scanMetadata?->scan_type;
+
+                $qcTypeLabel = match ($scanType) {
+                    'Retooling' =>
+                        'Instruksi Perubahan',
+
+                    'Laporan Hasil Produksi - Axle Assy' =>
+                        'Axle Assy',
+
+                    'Laporan Hasil Produksi - Brake Assy' =>
+                        'Brake Assy',
+
+                    default =>
+                        null,
+                };
+
+                $qcDetail = match ($scanType) {
+                    'Retooling' =>
+                        implode(
+                            ' → ',
+                            array_filter([
+                                $scanMetadata?->from_type,
+                                $scanMetadata?->to_type,
+                            ])
+                        ) ?: null,
+
+                    'Laporan Hasil Produksi - Axle Assy' =>
+                        implode(
+                            ' • ',
+                            array_filter([
+                                $scanMetadata?->axle_assy_type,
+                                $scanMetadata?->axle_side,
+                            ])
+                        ) ?: null,
+
+                    'Laporan Hasil Produksi - Brake Assy' =>
+                        $scanMetadata?->brake_part_number
+                        ?: implode(
+                            ' ',
+                            array_filter([
+                                $scanMetadata?->brake_part_prefix,
+                                $scanMetadata?->brake_part_variant,
+                            ])
+                        )
+                        ?: null,
+
+                    default =>
+                        null,
+                };
 
                 return [
                     'id' =>
@@ -2271,11 +2519,23 @@ class DocumentController extends Controller
                         $document->document_date
                             ?->locale('id')->translatedFormat('d M Y'),
 
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Revision
-                    |--------------------------------------------------------------------------
-                    */
+                    'scan_type' =>
+                        $scanType,
+
+                    'qc_type_label' =>
+                        $qcTypeLabel,
+
+                    'qc_detail' =>
+                        $qcDetail,
+
+                    'production_date' =>
+                        $scanMetadata?->production_date
+                            ? \Carbon\Carbon::parse(
+                                $scanMetadata->production_date
+                            )
+                                ->locale('id')
+                                ->translatedFormat('d M Y')
+                            : null,
 
                     'current_revision' =>
                         (int) $document->current_revision,
@@ -2324,21 +2584,27 @@ class DocumentController extends Controller
         Request $request
     ): void {
 
+        $input =
+            app(InputSanitizationService::class);
+
+        $request->merge([
+            'search' =>
+                $input->search(
+                    $request->input('search')
+                ),
+
+            'extension' =>
+                (($extension = $input->singleLine(
+                    $request->input('extension')
+                )) !== null)
+                    ? Str::lower($extension)
+                    : null,
+        ]);
+
         $dateToRules = [
             'nullable',
             'date',
         ];
-
-        /*
-        |--------------------------------------------------------------------------
-        | Date Range Protection
-        |--------------------------------------------------------------------------
-        |
-        | after_or_equal hanya diterapkan bila date_from memang diisi.
-        |
-        | Ini membuat filter "Date To" tetap dapat digunakan sendiri.
-        |
-        */
 
         if ($request->filled('date_from')) {
             $dateToRules[] =
@@ -2349,7 +2615,7 @@ class DocumentController extends Controller
             'search' => [
                 'nullable',
                 'string',
-                'max:255',
+                'max:160',
             ],
 
             'category' => [
@@ -2369,6 +2635,16 @@ class DocumentController extends Controller
                 'string',
                 'max:20',
                 'regex:/^[A-Za-z0-9]+$/',
+            ],
+
+            'document_type' => [
+                'nullable',
+                'string',
+                Rule::in([
+                    'Retooling',
+                    'Laporan Hasil Produksi - Axle Assy',
+                    'Laporan Hasil Produksi - Brake Assy',
+                ]),
             ],
 
             'date_from' => [
@@ -2401,119 +2677,144 @@ class DocumentController extends Controller
         Request $request
     ): Builder {
 
-        /*
-        |--------------------------------------------------------------------------
-        | Global Search
-        |--------------------------------------------------------------------------
-        */
-
-        $search = trim(
+        $search =
             (string) $request->input(
                 'search',
                 ''
-            )
-        );
+            );
+
+        $likeSearch =
+            app(InputSanitizationService::class)
+                ->escapeLike($search);
 
         if ($search !== '') {
 
             $query->where(
                 function (
                     Builder $searchQuery
-                ) use ($search) {
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Document Metadata
-                    |--------------------------------------------------------------------------
-                    */
+                ) use ($likeSearch) {
 
                     $searchQuery
                         ->where(
                             'title',
                             'like',
-                            "%{$search}%"
+                            "%{$likeSearch}%"
                         )
-
                         ->orWhere(
                             'file_name',
                             'like',
-                            "%{$search}%"
+                            "%{$likeSearch}%"
                         )
-
                         ->orWhere(
                             'document_code',
                             'like',
-                            "%{$search}%"
+                            "%{$likeSearch}%"
                         )
-
                         ->orWhere(
                             'part_number',
                             'like',
-                            "%{$search}%"
+                            "%{$likeSearch}%"
                         )
-
                         ->orWhere(
                             'keywords',
                             'like',
-                            "%{$search}%"
+                            "%{$likeSearch}%"
                         )
-
                         ->orWhere(
                             'description',
                             'like',
-                            "%{$search}%"
+                            "%{$likeSearch}%"
                         );
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Category Search
-                    |--------------------------------------------------------------------------
-                    */
 
                     $searchQuery->orWhereHas(
                         'category',
                         function (
                             Builder $categoryQuery
-                        ) use ($search) {
+                        ) use ($likeSearch) {
 
                             $categoryQuery
                                 ->where(
                                     'name',
                                     'like',
-                                    "%{$search}%"
+                                    "%{$likeSearch}%"
                                 )
-
                                 ->orWhere(
                                     'slug',
                                     'like',
-                                    "%{$search}%"
+                                    "%{$likeSearch}%"
                                 );
                         }
                     );
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Department Search
-                    |--------------------------------------------------------------------------
-                    */
 
                     $searchQuery->orWhereHas(
                         'category.department',
                         function (
                             Builder $departmentQuery
-                        ) use ($search) {
+                        ) use ($likeSearch) {
 
                             $departmentQuery
                                 ->where(
                                     'name',
                                     'like',
-                                    "%{$search}%"
+                                    "%{$likeSearch}%"
                                 )
-
                                 ->orWhere(
                                     'code',
                                     'like',
-                                    "%{$search}%"
+                                    "%{$likeSearch}%"
+                                );
+                        }
+                    );
+
+                    /*
+                    |--------------------------------------------------------------
+                    | Scan / Production Metadata Search
+                    |--------------------------------------------------------------
+                    |
+                    | Membuat kata seperti Axle, RH, Module Assy, Brake, 402 / 502,
+                    | Retooling, line, atau type perubahan langsung menemukan
+                    | dokumen scan yang sesuai.
+                    |
+                    */
+
+                    $searchQuery->orWhereExists(
+                        function ($metadataQuery) use ($likeSearch) {
+
+                            $metadataQuery
+                                ->select(DB::raw(1))
+                                ->from('document_scan_metadata')
+                                ->whereColumn(
+                                    'document_scan_metadata.document_id',
+                                    'documents.id'
+                                )
+                                ->where(
+                                    function ($scanQuery) use ($likeSearch) {
+
+                                        $fields = [
+                                            'scan_type',
+                                            'shift',
+                                            'line',
+                                            'from_type',
+                                            'to_type',
+                                            'axle_assy_type',
+                                            'axle_side',
+                                            'brake_part_prefix',
+                                            'brake_part_variant',
+                                            'brake_part_number',
+                                        ];
+
+                                        foreach ($fields as $index => $field) {
+                                            $method = $index === 0
+                                                ? 'where'
+                                                : 'orWhere';
+
+                                            $scanQuery->{$method}(
+                                                $field,
+                                                'like',
+                                                "%{$likeSearch}%"
+                                            );
+                                        }
+                                    }
                                 );
                         }
                     );
@@ -2521,25 +2822,12 @@ class DocumentController extends Controller
             );
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Category Filter
-        |--------------------------------------------------------------------------
-        */
-
         if ($request->filled('category')) {
-
             $query->where(
                 'category_id',
                 $request->input('category')
             );
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Department Filter
-        |--------------------------------------------------------------------------
-        */
 
         if ($request->filled('department')) {
 
@@ -2560,14 +2848,7 @@ class DocumentController extends Controller
             );
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | File Type
-        |--------------------------------------------------------------------------
-        */
-
         if ($request->filled('extension')) {
-
             $query->where(
                 'file_extension',
                 strtolower(
@@ -2578,37 +2859,42 @@ class DocumentController extends Controller
             );
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Date From
-        |--------------------------------------------------------------------------
-        */
+        if ($request->filled('document_type')) {
 
-        if ($request->filled('date_from')) {
+            $documentType =
+                (string) $request->input('document_type');
 
-            $query->whereDate(
-                'document_date',
-                '>=',
-                $request->input(
-                    'date_from'
-                )
+            $query->whereExists(
+                function ($metadataQuery) use ($documentType) {
+
+                    $metadataQuery
+                        ->select(DB::raw(1))
+                        ->from('document_scan_metadata')
+                        ->whereColumn(
+                            'document_scan_metadata.document_id',
+                            'documents.id'
+                        )
+                        ->where(
+                            'document_scan_metadata.scan_type',
+                            $documentType
+                        );
+                }
             );
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Date To
-        |--------------------------------------------------------------------------
-        */
+        if ($request->filled('date_from')) {
+            $query->whereDate(
+                'document_date',
+                '>=',
+                $request->input('date_from')
+            );
+        }
 
         if ($request->filled('date_to')) {
-
             $query->whereDate(
                 'document_date',
                 '<=',
-                $request->input(
-                    'date_to'
-                )
+                $request->input('date_to')
             );
         }
 

@@ -1746,7 +1746,7 @@
 
                                                text-left"
 
-                                        style="display: none;"
+                                        x-cloak
                                     >
 
                                         <p

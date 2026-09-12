@@ -28,7 +28,7 @@
     {{-- BMC QUALITYHUB · AUTH VISUAL SYSTEM --}}
     {{-- ========================================================= --}}
 
-    <style>
+    <style nonce="{{ $cspNonce }}">
         :root {
             --qh-auth-blue:
                 #1d4ed8;
@@ -293,7 +293,7 @@
                                            tracking-wide
                                            text-blue-200/80"
                                 >
-                                    Sistem Data & Analitik Quality Control
+                                    Sistem Data & Data Inspection Control
                                 </p>
 
                             </div>
@@ -360,15 +360,15 @@
                                    text-white
                                    xl:text-5xl"
                         >
-                            Data Quality.
+                            Quality Control
                             <span
                                 class="bg-gradient-to-r
-                                       from-blue-200
-                                       to-cyan-300
+                                       from-blue-100
+                                       to-sky-200
                                        bg-clip-text
                                        text-transparent"
                             >
-                                Lebih Jelas. Lebih Cepat.
+                                Management System
                             </span>
                         </h2>
 
@@ -381,10 +381,9 @@
                                    text-blue-100/72
                                    xl:text-[17px]"
                         >
-                            Pusat dokumen dan data Quality Control untuk
-                            pencarian, pengelolaan revisi, analitik spreadsheet,
-                            serta traceability informasi secara terstruktur
-                            dan aman.
+                            Platform internal BMC untuk mengelola
+                            dokumen Quality Control, data inspeksi,
+                            dan riwayat revisi secara terstruktur.
                         </p>
 
 
@@ -438,7 +437,7 @@
                                            font-bold
                                            text-white"
                                 >
-                                    Pencarian Cerdas
+                                    Dokumen QC
                                 </p>
 
 
@@ -448,7 +447,7 @@
                                            leading-5
                                            text-blue-200/70"
                                 >
-                                    Temukan dokumen QC lebih cepat.
+                                    Kelola dokumen inspeksi dan laporan.
                                 </p>
 
                             </article>
@@ -495,7 +494,7 @@
                                            font-bold
                                            text-white"
                                 >
-                                    Analitik Quality
+                                    Data Inspection
                                 </p>
 
 
@@ -505,7 +504,7 @@
                                            leading-5
                                            text-blue-200/70"
                                 >
-                                    Analisis data Excel lebih jelas.
+                                    Pantau hasil pengecekan dan kualitas.
                                 </p>
 
                             </article>
@@ -552,7 +551,7 @@
                                            font-bold
                                            text-white"
                                 >
-                                    Akses Aman
+                                    Kontrol Akses
                                 </p>
 
 
@@ -562,7 +561,7 @@
                                            leading-5
                                            text-blue-200/70"
                                 >
-                                    Akses internal sesuai akun dan role.
+                                    Kelola akses sesuai pengguna.
                                 </p>
 
                             </article>
@@ -771,7 +770,7 @@
                                        text-xs
                                        text-slate-500"
                             >
-                                Sistem Data & Analitik Quality Control
+                                Sistem Data & Data Inspection Control
                             </p>
 
                         </div>
@@ -799,7 +798,7 @@
                         </p>
 
                         <p>
-                            BMC QualityHub · Sistem Dokumen & Analitik Quality Control
+                            BMC QualityHub · Sistem Dokumen & Data Inspection Control
                         </p>
                     </div>
 
@@ -814,3 +813,4 @@
 </body>
 
 </html>
+

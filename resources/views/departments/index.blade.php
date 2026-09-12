@@ -829,7 +829,7 @@
     {{-- Menggantikan native browser confirm() dengan modal biru-putih --}}
     {{-- ========================================================= --}}
 
-    <style>
+    <style nonce="{{ $cspNonce }}">
         [x-cloak] { display: none !important; }
     </style>
 
@@ -951,3 +951,4 @@
     </div>
 
 </x-app-layout>
+

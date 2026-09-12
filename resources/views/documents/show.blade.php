@@ -20,7 +20,7 @@
         */
         $canPreviewInBrowser = in_array(
             $extension,
-            ['pdf', 'txt', 'csv'],
+            ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'tif', 'tiff', 'pdf', 'txt', 'csv'],
             true
         );
 
@@ -929,6 +929,107 @@
 
     </section>
 
+
+
+    {{-- ========================================================= --}}
+    {{-- IMAGE PREVIEW --}}
+    {{-- ========================================================= --}}
+
+    @if(in_array($extension, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'tif', 'tiff'], true))
+        <section
+            class="mb-8
+                   overflow-hidden
+                   rounded-2xl
+                   border
+                   border-slate-200/70
+                   bg-white
+                   shadow-sm"
+        >
+            <div
+                class="flex
+                       flex-col
+                       gap-3
+                       border-b
+                       border-slate-100
+                       px-6
+                       py-5
+                       sm:flex-row
+                       sm:items-center
+                       sm:justify-between"
+            >
+                <div>
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-700"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            >
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <circle cx="8.5" cy="8.5" r="1.5"/>
+                                <path d="m21 15-5-5L5 21"/>
+                            </svg>
+                        </div>
+
+                        <div>
+                            <h2 class="font-bold text-slate-900">
+                                Pratinjau Berkas
+                            </h2>
+                            <p class="mt-1 text-sm text-slate-500">
+                                Gambar hasil scan dapat dilihat langsung tanpa mengunduh file.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <a
+                    href="{{ route('documents.open', $document) }}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-semibold text-blue-800 transition hover:border-blue-300 hover:bg-blue-100"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <path d="M15 3h6v6"/>
+                        <path d="M10 14 21 3"/>
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                    </svg>
+                    Buka Penuh
+                </a>
+            </div>
+
+            <div class="bg-slate-100 p-4 sm:p-6">
+                <div
+                    class="flex min-h-[320px] items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white p-3 sm:min-h-[460px]"
+                >
+                    <img
+                        src="{{ route('documents.open', $document) }}"
+                        alt="Pratinjau {{ $document->title }}"
+                        class="max-h-[760px] w-auto max-w-full rounded-lg object-contain shadow-sm"
+                        loading="lazy"
+                        decoding="async"
+                    >
+                </div>
+            </div>
+        </section>
+    @endif
 
 
     {{-- ========================================================= --}}

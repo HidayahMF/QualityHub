@@ -4,23 +4,61 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\View;
 use Symfony\Component\HttpFoundation\Response;
 
 class SecurityHeaders
 {
+    private const CSP_NONCE_PLACEHOLDER = '__SMARTFIND_CSP_NONCE__';
+
+    private const REQUEST_NONCE_ATTRIBUTE = 'smartfind_csp_nonce';
+
     public function handle(
         Request $request,
         Closure $next
     ): Response {
+        /*
+        |--------------------------------------------------------------------------
+        | Per-response CSP nonce — idempotent
+        |--------------------------------------------------------------------------
+        |
+        | SecurityHeaders sekarang juga dipasang sebagai lapisan awal web middleware
+        | supaya halaman error yang dibuat sebelum route middleware (contoh: 403 dari
+        | EnforceSameOrigin) tetap mempunyai nonce + browser security headers.
+        |
+        | Route QualityHub saat ini juga masih memasang SecurityHeaders. Karena itu
+        | middleware HARUS reuse nonce pada Request yang sama, bukan membuat nonce
+        | kedua. Dengan begitu CSP header dan nonce Blade selalu tetap sinkron.
+        |
+        */
 
-        $response =
-            $next(
-                $request
-            );
+        $existingNonce = $request->attributes->get(
+            self::REQUEST_NONCE_ATTRIBUTE
+        );
+
+        $cspNonce =
+            is_string($existingNonce)
+            && $existingNonce !== ''
+                ? $existingNonce
+                : base64_encode(
+                    random_bytes(18)
+                );
+
+        $request->attributes->set(
+            self::REQUEST_NONCE_ATTRIBUTE,
+            $cspNonce
+        );
+
+        View::share(
+            'cspNonce',
+            $cspNonce
+        );
+
+        $response = $next($request);
 
         /*
         |--------------------------------------------------------------------------
-        | Baseline Security Headers
+        | Baseline Browser Security Headers
         |--------------------------------------------------------------------------
         */
 
@@ -43,7 +81,7 @@ class SecurityHeaders
             'Permissions-Policy',
             (string) config(
                 'smartfind_security.headers.permissions_policy',
-                'camera=(), microphone=(), geolocation=(), payment=(), usb=()'
+                'camera=(self), microphone=(), geolocation=(), payment=(), usb=()'
             )
         );
 
@@ -62,26 +100,23 @@ class SecurityHeaders
             'none'
         );
 
+        $response->headers->set(
+            'X-DNS-Prefetch-Control',
+            'off'
+        );
 
         /*
         |--------------------------------------------------------------------------
         | Sensitive Authenticated HTML Pages
         |--------------------------------------------------------------------------
-        |
-        | Mencegah browser / intermediary menyimpan halaman internal SmartFind
-        | yang berisi metadata dokumen atau data user.
-        |
         */
 
-        $contentType =
-            strtolower(
-                (string) $response
-                    ->headers
-                    ->get(
-                        'Content-Type',
-                        ''
-                    )
-            );
+        $contentType = strtolower(
+            (string) $response->headers->get(
+                'Content-Type',
+                ''
+            )
+        );
 
         if (
             $request->user() !== null
@@ -106,16 +141,14 @@ class SecurityHeaders
             );
         }
 
-
         /*
         |--------------------------------------------------------------------------
-        | Content Security Policy
+        | Content Security Policy — SH-5C3A early-response compatible
         |--------------------------------------------------------------------------
         |
-        | Disabled by default during local development so Vite / HMR is not
-        | broken. Enable deliberately in production after deployment test.
-        |
-        | Policy keeps compatibility with current Blade/Alpine inline code.
+        | Placeholder nonce dipakai oleh script-src dan style-src-elem.
+        | Nonce yang sama dipakai walaupun middleware masuk lebih dari satu kali
+        | pada Request yang sama.
         |
         */
 
@@ -125,15 +158,20 @@ class SecurityHeaders
                 false
             )
         ) {
-            $policy =
-                trim(
-                    (string) config(
-                        'smartfind_security.csp.policy',
-                        ''
-                    )
-                );
+            $policy = trim(
+                (string) config(
+                    'smartfind_security.csp.policy',
+                    ''
+                )
+            );
 
             if ($policy !== '') {
+                $policy = str_replace(
+                    self::CSP_NONCE_PLACEHOLDER,
+                    "'nonce-{$cspNonce}'",
+                    $policy
+                );
+
                 $response->headers->set(
                     'Content-Security-Policy',
                     $policy
@@ -141,14 +179,10 @@ class SecurityHeaders
             }
         }
 
-
         /*
         |--------------------------------------------------------------------------
         | HSTS — HTTPS ONLY
         |--------------------------------------------------------------------------
-        |
-        | Never emit HSTS on local HTTP development.
-        |
         */
 
         if (
@@ -158,18 +192,15 @@ class SecurityHeaders
                 false
             )
         ) {
-            $maxAge =
-                max(
-                    0,
-                    (int) config(
-                        'smartfind_security.hsts.max_age',
-                        31536000
-                    )
-                );
+            $maxAge = max(
+                0,
+                (int) config(
+                    'smartfind_security.hsts.max_age',
+                    31536000
+                )
+            );
 
-            $hsts =
-                'max-age='
-                . $maxAge;
+            $hsts = 'max-age=' . $maxAge;
 
             if (
                 (bool) config(
@@ -177,8 +208,7 @@ class SecurityHeaders
                     false
                 )
             ) {
-                $hsts .=
-                    '; includeSubDomains';
+                $hsts .= '; includeSubDomains';
             }
 
             if (
@@ -187,8 +217,7 @@ class SecurityHeaders
                     false
                 )
             ) {
-                $hsts .=
-                    '; preload';
+                $hsts .= '; preload';
             }
 
             $response->headers->set(

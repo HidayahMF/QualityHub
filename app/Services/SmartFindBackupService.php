@@ -1462,6 +1462,32 @@ class SmartFindBackupService
         $binary =
             $this->resolveMysqldumpBinary();
 
+        $backupUsername =
+            trim(
+                (string) config(
+                    'smartfind_backup.database_username',
+                    ''
+                )
+            );
+
+        $backupPassword =
+            (string) config(
+                'smartfind_backup.database_password',
+                ''
+            );
+
+        if ($backupUsername === '') {
+            throw new RuntimeException(
+                'SMARTFIND_BACKUP_DB_USERNAME belum dikonfigurasi.'
+            );
+        }
+
+        if ($backupPassword === '') {
+            throw new RuntimeException(
+                'SMARTFIND_BACKUP_DB_PASSWORD belum dikonfigurasi.'
+            );
+        }
+
         $command = [
             $binary,
             '--single-transaction',
@@ -1485,24 +1511,14 @@ class SmartFindBackupService
                     ?? '3306'
                 ),
             '--user='
-                . (string) (
-                    $config[
-                        'username'
-                    ]
-                    ?? ''
-                ),
+                . $backupUsername,
             '--result-file='
                 . $resultFile,
             $database,
         ];
 
         $password =
-            (string) (
-                $config[
-                    'password'
-                ]
-                ?? ''
-            );
+            $backupPassword;
 
         $environment = [];
 
