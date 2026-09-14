@@ -685,7 +685,11 @@
                     </div>
 
 
-                    {{-- SHIFT + LINE --}}
+                    {{-- ===================================================== --}}
+                    {{-- BMC RETOOLING MASTER FIELDS V2                       --}}
+                    {{-- ===================================================== --}}
+
+                    {{-- SHIFT: hanya 3 nilai valid --}}
                     <div class="grid gap-4 sm:grid-cols-2">
 
                         <div>
@@ -696,16 +700,35 @@
                                 Shift
                             </label>
 
-                            <input
+                            <select
                                 id="shift"
                                 name="shift"
-                                value="{{ old('shift') }}"
-                                class="block w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                placeholder="1 / 2 / 3"
+                                class="block w-full rounded-xl border-slate-300 bg-white text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
                             >
+                                <option value="">
+                                    Pilih Shift
+                                </option>
+
+                                @foreach(['1', '2', '3'] as $shiftOption)
+                                    <option
+                                        value="{{ $shiftOption }}"
+                                        @selected(old('shift') === $shiftOption)
+                                    >
+                                        Shift {{ $shiftOption }}
+                                    </option>
+                                @endforeach
+                            </select>
+
+                            @error('shift')
+                                <p class="mt-1.5 text-xs font-medium text-red-600">
+                                    {{ $message }}
+                                </p>
+                            @enderror
                         </div>
 
-                        <div>
+                        {{-- LINE MANUAL: tetap dipakai non-Retooling --}}
+                        <div id="manualLineField">
+
                             <label
                                 for="line"
                                 class="mb-1.5 block text-sm font-medium text-slate-700"
@@ -720,13 +743,72 @@
                                 class="block w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                 placeholder="Contoh: MOP 3"
                             >
+
+                        </div>
+
+                        {{-- LINE MASTER: khusus Retooling --}}
+                        <div
+                            id="retoolingLineField"
+                            data-retooling-master="1"
+                            data-lines-url="{{ route('documents.scan.master.lines') }}"
+                            data-products-url-base="{{ url('/documents/scan/master/lines') }}"
+                            class="hidden"
+                        >
+                            <label
+                                for="retoolingLineSearch"
+                                class="mb-1.5 block text-sm font-medium text-slate-700"
+                            >
+                                Line
+                                <span class="text-red-500">*</span>
+                            </label>
+
+                            <div class="relative">
+
+                                <input
+                                    id="retoolingLineSearch"
+                                    type="search"
+                                    autocomplete="off"
+                                    placeholder="Cari Line..."
+                                    class="block w-full rounded-xl border-slate-300 bg-white pr-10 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    role="combobox"
+                                    aria-autocomplete="list"
+                                    aria-expanded="false"
+                                    aria-controls="retoolingLineOptions"
+                                >
+
+                                <input
+                                    type="hidden"
+                                    id="production_line_id"
+                                    name="production_line_id"
+                                    value="{{ old('production_line_id') }}"
+                                >
+
+                                <div
+                                    id="retoolingLineOptions"
+                                    class="absolute left-0 right-0 top-full z-50 mt-1 hidden max-h-60 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1 shadow-xl"
+                                    role="listbox"
+                                ></div>
+
+                            </div>
+
+                            <p class="mt-1 text-xs text-slate-500">
+                                Pilihan Line berasal dari master database produksi.
+                            </p>
+
+                            @error('production_line_id')
+                                <p class="mt-1.5 text-xs font-medium text-red-600">
+                                    {{ $message }}
+                                </p>
+                            @enderror
                         </div>
 
                     </div>
 
-
-                    {{-- FROM TYPE + TO TYPE : RETOOLING / DOKUMEN UMUM --}}
-                    <div id="retoolingFields" class="grid gap-4 sm:grid-cols-2">
+                    {{-- FROM TYPE + TO TYPE MANUAL: untuk Dokumen QC Lainnya --}}
+                    <div
+                        id="retoolingFields"
+                        class="grid gap-4 sm:grid-cols-2"
+                    >
 
                         <div>
                             <label
@@ -760,6 +842,122 @@
                                 class="block w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                 placeholder="Type berikutnya"
                             >
+                        </div>
+
+                    </div>
+
+                    {{-- FROM TYPE + TO TYPE MASTER: khusus Retooling --}}
+                    <div
+                        id="retoolingMasterTypeFields"
+                        class="hidden grid gap-4 sm:grid-cols-2"
+                    >
+
+                        <div>
+
+                            <label
+                                for="retoolingFromSearch"
+                                class="mb-1.5 block text-sm font-medium text-slate-700"
+                            >
+                                Dari Type
+                                <span class="text-red-500">*</span>
+                            </label>
+
+                            <div class="relative">
+
+                                <input
+                                    id="retoolingFromSearch"
+                                    type="search"
+                                    autocomplete="off"
+                                    placeholder="Pilih Line terlebih dahulu"
+                                    disabled
+                                    class="block w-full rounded-xl border-slate-300 bg-white text-sm shadow-sm disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 focus:border-blue-500 focus:ring-blue-500"
+                                    role="combobox"
+                                    aria-autocomplete="list"
+                                    aria-expanded="false"
+                                    aria-controls="retoolingFromOptions"
+                                >
+
+                                <input
+                                    type="hidden"
+                                    id="from_casting_id"
+                                    name="from_casting_id"
+                                    value="{{ old('from_casting_id') }}"
+                                >
+
+                                <div
+                                    id="retoolingFromOptions"
+                                    class="absolute left-0 right-0 top-full z-50 mt-1 hidden max-h-60 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1 shadow-xl"
+                                    role="listbox"
+                                ></div>
+
+                            </div>
+
+                            <div
+                                id="retoolingFromCycleTime"
+                                class="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600"
+                            >
+                                Cycle Time: -
+                            </div>
+
+                            @error('from_casting_id')
+                                <p class="mt-1.5 text-xs font-medium text-red-600">
+                                    {{ $message }}
+                                </p>
+                            @enderror
+                        </div>
+
+                        <div>
+
+                            <label
+                                for="retoolingToSearch"
+                                class="mb-1.5 block text-sm font-medium text-slate-700"
+                            >
+                                Ke Type
+                                <span class="text-red-500">*</span>
+                            </label>
+
+                            <div class="relative">
+
+                                <input
+                                    id="retoolingToSearch"
+                                    type="search"
+                                    autocomplete="off"
+                                    placeholder="Pilih Line terlebih dahulu"
+                                    disabled
+                                    class="block w-full rounded-xl border-slate-300 bg-white text-sm shadow-sm disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 focus:border-blue-500 focus:ring-blue-500"
+                                    role="combobox"
+                                    aria-autocomplete="list"
+                                    aria-expanded="false"
+                                    aria-controls="retoolingToOptions"
+                                >
+
+                                <input
+                                    type="hidden"
+                                    id="to_casting_id"
+                                    name="to_casting_id"
+                                    value="{{ old('to_casting_id') }}"
+                                >
+
+                                <div
+                                    id="retoolingToOptions"
+                                    class="absolute left-0 right-0 top-full z-50 mt-1 hidden max-h-60 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1 shadow-xl"
+                                    role="listbox"
+                                ></div>
+
+                            </div>
+
+                            <div
+                                id="retoolingToCycleTime"
+                                class="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600"
+                            >
+                                Cycle Time: -
+                            </div>
+
+                            @error('to_casting_id')
+                                <p class="mt-1.5 text-xs font-medium text-red-600">
+                                    {{ $message }}
+                                </p>
+                            @enderror
                         </div>
 
                     </div>
@@ -2415,6 +2613,1014 @@
             });
 
 
+        })();
+    </script>
+
+    {{-- ========================================================= --}}
+    {{-- BMC QUALITYHUB RETOOLING MASTER SCRIPT V2                --}}
+    {{-- CSP-safe searchable dropdown tanpa jQuery / Select2      --}}
+    {{-- ========================================================= --}}
+
+    <script nonce="{{ $cspNonce }}">
+        (() => {
+
+            const masterRoot =
+                document.querySelector(
+                    '[data-retooling-master="1"]'
+                );
+
+            if (!masterRoot) {
+                return;
+            }
+
+            const RETOOLING =
+                'Retooling';
+
+            const AXLE_SCAN =
+                'Laporan Hasil Produksi - Axle Assy';
+
+            const BRAKE_SCAN =
+                'Laporan Hasil Produksi - Brake Assy';
+
+            const scanType =
+                document.getElementById('scan_type');
+
+            const shift =
+                document.getElementById('shift');
+
+            const manualLineField =
+                document.getElementById('manualLineField');
+
+            const manualLine =
+                document.getElementById('line');
+
+            const retoolingLineField =
+                document.getElementById('retoolingLineField');
+
+            const lineSearch =
+                document.getElementById('retoolingLineSearch');
+
+            const lineOptions =
+                document.getElementById('retoolingLineOptions');
+
+            const lineId =
+                document.getElementById('production_line_id');
+
+            const manualTypeFields =
+                document.getElementById('retoolingFields');
+
+            const manualFrom =
+                document.getElementById('from_type');
+
+            const manualTo =
+                document.getElementById('to_type');
+
+            const masterTypeFields =
+                document.getElementById('retoolingMasterTypeFields');
+
+            const fromSearch =
+                document.getElementById('retoolingFromSearch');
+
+            const fromOptions =
+                document.getElementById('retoolingFromOptions');
+
+            const fromId =
+                document.getElementById('from_casting_id');
+
+            const fromCycleTime =
+                document.getElementById('retoolingFromCycleTime');
+
+            const toSearch =
+                document.getElementById('retoolingToSearch');
+
+            const toOptions =
+                document.getElementById('retoolingToOptions');
+
+            const toId =
+                document.getElementById('to_casting_id');
+
+            const toCycleTime =
+                document.getElementById('retoolingToCycleTime');
+
+            const linesUrl =
+                masterRoot.dataset.linesUrl;
+
+            const productsUrlBase =
+                masterRoot.dataset.productsUrlBase;
+
+            const oldLineId =
+                String(
+                    lineId?.value || ''
+                );
+
+            const oldFromId =
+                String(
+                    fromId?.value || ''
+                );
+
+            const oldToId =
+                String(
+                    toId?.value || ''
+                );
+
+            let lines = [];
+            let products = [];
+
+            let selectedLine = null;
+            let selectedFrom = null;
+            let selectedTo = null;
+
+            let linesLoaded = false;
+            let linesLoading = false;
+            let productRequestId = 0;
+
+            function normalize(value) {
+
+                return String(value || '')
+                    .trim()
+                    .toLowerCase();
+            }
+
+            function isRetooling() {
+
+                return scanType?.value
+                    === RETOOLING;
+            }
+
+            function isProduction() {
+
+                const value =
+                    scanType?.value || '';
+
+                return value === AXLE_SCAN
+                    || value === BRAKE_SCAN;
+            }
+
+            function closeDropdown(
+                element,
+                input
+            ) {
+
+                element?.classList.add(
+                    'hidden'
+                );
+
+                input?.setAttribute(
+                    'aria-expanded',
+                    'false'
+                );
+            }
+
+            function openDropdown(
+                element,
+                input
+            ) {
+
+                element?.classList.remove(
+                    'hidden'
+                );
+
+                input?.setAttribute(
+                    'aria-expanded',
+                    'true'
+                );
+            }
+
+            function emptyMessage(
+                text
+            ) {
+
+                const element =
+                    document.createElement(
+                        'div'
+                    );
+
+                element.className =
+                    'px-3 py-3 text-sm text-slate-400';
+
+                element.textContent =
+                    text;
+
+                return element;
+            }
+
+            function createOption(
+                primary,
+                secondary,
+                callback
+            ) {
+
+                const button =
+                    document.createElement(
+                        'button'
+                    );
+
+                button.type =
+                    'button';
+
+                button.className =
+                    'flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-blue-50 hover:text-blue-800 focus:bg-blue-50 focus:text-blue-800 focus:outline-none';
+
+                button.setAttribute(
+                    'role',
+                    'option'
+                );
+
+                const main =
+                    document.createElement(
+                        'span'
+                    );
+
+                main.className =
+                    'min-w-0 flex-1 truncate font-semibold';
+
+                main.textContent =
+                    primary;
+
+                const meta =
+                    document.createElement(
+                        'span'
+                    );
+
+                meta.className =
+                    'shrink-0 text-xs font-medium text-slate-400';
+
+                meta.textContent =
+                    secondary || '';
+
+                button.append(
+                    main,
+                    meta
+                );
+
+                button.addEventListener(
+                    'click',
+                    callback
+                );
+
+                return button;
+            }
+
+            function filterItems(
+                items,
+                search
+            ) {
+
+                const query =
+                    normalize(
+                        search
+                    );
+
+                if (query === '') {
+                    return items;
+                }
+
+                return items.filter(item => {
+
+                    const text =
+                        normalize(
+                            [
+                                item.code,
+                                item.name,
+                                item.text,
+                            ].join(' ')
+                        );
+
+                    return text.includes(
+                        query
+                    );
+                });
+            }
+
+            function renderLines() {
+
+                lineOptions.replaceChildren();
+
+                const filtered =
+                    filterItems(
+                        lines,
+                        lineSearch.value
+                    );
+
+                if (filtered.length === 0) {
+
+                    lineOptions.append(
+                        emptyMessage(
+                            'Line tidak ditemukan.'
+                        )
+                    );
+
+                    return;
+                }
+
+                filtered.forEach(line => {
+
+                    lineOptions.append(
+                        createOption(
+                            line.code,
+                            line.name,
+                            () => {
+                                selectLine(
+                                    line,
+                                    false
+                                );
+                            }
+                        )
+                    );
+                });
+            }
+
+            function renderProducts(
+                dropdown,
+                searchInput,
+                selectCallback
+            ) {
+
+                dropdown.replaceChildren();
+
+                const filtered =
+                    filterItems(
+                        products,
+                        searchInput.value
+                    );
+
+                if (filtered.length === 0) {
+
+                    dropdown.append(
+                        emptyMessage(
+                            'Type tidak ditemukan pada Line ini.'
+                        )
+                    );
+
+                    return;
+                }
+
+                filtered.forEach(product => {
+
+                    dropdown.append(
+                        createOption(
+                            product.code,
+                            `CT ${product.cycle_time}`,
+                            () => {
+                                selectCallback(
+                                    product
+                                );
+                            }
+                        )
+                    );
+                });
+            }
+
+            function resetFrom() {
+
+                selectedFrom = null;
+
+                fromId.value = '';
+                fromSearch.value = '';
+
+                fromCycleTime.textContent =
+                    'Cycle Time: -';
+            }
+
+            function resetTo() {
+
+                selectedTo = null;
+
+                toId.value = '';
+                toSearch.value = '';
+
+                toCycleTime.textContent =
+                    'Cycle Time: -';
+            }
+
+            function selectFrom(
+                product
+            ) {
+
+                selectedFrom =
+                    product;
+
+                fromId.value =
+                    String(product.id);
+
+                fromSearch.value =
+                    product.code;
+
+                fromCycleTime.textContent =
+                    `Cycle Time: ${product.cycle_time}`;
+
+                closeDropdown(
+                    fromOptions,
+                    fromSearch
+                );
+            }
+
+            function selectTo(
+                product
+            ) {
+
+                selectedTo =
+                    product;
+
+                toId.value =
+                    String(product.id);
+
+                toSearch.value =
+                    product.code;
+
+                toCycleTime.textContent =
+                    `Cycle Time: ${product.cycle_time}`;
+
+                closeDropdown(
+                    toOptions,
+                    toSearch
+                );
+            }
+
+            async function loadProducts(
+                productionLineId,
+                restoreOld = false
+            ) {
+                const requestId = ++productRequestId;
+
+                products = [];
+
+                fromOptions.replaceChildren();
+                toOptions.replaceChildren();
+
+                if (!productionLineId) {
+
+                    fromSearch.disabled = true;
+                    toSearch.disabled = true;
+
+                    fromSearch.placeholder =
+                        'Pilih Line terlebih dahulu';
+
+                    toSearch.placeholder =
+                        'Pilih Line terlebih dahulu';
+
+                    return;
+                }
+
+                fromSearch.disabled = true;
+                toSearch.disabled = true;
+
+                fromSearch.placeholder =
+                    'Memuat Type...';
+
+                toSearch.placeholder =
+                    'Memuat Type...';
+
+                try {
+
+                    const response =
+                        await fetch(
+                            `${productsUrlBase}/${encodeURIComponent(productionLineId)}/products`,
+                            {
+                                headers: {
+                                    'Accept':
+                                        'application/json',
+                                    'X-Requested-With':
+                                        'XMLHttpRequest',
+                                },
+
+                                credentials:
+                                    'same-origin',
+                            }
+                        );
+
+                    if (!response.ok) {
+
+                        throw new Error(
+                            `HTTP ${response.status}`
+                        );
+                    }
+
+                    const payload =
+                        await response.json();
+                    if (
+                        requestId !== productRequestId
+                        || String(lineId.value) !== String(productionLineId)
+                    ) {
+                        return;
+                    }
+
+                    products =
+                        Array.isArray(
+                            payload.results
+                        )
+                            ? payload.results
+                            : [];
+
+                    fromSearch.disabled = false;
+                    toSearch.disabled = false;
+
+                    fromSearch.placeholder =
+                        'Cari Dari Type...';
+
+                    toSearch.placeholder =
+                        'Cari Ke Type...';
+
+                    if (restoreOld) {
+
+                        const oldFrom =
+                            products.find(
+                                product =>
+                                    String(product.id)
+                                    === oldFromId
+                            );
+
+                        const oldTo =
+                            products.find(
+                                product =>
+                                    String(product.id)
+                                    === oldToId
+                            );
+
+                        if (oldFrom) {
+                            selectFrom(
+                                oldFrom
+                            );
+                        }
+
+                        if (oldTo) {
+                            selectTo(
+                                oldTo
+                            );
+                        }
+                    }
+
+                } catch (error) {
+                    if (
+                        requestId !== productRequestId
+                        || String(lineId.value) !== String(productionLineId)
+                    ) {
+                        return;
+                    }
+
+                    console.error(
+                        'Gagal memuat Type Retooling.',
+                        error
+                    );
+
+                    fromSearch.disabled = true;
+                    toSearch.disabled = true;
+
+                    fromSearch.placeholder =
+                        'Gagal memuat Type';
+
+                    toSearch.placeholder =
+                        'Gagal memuat Type';
+                }
+            }
+
+            async function selectLine(
+                line,
+                restoreOld = false
+            ) {
+
+                const previous =
+                    String(
+                        selectedLine?.id
+                        || lineId.value
+                        || ''
+                    );
+
+                selectedLine =
+                    line;
+
+                lineId.value =
+                    String(line.id);
+
+                lineSearch.value =
+                    line.code;
+
+                closeDropdown(
+                    lineOptions,
+                    lineSearch
+                );
+
+                if (
+                    !restoreOld
+                    && previous !== String(line.id)
+                ) {
+
+                    resetFrom();
+                    resetTo();
+                }
+
+                await loadProducts(
+                    line.id,
+                    restoreOld
+                );
+            }
+
+            async function loadLines() {
+
+                if (linesLoaded || linesLoading) {
+                    return;
+                }
+                linesLoading = true;
+
+                lineSearch.disabled = true;
+
+                lineSearch.placeholder =
+                    'Memuat Line...';
+
+                try {
+
+                    const response =
+                        await fetch(
+                            linesUrl,
+                            {
+                                headers: {
+                                    'Accept':
+                                        'application/json',
+                                    'X-Requested-With':
+                                        'XMLHttpRequest',
+                                },
+
+                                credentials:
+                                    'same-origin',
+                            }
+                        );
+
+                    if (!response.ok) {
+
+                        throw new Error(
+                            `HTTP ${response.status}`
+                        );
+                    }
+
+                    const payload =
+                        await response.json();
+
+                    lines =
+                        Array.isArray(
+                            payload.results
+                        )
+                            ? payload.results
+                            : [];
+
+                    linesLoaded = true;
+
+                    lineSearch.disabled = false;
+
+                    lineSearch.placeholder =
+                        'Cari Line...';
+
+                    if (oldLineId !== '') {
+
+                        const oldLine =
+                            lines.find(
+                                line =>
+                                    String(line.id)
+                                    === oldLineId
+                            );
+
+                        if (oldLine) {
+
+                            await selectLine(
+                                oldLine,
+                                true
+                            );
+                        }
+                    }
+
+                } catch (error) {
+
+                    console.error(
+                        'Gagal memuat Line Retooling.',
+                        error
+                    );
+
+                    lineSearch.disabled = true;
+
+                    lineSearch.placeholder =
+                        'Gagal memuat Line';
+                } finally {
+                    linesLoading = false;
+                }
+            }
+
+            function syncMode() {
+
+                const retooling =
+                    isRetooling();
+
+                const production =
+                    isProduction();
+
+                /*
+                 * Shift tetap tersedia untuk workflow lama, tetapi diwajibkan
+                 * oleh backend hanya ketika Retooling.
+                 */
+                shift.required =
+                    retooling;
+
+                /*
+                 * Line manual dipertahankan untuk Axle / Brake / Dokumen lain.
+                 */
+                manualLineField.classList.toggle(
+                    'hidden',
+                    retooling
+                );
+
+                manualLine.disabled =
+                    retooling;
+
+                /*
+                 * Line master hanya Retooling.
+                 */
+                retoolingLineField.classList.toggle(
+                    'hidden',
+                    !retooling
+                );
+
+                lineId.disabled =
+                    !retooling;
+
+                lineId.required =
+                    retooling;
+
+                /*
+                 * Input Type manual tetap untuk Dokumen QC Lainnya.
+                 * Production mengikuti perilaku lama: disembunyikan.
+                 */
+                const showManualTypes =
+                    !retooling
+                    && !production;
+
+                manualTypeFields.classList.toggle(
+                    'hidden',
+                    !showManualTypes
+                );
+
+                manualFrom.disabled =
+                    !showManualTypes;
+
+                manualTo.disabled =
+                    !showManualTypes;
+
+                /*
+                 * Type master hanya Retooling.
+                 */
+                masterTypeFields.classList.toggle(
+                    'hidden',
+                    !retooling
+                );
+
+                fromId.disabled =
+                    !retooling;
+
+                toId.disabled =
+                    !retooling;
+
+                fromId.required =
+                    retooling;
+
+                toId.required =
+                    retooling;
+
+                if (retooling) {
+
+                    loadLines();
+
+                    if (!lineId.value) {
+
+                        fromSearch.disabled = true;
+                        toSearch.disabled = true;
+                    }
+
+                } else {
+
+                    closeDropdown(
+                        lineOptions,
+                        lineSearch
+                    );
+
+                    closeDropdown(
+                        fromOptions,
+                        fromSearch
+                    );
+
+                    closeDropdown(
+                        toOptions,
+                        toSearch
+                    );
+                }
+            }
+
+            lineSearch.addEventListener(
+                'focus',
+                () => {
+
+                    renderLines();
+
+                    openDropdown(
+                        lineOptions,
+                        lineSearch
+                    );
+                }
+            );
+
+            lineSearch.addEventListener(
+                'input',
+                () => {
+
+                    if (
+                        selectedLine
+                        && lineSearch.value
+                            !== selectedLine.code
+                    ) {
+
+                        selectedLine = null;
+
+                        lineId.value = '';
+
+                        resetFrom();
+                        resetTo();
+
+                        loadProducts(
+                            null
+                        );
+                    }
+
+                    renderLines();
+
+                    openDropdown(
+                        lineOptions,
+                        lineSearch
+                    );
+                }
+            );
+
+            fromSearch.addEventListener(
+                'focus',
+                () => {
+
+                    renderProducts(
+                        fromOptions,
+                        fromSearch,
+                        selectFrom
+                    );
+
+                    openDropdown(
+                        fromOptions,
+                        fromSearch
+                    );
+                }
+            );
+
+            fromSearch.addEventListener(
+                'input',
+                () => {
+
+                    if (
+                        selectedFrom
+                        && fromSearch.value
+                            !== selectedFrom.code
+                    ) {
+
+                        selectedFrom = null;
+
+                        fromId.value = '';
+
+                        fromCycleTime.textContent =
+                            'Cycle Time: -';
+                    }
+
+                    renderProducts(
+                        fromOptions,
+                        fromSearch,
+                        selectFrom
+                    );
+
+                    openDropdown(
+                        fromOptions,
+                        fromSearch
+                    );
+                }
+            );
+
+            toSearch.addEventListener(
+                'focus',
+                () => {
+
+                    renderProducts(
+                        toOptions,
+                        toSearch,
+                        selectTo
+                    );
+
+                    openDropdown(
+                        toOptions,
+                        toSearch
+                    );
+                }
+            );
+
+            toSearch.addEventListener(
+                'input',
+                () => {
+
+                    if (
+                        selectedTo
+                        && toSearch.value
+                            !== selectedTo.code
+                    ) {
+
+                        selectedTo = null;
+
+                        toId.value = '';
+
+                        toCycleTime.textContent =
+                            'Cycle Time: -';
+                    }
+
+                    renderProducts(
+                        toOptions,
+                        toSearch,
+                        selectTo
+                    );
+
+                    openDropdown(
+                        toOptions,
+                        toSearch
+                    );
+                }
+            );
+
+            document.addEventListener(
+                'click',
+                event => {
+
+                    if (
+                        !lineSearch.contains(event.target)
+                        && !lineOptions.contains(event.target)
+                    ) {
+
+                        closeDropdown(
+                            lineOptions,
+                            lineSearch
+                        );
+                    }
+
+                    if (
+                        !fromSearch.contains(event.target)
+                        && !fromOptions.contains(event.target)
+                    ) {
+
+                        closeDropdown(
+                            fromOptions,
+                            fromSearch
+                        );
+                    }
+
+                    if (
+                        !toSearch.contains(event.target)
+                        && !toOptions.contains(event.target)
+                    ) {
+
+                        closeDropdown(
+                            toOptions,
+                            toSearch
+                        );
+                    }
+                }
+            );
+
+            document.addEventListener(
+                'keydown',
+                event => {
+
+                    if (event.key !== 'Escape') {
+                        return;
+                    }
+
+                    closeDropdown(
+                        lineOptions,
+                        lineSearch
+                    );
+
+                    closeDropdown(
+                        fromOptions,
+                        fromSearch
+                    );
+
+                    closeDropdown(
+                        toOptions,
+                        toSearch
+                    );
+                }
+            );
+
+            scanType?.addEventListener(
+                'change',
+                syncMode
+            );
+
+            syncMode();
         })();
     </script>
 

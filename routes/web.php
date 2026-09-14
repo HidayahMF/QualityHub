@@ -9,6 +9,7 @@ use App\Http\Controllers\DepartmentManagementController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ScanDocumentController;
+use App\Http\Controllers\RetoolingMasterDataController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Middleware\EnsureActiveAccount;
 use App\Http\Middleware\EnsureSessionFreshness;
@@ -161,6 +162,33 @@ Route::middleware([
     )
         ->middleware('throttle:10,1')
         ->name('documents.scan.store');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Retooling Master Data
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint JSON untuk dropdown Line dan Type / Casting pada workflow
+    | Retooling. Diletakkan sebelum /documents/{document}.
+    |
+    */
+
+    Route::get(
+        '/documents/scan/master/lines',
+        [RetoolingMasterDataController::class, 'lines']
+    )
+        ->middleware('throttle:120,1')
+        ->name('documents.scan.master.lines');
+
+
+    Route::get(
+        '/documents/scan/master/lines/{productionLine}/products',
+        [RetoolingMasterDataController::class, 'products']
+    )
+        ->whereNumber('productionLine')
+        ->middleware('throttle:120,1')
+        ->name('documents.scan.master.products');
 
     Route::get(
         '/documents/{document}/edit',

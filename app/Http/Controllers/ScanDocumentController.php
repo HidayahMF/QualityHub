@@ -6,7 +6,10 @@ use App\Models\ActivityLog;
 use App\Models\Category;
 use App\Models\Document;
 use App\Models\DocumentScanMetadata;
+use App\Models\DocumentRetooling;
 use App\Models\DocumentVersion;
+use App\Models\LineProduct;
+use App\Models\ProductionLine;
 use App\Services\MultiPageScanPdfService;
 use App\Services\PrivateDocumentStorageService;
 use App\Services\ScanImageSecurityService;
@@ -56,6 +59,24 @@ class ScanDocumentController extends Controller
      *              menjadi satu PDF multi-halaman.
      */
     public function store(
+        Request $request,
+        ScanImageSecurityService $imageSecurity,
+        MultiPageScanPdfService $pdfService,
+        PrivateDocumentStorageService $privateStorage
+    ): RedirectResponse {
+        try {
+            return $this->storeScan(
+                $request,
+                $imageSecurity,
+                $pdfService,
+                $privateStorage
+            );
+        } catch (ValidationException $exception) {
+            throw $exception->redirectTo(route('documents.scan.create'));
+        }
+    }
+
+    private function storeScan(
         Request $request,
         ScanImageSecurityService $imageSecurity,
         MultiPageScanPdfService $pdfService,
@@ -117,10 +138,55 @@ class ScanDocumentController extends Controller
                 'max:50',
             ],
             'scan_date' => ['required', 'date_format:Y-m-d'],
-            'shift' => ['nullable', 'string', 'max:20'],
+            'shift' => [
+                Rule::requiredIf(
+                    fn () => $request->input('scan_type') === self::SCAN_RETOOLING
+                ),
+                'nullable',
+                Rule::in(['1', '2', '3']),
+            ],
+
+            'production_line_id' => [
+                Rule::requiredIf(
+                    fn () => $request->input('scan_type') === self::SCAN_RETOOLING
+                ),
+                'nullable',
+                'integer',
+                Rule::exists('production_lines', 'id')->where(
+                    fn ($query) => $query->where('is_active', true)
+                ),
+            ],
+
+            'from_casting_id' => [
+                Rule::requiredIf(
+                    fn () => $request->input('scan_type') === self::SCAN_RETOOLING
+                ),
+                'nullable',
+                'integer',
+                Rule::exists('castings', 'id')->where(
+                    fn ($query) => $query->where('is_active', true)
+                ),
+            ],
+
+            'to_casting_id' => [
+                Rule::requiredIf(
+                    fn () => $request->input('scan_type') === self::SCAN_RETOOLING
+                ),
+                'nullable',
+                'integer',
+                Rule::exists('castings', 'id')->where(
+                    fn ($query) => $query->where('is_active', true)
+                ),
+            ],
+
+            /*
+             * Metadata teks lama tetap diterima untuk workflow non-Retooling
+             * dan kompatibilitas dokumen lama.
+             */
             'line' => ['nullable', 'string', 'max:100'],
             'from_type' => ['nullable', 'string', 'max:150'],
             'to_type' => ['nullable', 'string', 'max:150'],
+
             'scan_time' => ['nullable', 'date_format:H:i'],
 
             'axle_assy_type' => [
@@ -289,7 +355,7 @@ class ScanDocumentController extends Controller
             ->find($validated['category_id']);
 
         if (! $category) {
-            return back()
+            return redirect()->route('documents.scan.create')
                 ->withInput()
                 ->withErrors([
                     'category_id' => 'Kategori atau departemen yang dipilih sudah tidak aktif.',
@@ -372,7 +438,7 @@ class ScanDocumentController extends Controller
         if ($safeBaseName === '') {
             $pdfService->cleanup($generatedPdfPath);
 
-            return back()
+            return redirect()->route('documents.scan.create')
                 ->withInput()
                 ->withErrors([
                     'file_name' => 'Nama file tidak menghasilkan nama yang valid.',
@@ -479,6 +545,69 @@ class ScanDocumentController extends Controller
                 $isMultiPhoto,
                 $sourceCount
             ) {
+                // Resolve names and Cycle Time from active master records.
+                $retoolingMaster = null;
+
+                if (($validated['scan_type'] ?? null) === self::SCAN_RETOOLING) {
+                    $productionLine = ProductionLine::query()
+                        ->whereKey($validated['production_line_id'])
+                        ->where('is_active', true)
+                        ->first();
+
+                    if (! $productionLine) {
+                        throw ValidationException::withMessages([
+                            'production_line_id' => 'Line yang dipilih sudah tidak tersedia.',
+                        ]);
+                    }
+
+                    $fromLineProduct = LineProduct::query()
+                        ->with(['casting:id,code,name,is_active'])
+                        ->where('production_line_id', $productionLine->id)
+                        ->where('casting_id', $validated['from_casting_id'])
+                        ->where('is_active', true)
+                        ->whereHas(
+                            'casting',
+                            fn (Builder $query) => $query->where('is_active', true)
+                        )
+                        ->first();
+
+                    $toLineProduct = LineProduct::query()
+                        ->with(['casting:id,code,name,is_active'])
+                        ->where('production_line_id', $productionLine->id)
+                        ->where('casting_id', $validated['to_casting_id'])
+                        ->where('is_active', true)
+                        ->whereHas(
+                            'casting',
+                            fn (Builder $query) => $query->where('is_active', true)
+                        )
+                        ->first();
+
+                    if (! $fromLineProduct) {
+                        throw ValidationException::withMessages([
+                            'from_casting_id' => 'Dari Type tidak tersedia pada Line yang dipilih.',
+                        ]);
+                    }
+
+                    if (! $toLineProduct) {
+                        throw ValidationException::withMessages([
+                            'to_casting_id' => 'Ke Type tidak tersedia pada Line yang dipilih.',
+                        ]);
+                    }
+
+                    // Keep legacy metadata for search, detail, and revision history.
+                    $validated['line'] = $productionLine->code;
+                    $validated['from_type'] = $fromLineProduct->casting->code;
+                    $validated['to_type'] = $toLineProduct->casting->code;
+
+                    $retoolingMaster = [
+                        'production_line_id' => $productionLine->id,
+                        'from_casting_id' => $fromLineProduct->casting_id,
+                        'to_casting_id' => $toLineProduct->casting_id,
+                        'from_cycle_time' => $fromLineProduct->cycle_time,
+                        'to_cycle_time' => $toLineProduct->cycle_time,
+                    ];
+                }
+
                 $keywords = implode(', ', array_filter([
                     $validated['scan_type'] ?? null,
                     $validated['shift'] ?? null,
@@ -545,6 +674,19 @@ class ScanDocumentController extends Controller
                     'image_format' => $extension,
                     'capture_source' => $captureSource,
                 ])->save();
+
+                // Snapshot Cycle Time before master values can change.
+                if ($retoolingMaster !== null) {
+                    DocumentRetooling::create([
+                        'document_id' => $document->id,
+                        'shift' => (int) $validated['shift'],
+                        'production_line_id' => $retoolingMaster['production_line_id'],
+                        'from_casting_id' => $retoolingMaster['from_casting_id'],
+                        'to_casting_id' => $retoolingMaster['to_casting_id'],
+                        'from_cycle_time' => $retoolingMaster['from_cycle_time'],
+                        'to_cycle_time' => $retoolingMaster['to_cycle_time'],
+                    ]);
+                }
 
                 DocumentVersion::create([
                     'document_id' => $document->id,
@@ -636,7 +778,7 @@ class ScanDocumentController extends Controller
 
             report($exception);
 
-            return back()
+            return redirect()->route('documents.scan.create')
                 ->withInput()
                 ->withErrors([
                     'files' => 'Berkas scan tidak dapat disimpan. Proses dibatalkan dengan aman.',
