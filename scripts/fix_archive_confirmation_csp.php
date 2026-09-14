@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 /*
 |--------------------------------------------------------------------------
-| BMC QualityHub - Archive Confirmation CSP Fix
+| BMC QualityHub - Archive Confirmation CSP Fix V2
 |--------------------------------------------------------------------------
 |
 | Target:
@@ -54,7 +54,7 @@ $backupDir =
     $root
     . DIRECTORY_SEPARATOR . 'storage'
     . DIRECTORY_SEPARATOR . 'backups'
-    . DIRECTORY_SEPARATOR . 'archive-confirm-before-csp-fix-'
+    . DIRECTORY_SEPARATOR . 'archive-confirm-before-csp-fix-v2-'
     . date('Ymd-His');
 
 if (
@@ -74,7 +74,7 @@ $backupPath =
 copy($viewPath, $backupPath);
 
 echo PHP_EOL;
-echo "=== BMC QualityHub Archive Confirmation CSP Fix ===" . PHP_EOL;
+echo "=== BMC QualityHub Archive Confirmation CSP Fix V2 ===" . PHP_EOL;
 
 try {
     /*
@@ -139,158 +139,187 @@ BLADE;
 
     /*
     |--------------------------------------------------------------------------
-    | 2. Replace old confirmation modal at bottom of page
+    | 2. Replace / refresh confirmation modal at bottom of page
     |--------------------------------------------------------------------------
+    |
+    | Bagian ini sengaja selalu me-refresh modal jika:
+    | - masih memakai modal Alpine lama, atau
+    | - sudah memakai modal CSP-safe versi sebelumnya.
+    |
+    | Dengan begitu script V2 juga bisa memperbaiki hasil patch lama yang
+    | masih memiliki konflik Tailwind "hidden" + "flex" pada elemen yang sama.
+    |
     */
 
-    $newMarker =
-        'BMC QUALITYHUB CSP-SAFE ARCHIVE CONFIRMATION';
+    $legacyModalMarker =
+        '{{-- BMC QUALITYHUB CUSTOM CONFIRMATION MODAL --}}';
 
-    if (! str_contains($content, $newMarker)) {
-        $modalTitleMarker =
-            '{{-- BMC QUALITYHUB CUSTOM CONFIRMATION MODAL --}}';
+    $cspModalMarker =
+        '{{-- BMC QUALITYHUB CSP-SAFE ARCHIVE CONFIRMATION';
 
-        $titlePos =
+    $titlePos = false;
+
+    $cspPos =
+        strpos(
+            $content,
+            $cspModalMarker
+        );
+
+    if ($cspPos !== false) {
+        $titlePos = $cspPos;
+    } else {
+        $legacyPos =
             strpos(
                 $content,
-                $modalTitleMarker
+                $legacyModalMarker
             );
 
-        if ($titlePos === false) {
-            throw new RuntimeException(
-                'Marker modal konfirmasi lama tidak ditemukan.'
-            );
+        if ($legacyPos !== false) {
+            $titlePos = $legacyPos;
         }
+    }
 
-        $separator =
-            '{{-- ========================================================= --}}';
+    if ($titlePos === false) {
+        throw new RuntimeException(
+            'Marker modal konfirmasi lama / CSP-safe tidak ditemukan.'
+        );
+    }
 
-        $modalStart =
-            strrpos(
-                substr(
-                    $content,
-                    0,
-                    $titlePos
-                ),
-                $separator
-            );
+    $separator =
+        '{{-- ========================================================= --}}';
 
-        if ($modalStart === false) {
-            $modalStart = $titlePos;
-        }
-
-        $layoutClose =
-            strrpos(
+    $modalStart =
+        strrpos(
+            substr(
                 $content,
-                '</x-app-layout>'
-            );
+                0,
+                $titlePos
+            ),
+            $separator
+        );
 
-        if ($layoutClose === false) {
-            throw new RuntimeException(
-                'Penutup </x-app-layout> tidak ditemukan.'
-            );
-        }
+    if ($modalStart === false) {
+        $modalStart = $titlePos;
+    }
 
-        if ($layoutClose <= $modalStart) {
-            throw new RuntimeException(
-                'Posisi modal lama tidak valid.'
-            );
-        }
+    $layoutClose =
+        strrpos(
+            $content,
+            '</x-app-layout>'
+        );
 
-        $newModal = <<<'BLADE'
+    if ($layoutClose === false) {
+        throw new RuntimeException(
+            'Penutup </x-app-layout> tidak ditemukan.'
+        );
+    }
+
+    if ($layoutClose <= $modalStart) {
+        throw new RuntimeException(
+            'Posisi modal konfirmasi tidak valid.'
+        );
+    }
+
+    $newModal = <<<'BLADE'
     {{-- ========================================================= --}}
-    {{-- BMC QUALITYHUB CSP-SAFE ARCHIVE CONFIRMATION --}}
+    {{-- BMC QUALITYHUB CSP-SAFE ARCHIVE CONFIRMATION V2 --}}
     {{-- Pure DOM + nonced script; tidak bergantung pada Alpine expression --}}
     {{-- ========================================================= --}}
 
     <div
         id="qualityhub-archive-confirm"
-        class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4"
+        class="hidden fixed inset-0 z-[100] overflow-y-auto p-4"
         role="dialog"
         aria-modal="true"
         aria-labelledby="qualityhub-archive-confirm-title"
+        aria-describedby="qualityhub-archive-confirm-description"
         aria-hidden="true"
     >
         <div
             data-qualityhub-confirm-backdrop
-            class="absolute inset-0 bg-slate-950/45 backdrop-blur-[2px]"
+            class="fixed inset-0 bg-slate-950/45 backdrop-blur-[2px]"
         ></div>
 
-        <section
-            class="relative w-full max-w-md overflow-hidden rounded-3xl border border-blue-100 bg-white shadow-2xl shadow-blue-950/20"
+        <div
+            class="relative z-10 flex min-h-full items-center justify-center"
         >
-            <div class="h-1.5 w-full bg-blue-800"></div>
+            <section
+                class="w-full max-w-md overflow-hidden rounded-3xl border border-blue-100 bg-white shadow-2xl shadow-blue-950/20"
+            >
+                <div class="h-1.5 w-full bg-blue-800"></div>
 
-            <div class="p-6 sm:p-7">
-                <div class="flex items-start gap-4">
+                <div class="p-6 sm:p-7">
+                    <div class="flex items-start gap-4">
+
+                        <div
+                            class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 ring-1 ring-blue-100"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="22"
+                                height="22"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                aria-hidden="true"
+                            >
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
+                                <path d="M9 12l2 2 4-4"/>
+                            </svg>
+                        </div>
+
+                        <div class="min-w-0 flex-1">
+
+                            <p
+                                class="text-xs font-bold uppercase tracking-[0.18em] text-blue-600"
+                            >
+                                BMC QualityHub
+                            </p>
+
+                            <h3
+                                id="qualityhub-archive-confirm-title"
+                                class="mt-1.5 text-xl font-bold text-slate-900"
+                            >
+                                Arsipkan Dokumen?
+                            </h3>
+
+                            <p
+                                id="qualityhub-archive-confirm-description"
+                                data-qualityhub-confirm-message
+                                class="mt-2 text-sm leading-6 text-slate-600"
+                            >
+                                Dokumen akan dipindahkan dari pustaka aktif ke arsip.
+                                File fisik dan seluruh riwayat revisi tetap tersimpan.
+                            </p>
+
+                        </div>
+                    </div>
 
                     <div
-                        class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 ring-1 ring-blue-100"
+                        class="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"
                     >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="22"
-                            height="22"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            aria-hidden="true"
+                        <button
+                            type="button"
+                            data-qualityhub-confirm-cancel
+                            class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:ring-offset-2"
                         >
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
-                            <path d="M9 12l2 2 4-4"/>
-                        </svg>
-                    </div>
+                            Batal
+                        </button>
 
-                    <div class="min-w-0 flex-1">
-
-                        <p
-                            class="text-xs font-bold uppercase tracking-[0.18em] text-blue-600"
+                        <button
+                            type="button"
+                            data-qualityhub-confirm-submit
+                            class="inline-flex items-center justify-center rounded-xl bg-blue-800 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-900/15 transition hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                         >
-                            BMC QualityHub
-                        </p>
-
-                        <h3
-                            id="qualityhub-archive-confirm-title"
-                            class="mt-1.5 text-xl font-bold text-slate-900"
-                        >
-                            Arsipkan Dokumen?
-                        </h3>
-
-                        <p
-                            data-qualityhub-confirm-message
-                            class="mt-2 text-sm leading-6 text-slate-600"
-                        >
-                            Dokumen akan dipindahkan dari pustaka aktif ke arsip.
-                            File fisik dan seluruh riwayat revisi tetap tersimpan.
-                        </p>
-
+                            Arsipkan Dokumen
+                        </button>
                     </div>
                 </div>
-
-                <div
-                    class="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"
-                >
-                    <button
-                        type="button"
-                        data-qualityhub-confirm-cancel
-                        class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:ring-offset-2"
-                    >
-                        Batal
-                    </button>
-
-                    <button
-                        type="button"
-                        data-qualityhub-confirm-submit
-                        class="inline-flex items-center justify-center rounded-xl bg-blue-800 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-900/15 transition hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                    >
-                        Arsipkan Dokumen
-                    </button>
-                </div>
-            </div>
-        </section>
+            </section>
+        </div>
     </div>
 
 
@@ -331,19 +360,41 @@ BLADE;
                 );
 
             let pendingForm = null;
+            let returnFocusElement = null;
 
-            const closeModal = () => {
+            const hideModal = () => {
                 modal.classList.add('hidden');
+
                 modal.setAttribute(
                     'aria-hidden',
                     'true'
                 );
 
+                document.body.classList.remove(
+                    'overflow-hidden'
+                );
+            };
+
+            const closeModal = () => {
+                hideModal();
+
                 pendingForm = null;
+
+                if (
+                    returnFocusElement
+                    && typeof returnFocusElement.focus === 'function'
+                ) {
+                    returnFocusElement.focus();
+                }
+
+                returnFocusElement = null;
             };
 
             const openModal = (form) => {
                 pendingForm = form;
+
+                returnFocusElement =
+                    document.activeElement;
 
                 title.textContent =
                     form.dataset.confirmTitle
@@ -358,9 +409,14 @@ BLADE;
                     || 'Lanjutkan';
 
                 modal.classList.remove('hidden');
+
                 modal.setAttribute(
                     'aria-hidden',
                     'false'
+                );
+
+                document.body.classList.add(
+                    'overflow-hidden'
                 );
 
                 submitButton.focus();
@@ -383,6 +439,7 @@ BLADE;
                             }
 
                             event.preventDefault();
+
                             openModal(form);
                         }
                     );
@@ -422,13 +479,10 @@ BLADE;
 
                     form.dataset.confirmBypass = '1';
 
-                    modal.classList.add('hidden');
-                    modal.setAttribute(
-                        'aria-hidden',
-                        'true'
-                    );
+                    hideModal();
 
                     pendingForm = null;
+                    returnFocusElement = null;
 
                     form.requestSubmit();
                 }
@@ -439,22 +493,19 @@ BLADE;
 
 BLADE;
 
-        $content =
-            substr(
-                $content,
-                0,
-                $modalStart
-            )
-            . $newModal
-            . substr(
-                $content,
-                $layoutClose
-            );
+    $content =
+        substr(
+            $content,
+            0,
+            $modalStart
+        )
+        . $newModal
+        . substr(
+            $content,
+            $layoutClose
+        );
 
-        echo "[OK] Modal Alpine lama diganti modal konfirmasi CSP-safe." . PHP_EOL;
-    } else {
-        echo "[OK] Modal CSP-safe sudah ada." . PHP_EOL;
-    }
+    echo "[OK] Modal konfirmasi diperbarui ke CSP-safe V2 tanpa konflik hidden/flex." . PHP_EOL;
 
 
     /*
@@ -486,6 +537,28 @@ BLADE;
     ) {
         throw new RuntimeException(
             'Modal Alpine object lama masih terdeteksi.'
+        );
+    }
+
+    if (
+        str_contains(
+            $content,
+            'class="hidden fixed inset-0 z-[100] flex'
+        )
+    ) {
+        throw new RuntimeException(
+            'Konflik Tailwind hidden + flex masih ditemukan.'
+        );
+    }
+
+    if (
+        ! str_contains(
+            $content,
+            'class="relative z-10 flex min-h-full items-center justify-center"'
+        )
+    ) {
+        throw new RuntimeException(
+            'Wrapper flex positioner modal tidak ditemukan.'
         );
     }
 
@@ -538,7 +611,7 @@ BLADE;
     echo "Backup:" . PHP_EOL;
     echo $backupPath . PHP_EOL;
     echo PHP_EOL;
-    echo "ARCHIVE CONFIRMATION CSP FIX: APPLIED" . PHP_EOL;
+    echo "ARCHIVE CONFIRMATION CSP FIX V2: APPLIED" . PHP_EOL;
     echo PHP_EOL;
     echo "Next:" . PHP_EOL;
     echo "php artisan view:clear" . PHP_EOL;
