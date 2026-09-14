@@ -144,10 +144,22 @@ class DocumentVersionController extends Controller
 
         $validated = $request->validate([
             'file' => [
-                'required',
+                'nullable',
                 'file',
                 'max:20480',
                 'mimes:pdf,xls,xlsx,doc,docx,csv,txt',
+            ],
+
+            'revision_file_name' => [
+                'required',
+                'string',
+                'min:1',
+                'max:180',
+            ],
+
+            'document_date' => [
+                'required',
+                'date_format:Y-m-d',
             ],
 
             'revision_note' => [
@@ -161,10 +173,13 @@ class DocumentVersionController extends Controller
 
         $file = $request->file('file');
 
+        $hasNewFile =
+            $file !== null;
+
 
         if (
-            $file === null
-            || ! $file->isValid()
+            $hasNewFile
+            && ! $file->isValid()
         ) {
 
             return back()
@@ -182,16 +197,134 @@ class DocumentVersionController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $security =
-            $uploadSecurity->validate(
-                $file
-            );
+        if ($hasNewFile) {
+            $security =
+                $uploadSecurity->validate(
+                    $file
+                );
+
+            $extension =
+                $security['extension'];
+
+            $safeOriginalName =
+                $security['original_name'];
+
+        } else {
+
+            $security = [
+                'extension' =>
+                    $document->file_extension,
+                'original_name' =>
+                    $document->file_name,
+                'server_mime' =>
+                    $document->mime_type,
+                'file_size' =>
+                    $document->file_size,
+                'mime_status' =>
+                    'reused_existing_file',
+                'signature' =>
+                    null,
+                'structure' =>
+                    null,
+                'macro_check' =>
+                    null,
+            ];
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Normalize Security Result for Both Revision Modes
+        |--------------------------------------------------------------------------
+        |
+        | Jalur upload baru dan metadata-only harus sama-sama memiliki
+        | extension, nama file, MIME, dan ukuran sebelum metadata revisi dibuat.
+        |
+        */
 
         $extension =
             $security['extension'];
 
         $safeOriginalName =
             $security['original_name'];
+
+        $serverMime =
+            $security['server_mime']
+            ?? $security['mime_type']
+            ?? $document->mime_type;
+
+        $verifiedFileSize =
+            $security['file_size']
+            ?? $security['size']
+            ?? $document->file_size;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Revision Display Filename + Revision Date
+        |--------------------------------------------------------------------------
+        | Nama tampilan dapat direvisi user. File fisik tetap UUID/private storage.
+        */
+
+        $requestedRevisionName =
+            trim(
+                (string) $validated['revision_file_name']
+            );
+
+        $requestedRevisionName =
+            pathinfo(
+                basename(
+                    str_replace('\\', '/', $requestedRevisionName)
+                ),
+                PATHINFO_FILENAME
+            );
+
+        $safeRevisionBaseName =
+            preg_replace(
+                '/[\\x00-\\x1F\\x7F\\\\\/:*?"<>|]+/u',
+                '-',
+                $requestedRevisionName
+            ) ?? '';
+
+        $safeRevisionBaseName =
+            trim(
+                $safeRevisionBaseName,
+                " .-_"
+            );
+
+        if ($safeRevisionBaseName === '') {
+
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'revision_file_name' =>
+                        'Nama file revisi tidak valid.',
+                ]);
+        }
+
+        $revisionDisplayName =
+            $safeRevisionBaseName
+            . '.'
+            . $extension;
+
+        $revisionDocumentDate =
+            $validated['document_date'];
+
+        $hasMetadataChange =
+            $revisionDisplayName !== $document->file_name
+            || $revisionDocumentDate
+                !== $document
+                    ->document_date
+                    ?->format('Y-m-d');
+
+        if (! $hasNewFile && ! $hasMetadataChange) {
+
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'file' =>
+                        'Pilih file revisi baru atau ubah nama/tanggal dokumen.',
+                ]);
+        }
 
         $serverMime =
             $security['server_mime'];
@@ -211,8 +344,11 @@ class DocumentVersionController extends Controller
                     $document,
                     $validated,
                     $file,
+                    $hasNewFile,
                     $extension,
                     $safeOriginalName,
+                    $revisionDisplayName,
+                    $revisionDocumentDate,
                     $serverMime,
                     $verifiedFileSize,
                     $security,
@@ -319,49 +455,66 @@ class DocumentVersionController extends Controller
                     |--------------------------------------------------------------------------
                     */
 
-                    $storedFileName =
-                        Str::uuid()->toString()
-                        . '.'
-                        . $extension;
+                    if ($hasNewFile) {
+                        $storedFileName =
+                            Str::uuid()->toString()
+                            . '.'
+                            . $extension;
 
 
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Store File
-                    |--------------------------------------------------------------------------
-                    */
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Store File
+                        |--------------------------------------------------------------------------
+                        */
 
-                    $storedPath = $file->storeAs(
-                        $directory,
-                        $storedFileName,
-                        'bmc_documents'
-                    );
-
-
-                    if (! $storedPath) {
-
-                        throw new \RuntimeException(
-                            'File revisi tidak dapat disimpan.'
+                        $storedPath = $file->storeAs(
+                            $directory,
+                            $storedFileName,
+                            'bmc_documents'
                         );
+
+
+                        if (! $storedPath) {
+
+                            throw new \RuntimeException(
+                                'File revisi tidak dapat disimpan.'
+                            );
+                        }
+
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Private Storage Boundary Verification
+                        |--------------------------------------------------------------------------
+                        */
+
+                        if (
+                            $privateStorage->resolveExistingFile(
+                                $storedPath
+                            ) === null
+                        ) {
+                            throw new \RuntimeException(
+                                'File revisi gagal melewati verifikasi penyimpanan private.'
+                            );
+                        }
+
+
+                    } else {
+
+                        $storedPath =
+                            $lockedDocument->file_path;
+
+                        if (
+                            $privateStorage->resolveExistingFile(
+                                $storedPath
+                            ) === null
+                        ) {
+                            throw new \RuntimeException(
+                                'File aktif tidak ditemukan di private storage.'
+                            );
+                        }
                     }
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Private Storage Boundary Verification
-                    |--------------------------------------------------------------------------
-                    */
-
-                    if (
-                        $privateStorage->resolveExistingFile(
-                            $storedPath
-                        ) === null
-                    ) {
-                        throw new \RuntimeException(
-                            'File revisi gagal melewati verifikasi penyimpanan private.'
-                        );
-                    }
-
 
                     /*
                     |--------------------------------------------------------------------------
@@ -400,9 +553,7 @@ class DocumentVersionController extends Controller
                                 ?->name,
 
                         'document_date' =>
-                            $lockedDocument
-                                ->document_date
-                                ?->format('Y-m-d'),
+                            $revisionDocumentDate,
 
                         'description' =>
                             $lockedDocument->description,
@@ -429,7 +580,7 @@ class DocumentVersionController extends Controller
                             Auth::id(),
 
                         'file_name' =>
-                            $safeOriginalName,
+                            $revisionDisplayName,
 
                         'file_path' =>
                             $storedPath,
@@ -467,7 +618,10 @@ class DocumentVersionController extends Controller
                             $nextRevision,
 
                         'file_name' =>
-                            $safeOriginalName,
+                            $revisionDisplayName,
+
+                        'document_date' =>
+                            $revisionDocumentDate,
 
                         'file_path' =>
                             $storedPath,
@@ -534,6 +688,20 @@ class DocumentVersionController extends Controller
 
                             'new_file_name' =>
                                 $version->file_name,
+
+                            'file_replaced' =>
+                                $hasNewFile,
+
+                            'previous_document_date' =>
+                                $document
+                                    ->document_date
+                                    ?->format('Y-m-d'),
+
+                            'new_document_date' =>
+                                $revisionDocumentDate,
+
+                            'uploaded_original_name' =>
+                                $safeOriginalName,
 
                             'security_validation' => [
                                 'extension' =>
@@ -684,6 +852,10 @@ class DocumentVersionController extends Controller
             'pdf',
             'txt',
             'csv',
+            'jpg',
+            'jpeg',
+            'png',
+            'webp',
         ];
 
 
@@ -743,6 +915,15 @@ class DocumentVersionController extends Controller
 
                         'txt' =>
                             'text/plain; charset=UTF-8',
+
+                        'jpg', 'jpeg' =>
+                            'image/jpeg',
+
+                        'png' =>
+                            'image/png',
+
+                        'webp' =>
+                            'image/webp',
 
                         default =>
                             'application/octet-stream',

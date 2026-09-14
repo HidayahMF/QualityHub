@@ -451,24 +451,10 @@
                 </option>
 
                 <option
-                    value="admin"
-                    @selected(request('role') === 'admin')
-                >
-                    Admin
-                </option>
-
-                <option
                     value="user"
                     @selected(request('role') === 'user')
                 >
                     Pengguna
-                </option>
-
-                <option
-                    value="viewer"
-                    @selected(request('role') === 'viewer')
-                >
-                    Peninjau
                 </option>
 
             </select>
@@ -675,9 +661,7 @@
                                     >
                                         {{ match($user->role) {
                                             'super_admin' => 'Super Admin',
-                                            'admin' => 'Admin',
                                             'user' => 'Pengguna',
-                                            'viewer' => 'Peninjau',
                                             default => ucwords(str_replace('_', ' ', $user->role)),
                                         } }}
                                     </span>
@@ -809,12 +793,10 @@
                                                 method="POST"
                                                 action="{{ route('users.reject', $user) }}"
 
-                                                x-on:submit.prevent="$dispatch('qualityhub-confirm', {
-                                                    form: $event.currentTarget,
-                                                    title: 'Tolak Permintaan Akun?',
-                                                    message: 'Permintaan akun ini akan ditandai sebagai ditolak dan pengguna tidak dapat masuk ke BMC QualityHub.',
-                                                    confirmText: 'Tolak Akun'
-                                                })"
+                                            data-qualityhub-user-confirm="1"
+                                            data-confirm-title="Tolak Permintaan Akun?"
+                                            data-confirm-message="Permintaan akun ini akan ditandai sebagai ditolak dan pengguna tidak dapat masuk ke BMC QualityHub."
+                                            data-confirm-button="Tolak Akun"
                                             >
                                                 @csrf
                                                 @method('PATCH')
@@ -844,12 +826,10 @@
                                                 method="POST"
                                                 action="{{ route('users.deactivate', $user) }}"
 
-                                                x-on:submit.prevent="$dispatch('qualityhub-confirm', {
-                                                    form: $event.currentTarget,
-                                                    title: 'Nonaktifkan Pengguna?',
-                                                    message: 'Pengguna tidak akan dapat masuk ke BMC QualityHub sampai akun diaktifkan kembali.',
-                                                    confirmText: 'Nonaktifkan'
-                                                })"
+                                            data-qualityhub-user-confirm="1"
+                                            data-confirm-title="Nonaktifkan Pengguna?"
+                                            data-confirm-message="Pengguna tidak akan dapat masuk ke BMC QualityHub sampai akun diaktifkan kembali."
+                                            data-confirm-button="Nonaktifkan"
                                             >
                                                 @csrf
                                                 @method('PATCH')
@@ -947,129 +927,445 @@
     </section>
 
     {{-- ========================================================= --}}
-    {{-- BMC QUALITYHUB CUSTOM CONFIRMATION MODAL --}}
-    {{-- Menggantikan native browser confirm() dengan modal biru-putih --}}
     {{-- ========================================================= --}}
 
-    <style nonce="{{ $cspNonce }}">
-        [x-cloak] { display: none !important; }
-    </style>
+    {{-- BMC QUALITYHUB CSP-SAFE USER CONFIRMATION --}}
+
+    {{-- ========================================================= --}}
+
+
 
     <div
-        x-data="{
-            open: false,
-            form: null,
-            title: 'Konfirmasi Tindakan',
-            message: 'Pastikan tindakan ini memang ingin dilanjutkan.',
-            confirmText: 'Lanjutkan'
-        }"
-        x-on:qualityhub-confirm.window="
-            form = $event.detail.form;
-            title = $event.detail.title || 'Konfirmasi Tindakan';
-            message = $event.detail.message || 'Pastikan tindakan ini memang ingin dilanjutkan.';
-            confirmText = $event.detail.confirmText || 'Lanjutkan';
-            open = true;
-        "
-        x-on:keydown.escape.window="
-            open = false;
-            form = null;
-        "
-        x-show="open"
-        x-cloak
-        class="fixed inset-0 z-[100] flex items-center justify-center p-4"
+
+        id="qualityhub-user-confirm"
+
+        class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4"
+
         role="dialog"
+
         aria-modal="true"
-        aria-labelledby="qualityhub-confirm-title"
+
+        aria-labelledby="qualityhub-user-confirm-title"
+
+        aria-hidden="true"
+
     >
+
         <div
-            x-show="open"
-            x-transition.opacity
+
+            data-qualityhub-user-confirm-backdrop
+
             class="absolute inset-0 bg-slate-950/45 backdrop-blur-[2px]"
-            x-on:click="
-                open = false;
-                form = null;
-            "
+
         ></div>
 
+
+
         <section
-            x-show="open"
-            x-transition:enter="transition ease-out duration-200"
-            x-transition:enter-start="opacity-0 scale-95 translate-y-2"
-            x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-            x-transition:leave="transition ease-in duration-150"
-            x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-            x-transition:leave-end="opacity-0 scale-95 translate-y-2"
+
             class="relative w-full max-w-md overflow-hidden rounded-3xl border border-blue-100 bg-white shadow-2xl shadow-blue-950/20"
+
         >
+
             <div class="h-1.5 w-full bg-blue-800"></div>
 
+
+
             <div class="p-6 sm:p-7">
+
                 <div class="flex items-start gap-4">
-                    <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 ring-1 ring-blue-100">
+
+
+
+                    <div
+
+                        class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 ring-1 ring-blue-100"
+
+                    >
+
                         <svg
+
                             xmlns="http://www.w3.org/2000/svg"
+
                             width="22"
+
                             height="22"
+
                             viewBox="0 0 24 24"
+
                             fill="none"
+
                             stroke="currentColor"
+
                             stroke-width="2"
+
                             stroke-linecap="round"
+
                             stroke-linejoin="round"
+
                             aria-hidden="true"
+
                         >
+
                             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
+
                             <path d="M9 12l2 2 4-4"/>
+
                         </svg>
+
                     </div>
+
+
 
                     <div class="min-w-0 flex-1">
-                        <p class="text-xs font-bold uppercase tracking-[0.18em] text-blue-600">
-                            BMC QualityHub
-                        </p>
-
-                        <h3
-                            id="qualityhub-confirm-title"
-                            class="mt-1.5 text-xl font-bold text-slate-900"
-                            x-text="title"
-                        ></h3>
 
                         <p
+
+                            class="text-xs font-bold uppercase tracking-[0.18em] text-blue-600"
+
+                        >
+
+                            BMC QualityHub
+
+                        </p>
+
+
+
+                        <h3
+
+                            id="qualityhub-user-confirm-title"
+
+                            class="mt-1.5 text-xl font-bold text-slate-900"
+
+                        >
+
+                            Konfirmasi Tindakan
+
+                        </h3>
+
+
+
+                        <p
+
+                            data-qualityhub-user-confirm-message
+
                             class="mt-2 text-sm leading-6 text-slate-600"
-                            x-text="message"
-                        ></p>
+
+                        >
+
+                            Pastikan tindakan ini memang ingin dilanjutkan.
+
+                        </p>
+
                     </div>
+
                 </div>
 
-                <div class="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+
+
+                <div
+
+                    class="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"
+
+                >
+
                     <button
+
                         type="button"
+
+                        data-qualityhub-user-confirm-cancel
+
                         class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:ring-offset-2"
-                        x-on:click="
-                            open = false;
-                            form = null;
-                        "
+
                     >
+
                         Batal
+
                     </button>
 
-                    <button
-                        type="button"
-                        class="inline-flex items-center justify-center rounded-xl bg-blue-800 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-900/15 transition hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                        x-text="confirmText"
-                        x-on:click="
-                            const target = form;
-                            open = false;
-                            form = null;
 
-                            if (target) {
-                                target.submit();
-                            }
-                        "
-                    ></button>
+
+                    <button
+
+                        type="button"
+
+                        data-qualityhub-user-confirm-submit
+
+                        class="inline-flex items-center justify-center rounded-xl bg-blue-800 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-900/15 transition hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+
+                    >
+
+                        Lanjutkan
+
+                    </button>
+
                 </div>
+
             </div>
+
         </section>
+
     </div>
 
+
+
+    <script nonce="{{ $cspNonce }}">
+
+        (() => {
+
+            const modal =
+
+                document.getElementById(
+
+                    'qualityhub-user-confirm'
+
+                );
+
+
+
+            if (!modal) {
+
+                return;
+
+            }
+
+
+
+            const title =
+
+                modal.querySelector(
+
+                    '#qualityhub-user-confirm-title'
+
+                );
+
+
+
+            const message =
+
+                modal.querySelector(
+
+                    '[data-qualityhub-user-confirm-message]'
+
+                );
+
+
+
+            const submitButton =
+
+                modal.querySelector(
+
+                    '[data-qualityhub-user-confirm-submit]'
+
+                );
+
+
+
+            const cancelButton =
+
+                modal.querySelector(
+
+                    '[data-qualityhub-user-confirm-cancel]'
+
+                );
+
+
+
+            const backdrop =
+
+                modal.querySelector(
+
+                    '[data-qualityhub-user-confirm-backdrop]'
+
+                );
+
+
+
+            let pendingForm = null;
+
+
+
+            const closeModal = () => {
+
+                modal.classList.add('hidden');
+
+                modal.setAttribute('aria-hidden', 'true');
+
+                pendingForm = null;
+
+            };
+
+
+
+            const openModal = (form) => {
+
+                pendingForm = form;
+
+
+
+                title.textContent =
+
+                    form.dataset.confirmTitle
+
+                    || 'Konfirmasi Tindakan';
+
+
+
+                message.textContent =
+
+                    form.dataset.confirmMessage
+
+                    || 'Pastikan tindakan ini memang ingin dilanjutkan.';
+
+
+
+                submitButton.textContent =
+
+                    form.dataset.confirmButton
+
+                    || 'Lanjutkan';
+
+
+
+                modal.classList.remove('hidden');
+
+                modal.setAttribute('aria-hidden', 'false');
+
+                submitButton.focus();
+
+            };
+
+
+
+            document
+
+                .querySelectorAll(
+
+                    'form[data-qualityhub-user-confirm="1"]'
+
+                )
+
+                .forEach((form) => {
+
+                    form.addEventListener(
+
+                        'submit',
+
+                        (event) => {
+
+                            if (
+
+                                form.dataset.confirmBypass
+
+                                === '1'
+
+                            ) {
+
+                                delete form.dataset.confirmBypass;
+
+                                return;
+
+                            }
+
+
+
+                            event.preventDefault();
+
+                            openModal(form);
+
+                        }
+
+                    );
+
+                });
+
+
+
+            cancelButton.addEventListener(
+
+                'click',
+
+                closeModal
+
+            );
+
+
+
+            backdrop.addEventListener(
+
+                'click',
+
+                closeModal
+
+            );
+
+
+
+            document.addEventListener(
+
+                'keydown',
+
+                (event) => {
+
+                    if (
+
+                        event.key === 'Escape'
+
+                        && ! modal.classList.contains('hidden')
+
+                    ) {
+
+                        closeModal();
+
+                    }
+
+                }
+
+            );
+
+
+
+            submitButton.addEventListener(
+
+                'click',
+
+                () => {
+
+                    const form = pendingForm;
+
+
+
+                    if (!form) {
+
+                        closeModal();
+
+                        return;
+
+                    }
+
+
+
+                    form.dataset.confirmBypass = '1';
+
+
+
+                    modal.classList.add('hidden');
+
+                    modal.setAttribute('aria-hidden', 'true');
+
+
+
+                    pendingForm = null;
+
+
+
+                    form.requestSubmit();
+
+                }
+
+            );
+
+        })();
+
+    </script>
 </x-app-layout>

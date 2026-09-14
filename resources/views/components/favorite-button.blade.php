@@ -16,6 +16,12 @@
         @csrf
         @method('DELETE')
 
+        <input
+            type="hidden"
+            name="return_to"
+            value="{{ request()->getRequestUri() }}"
+        >
+
         <button
             type="submit"
             title="Hapus dari Favorit"
@@ -65,6 +71,12 @@
         ) }}"
     >
         @csrf
+
+        <input
+            type="hidden"
+            name="return_to"
+            value="{{ request()->getRequestUri() }}"
+        >
 
         <button
             type="submit"

@@ -282,9 +282,11 @@ class FavoriteController extends Controller
         }
 
 
-        return back()->with(
-            'success',
-            'Dokumen berhasil ditambahkan ke Favorit.'
+        return $this->redirectAfterFavoriteAction(
+            request: $request,
+            document: $document,
+            message:
+                'Dokumen berhasil ditambahkan ke Favorit.'
         );
     }
 
@@ -327,10 +329,81 @@ class FavoriteController extends Controller
         }
 
 
-        return back()->with(
-            'success',
-            'Dokumen berhasil dihapus dari Favorit.'
+        return $this->redirectAfterFavoriteAction(
+            request: $request,
+            document: $document,
+            message:
+                'Dokumen berhasil dihapus dari Favorit.'
         );
+    }
+
+
+    /**
+     * Redirect kembali ke halaman yang benar setelah aksi Favorite.
+     *
+     * return_to hanya menerima path lokal:
+     *
+     * /documents/14
+     * /documents?page=2
+     * /favorites?search=axle
+     *
+     * URL eksternal / protocol-relative seperti:
+     *
+     * https://example.com
+     * //example.com
+     *
+     * akan ditolak.
+     */
+    private function redirectAfterFavoriteAction(
+        Request $request,
+        Document $document,
+        string $message
+    ): RedirectResponse {
+
+        $returnTo = trim(
+            (string) $request->input(
+                'return_to',
+                ''
+            )
+        );
+
+
+        $isSafeLocalPath =
+            $returnTo !== ''
+            && str_starts_with(
+                $returnTo,
+                '/'
+            )
+            && ! str_starts_with(
+                $returnTo,
+                '//'
+            )
+            && ! str_contains(
+                $returnTo,
+                "\r"
+            )
+            && ! str_contains(
+                $returnTo,
+                "\n"
+            );
+
+
+        if (! $isSafeLocalPath) {
+
+            $returnTo = route(
+                'documents.show',
+                $document,
+                false
+            );
+        }
+
+
+        return redirect()
+            ->to($returnTo)
+            ->with(
+                'success',
+                $message
+            );
     }
 
 

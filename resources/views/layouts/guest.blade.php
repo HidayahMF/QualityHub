@@ -18,6 +18,12 @@
         {{ config('app.name', 'BMC QualityHub') }}
     </title>
 
+    <link
+        rel="icon"
+        type="image/png"
+        href="{{ asset('images/bmc-logo.png') }}"
+    >
+
     @vite([
         'resources/css/app.css',
         'resources/js/app.js'

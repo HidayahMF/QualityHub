@@ -61,9 +61,7 @@ class UserManagementController extends Controller
                 'nullable',
                 Rule::in([
                     'super_admin',
-                    'admin',
                     'user',
-                    'viewer',
                 ]),
             ],
         ]);

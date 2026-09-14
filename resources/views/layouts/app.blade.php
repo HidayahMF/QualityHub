@@ -52,6 +52,12 @@
         @endif
     </title>
 
+    <link
+        rel="icon"
+        type="image/png"
+        href="{{ asset('images/bmc-logo.png') }}"
+    >
+
 
     @vite([
         'resources/css/app.css',

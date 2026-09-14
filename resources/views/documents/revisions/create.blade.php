@@ -232,11 +232,8 @@
                                font-semibold
                                text-slate-700"
                     >
-                        File Revisi
+                        File Revisi (Opsional)
 
-                        <span class="text-red-500">
-                            *
-                        </span>
                     </label>
 
 
@@ -247,7 +244,6 @@
 
                         name="file"
 
-                        required
 
                         accept=".pdf,.xls,.xlsx,.doc,.docx,.csv,.txt"
 
@@ -272,11 +268,104 @@
                                text-xs
                                text-slate-400"
                     >
+                        Opsional. Kosongkan jika hanya mengubah nama file atau tanggal dokumen.
                         PDF, Excel, Word, CSV, atau TXT · Maksimal 20 MB
                     </p>
 
                 </div>
 
+
+
+                {{-- REVISION METADATA --}}
+
+                <div
+                    class="grid
+                           md:grid-cols-2
+                           gap-5"
+                >
+
+                    <div>
+
+                        <label
+                            for="revision_file_name"
+                            class="block
+                                   mb-2
+                                   text-sm
+                                   font-semibold
+                                   text-slate-700"
+                        >
+                            Nama File Revisi
+                            <span class="text-red-500">*</span>
+                        </label>
+
+                        <input
+                            id="revision_file_name"
+                            type="text"
+                            name="revision_file_name"
+                            required
+                            maxlength="180"
+                            value="{{ old(
+                                'revision_file_name',
+                                pathinfo(
+                                    $document->file_name,
+                                    PATHINFO_FILENAME
+                                )
+                            ) }}"
+                            placeholder="Contoh: laporan-hasil-produksi-axle-assy-rev-1"
+                            class="w-full
+                                   rounded-xl
+                                   border-slate-200
+                                   bg-slate-50
+                                   px-4
+                                   py-3"
+                        >
+
+                        <p class="mt-2 text-xs text-slate-400">
+                            Isi nama tanpa ekstensi. Ekstensi mengikuti file revisi.
+                        </p>
+
+                    </div>
+
+                    <div>
+
+                        <label
+                            for="document_date"
+                            class="block
+                                   mb-2
+                                   text-sm
+                                   font-semibold
+                                   text-slate-700"
+                        >
+                            Tanggal Revisi Dokumen
+                            <span class="text-red-500">*</span>
+                        </label>
+
+                        <input
+                            id="document_date"
+                            type="date"
+                            name="document_date"
+                            required
+                            value="{{ old(
+                                'document_date',
+                                $document->document_date
+                                    ?->format('Y-m-d')
+                                ?? now()->format('Y-m-d')
+                            ) }}"
+                            class="w-full
+                                   rounded-xl
+                                   border-slate-200
+                                   bg-slate-50
+                                   px-4
+                                   py-3"
+                        >
+
+                        <p class="mt-2 text-xs text-slate-400">
+                            Tanggal ini menjadi tanggal dokumen revisi terbaru.
+                        </p>
+
+                    </div>
+
+                </div>
 
 
                 {{-- REVISION NOTE --}}
