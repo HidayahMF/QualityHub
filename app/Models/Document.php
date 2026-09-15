@@ -95,6 +95,16 @@ class Document extends Model
         return $this->hasOne(DocumentBrakeProduction::class);
     }
 
+    public function retooling(): HasOne
+    {
+        return $this->hasOne(DocumentRetooling::class);
+    }
+
+    public function documentRetooling(): HasOne
+    {
+        return $this->retooling();
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);

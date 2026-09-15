@@ -1739,6 +1739,43 @@
                             ['label' => 'Jam', 'value' => $productionTime($scanMetadata?->scan_time)],
                         ];
                     }
+                } elseif (
+                    $document->retooling !== null
+                    || $scanType === 'Retooling'
+                ) {
+                    $retooling = $document->retooling;
+                    $productionMetadataTitle = 'Informasi Retooling';
+                    $productionMetadataSubtitle = 'Data perubahan type saat dokumen ini dibuat.';
+
+                    if ($retooling !== null) {
+                        $lineName = $productionValue($retooling->productionLine?->name);
+                        $lineCode = $productionValue($retooling->productionLine?->code);
+                        $fromName = $productionValue($retooling->fromCasting?->code ?? $retooling->fromCasting?->name);
+                        $toName = $productionValue($retooling->toCasting?->code ?? $retooling->toCasting?->name);
+                        $fromCycle = $productionValue($retooling->from_cycle_time);
+                        $toCycle = $productionValue($retooling->to_cycle_time);
+                        $shift = $productionValue($retooling->shift);
+                        $productionMetadataItems = [
+                            ['label' => 'Shift', 'value' => $shift === null ? null : 'Shift '.$shift],
+                            ['label' => 'Line', 'value' => $lineName ?? $lineCode, 'detail' => $lineName === null ? null : $lineCode],
+                            ['label' => 'Dari Type', 'value' => $fromName],
+                            ['label' => 'Cycle Time Dari', 'value' => $fromCycle === null ? null : number_format((float) $fromCycle, 2, '.', '')],
+                            ['label' => 'Ke Type', 'value' => $toName],
+                            ['label' => 'Cycle Time Ke', 'value' => $toCycle === null ? null : number_format((float) $toCycle, 2, '.', '')],
+                            ['label' => 'Jam', 'value' => $productionTime($scanMetadata?->scan_time)],
+                        ];
+                    } else {
+                        $shift = $productionValue($scanMetadata?->shift);
+                        $productionMetadataItems = [
+                            ['label' => 'Shift', 'value' => $shift === null ? null : 'Shift '.$shift],
+                            ['label' => 'Line', 'value' => $productionValue($scanMetadata?->line)],
+                            ['label' => 'Dari Type', 'value' => $productionValue($scanMetadata?->from_type)],
+                            ['label' => 'Cycle Time Dari', 'value' => null],
+                            ['label' => 'Ke Type', 'value' => $productionValue($scanMetadata?->to_type)],
+                            ['label' => 'Cycle Time Ke', 'value' => null],
+                            ['label' => 'Jam', 'value' => $productionTime($scanMetadata?->scan_time)],
+                        ];
+                    }
                 }
             @endphp
 

@@ -774,7 +774,7 @@
                         </div>
 
                         {{-- LINE MANUAL: tetap dipakai Dokumen QC Lainnya --}}
-                        <div id="manualLineField">
+                        <div id="manualLineField" class="hidden">
 
                             <label
                                 for="line"
@@ -865,7 +865,7 @@
                     {{-- FROM TYPE + TO TYPE MANUAL: untuk Dokumen QC Lainnya --}}
                     <div
                         id="retoolingFields"
-                        class="grid gap-4 sm:grid-cols-2"
+                        class="hidden grid gap-4 sm:grid-cols-2"
                     >
 
                         <div>
@@ -1532,7 +1532,7 @@
                 customScanTypeWrapper?.classList.toggle('hidden', !isOther);
                 axleAssyFields?.classList.toggle('hidden', !isAxle);
                 brakeAssyFields?.classList.toggle('hidden', !isBrake);
-                retoolingFields?.classList.toggle('hidden', isProduction);
+                retoolingFields?.classList.toggle('hidden', isRetooling || isProduction);
 
                 if (customScanType) {
                     customScanType.required = isOther;
@@ -2731,6 +2731,9 @@
 
             const shift =
                 document.getElementById('shift');
+
+            const scanTime =
+                document.getElementById('scan_time');
 
             const manualLineField =
                 document.getElementById('manualLineField');

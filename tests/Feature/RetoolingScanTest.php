@@ -79,6 +79,24 @@ class RetoolingScanTest extends TestCase
         parent::tearDown();
     }
 
+    public function test_scan_view_uses_canonical_retooling_master_fields(): void
+    {
+        $html = $this->actingAs($this->admin)
+            ->get(route('documents.scan.create'))
+            ->assertOk()
+            ->baseResponse
+            ->getContent();
+
+        $this->assertStringContainsString(
+            "const scanTime = document.getElementById('scan_time');",
+            $html
+        );
+        $this->assertStringContainsString('id="retoolingLineField"', $html);
+        $this->assertStringContainsString('id="retoolingFromSearch"', $html);
+        $this->assertStringContainsString('id="retoolingToSearch"', $html);
+        $this->assertStringContainsString('id="retoolingMasterTypeFields"', $html);
+    }
+
     public function test_retooling_post_saves_master_snapshot_and_ignores_browser_supplied_values(): void
     {
         $master = $this->createMaster();
@@ -205,6 +223,31 @@ class RetoolingScanTest extends TestCase
 
         $this->assertDatabaseCount('documents', 0);
         $this->assertSame([], Storage::disk('bmc_documents')->allFiles());
+    }
+
+    public function test_retooling_document_detail_shows_historical_snapshot_card(): void
+    {
+        $master = $this->createMaster();
+
+        $this->actingAs($this->admin)
+            ->post(route('documents.scan.store'), array_merge($this->retoolingPayload($master), [
+                'scan_time' => '08:30',
+            ]))
+            ->assertRedirect(route('documents.scan.create'))
+            ->assertSessionHasNoErrors();
+
+        $document = Document::query()->sole();
+
+        $this->get(route('documents.show', $document))
+            ->assertOk()
+            ->assertSee('Informasi Retooling')
+            ->assertSee('Shift 1')
+            ->assertSee('LINE_2')
+            ->assertSee('product_A')
+            ->assertSee('product_E')
+            ->assertSee('25.00')
+            ->assertSee('22.00')
+            ->assertSee('08:30');
     }
 
     public function test_master_endpoints_show_only_active_data_with_line_specific_cycle_times(): void

@@ -1911,6 +1911,9 @@ class DocumentController extends Controller
             'scanMetadata',
             'axleProduction',
             'brakeProduction',
+            'retooling.productionLine',
+            'retooling.fromCasting',
+            'retooling.toCasting',
         ]);
 
         /*
