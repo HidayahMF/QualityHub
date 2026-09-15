@@ -104,7 +104,7 @@ class RetoolingScanTest extends TestCase
         $version = DocumentVersion::query()->sole();
         $activity = ActivityLog::query()->sole();
 
-        $this->assertSame('INSTRUKSI PERUBAHAN TYPE ( RETOOLING )', $document->title);
+        $this->assertSame('INSTRUKSI PERUBAHAN TYPE (RETOOLING)', $document->title);
         $this->assertSame($this->admin->id, $document->uploaded_by);
         $this->assertSame('png', $document->file_extension);
         $this->assertTrue(Storage::disk('bmc_documents')->exists($document->file_path));

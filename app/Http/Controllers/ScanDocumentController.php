@@ -328,7 +328,7 @@ class ScanDocumentController extends Controller
             : null;
 
         if ($isRetooling) {
-            $validated['title'] = 'INSTRUKSI PERUBAHAN TYPE ( RETOOLING )';
+            $validated['title'] = 'INSTRUKSI PERUBAHAN TYPE (RETOOLING)';
         } elseif ($isAxle) {
             $validated['title'] = 'LAPORAN HASIL PRODUKSI - AXLE ASSY - '
                 . $validated['axle_assy_type']

@@ -768,13 +768,15 @@
                                     id="retoolingLineSearch"
                                     type="search"
                                     autocomplete="off"
-                                    placeholder="Cari Line..."
+                                    placeholder="Cari atau pilih Line..."
                                     class="block w-full rounded-xl border-slate-300 bg-white pr-10 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                     role="combobox"
                                     aria-autocomplete="list"
                                     aria-expanded="false"
                                     aria-controls="retoolingLineOptions"
                                 >
+
+                                <span aria-hidden="true" class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400">⌄</span>
 
                                 <input
                                     type="hidden"
@@ -870,12 +872,14 @@
                                     autocomplete="off"
                                     placeholder="Pilih Line terlebih dahulu"
                                     disabled
-                                    class="block w-full rounded-xl border-slate-300 bg-white text-sm shadow-sm disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 focus:border-blue-500 focus:ring-blue-500"
+                                    class="block w-full rounded-xl border-slate-300 bg-white pr-10 text-sm shadow-sm disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 focus:border-blue-500 focus:ring-blue-500"
                                     role="combobox"
                                     aria-autocomplete="list"
                                     aria-expanded="false"
                                     aria-controls="retoolingFromOptions"
                                 >
+
+                                <span aria-hidden="true" class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400">⌄</span>
 
                                 <input
                                     type="hidden"
@@ -924,12 +928,14 @@
                                     autocomplete="off"
                                     placeholder="Pilih Line terlebih dahulu"
                                     disabled
-                                    class="block w-full rounded-xl border-slate-300 bg-white text-sm shadow-sm disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 focus:border-blue-500 focus:ring-blue-500"
+                                    class="block w-full rounded-xl border-slate-300 bg-white pr-10 text-sm shadow-sm disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 focus:border-blue-500 focus:ring-blue-500"
                                     role="combobox"
                                     aria-autocomplete="list"
                                     aria-expanded="false"
                                     aria-controls="retoolingToOptions"
                                 >
+
+                                <span aria-hidden="true" class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400">⌄</span>
 
                                 <input
                                     type="hidden"
@@ -1404,6 +1410,12 @@
             function refreshProductionPreview() {
                 const type = scanType?.value || '';
                 const date = scanDate?.value || '';
+
+                if (type === 'Retooling') {
+                    const autoTitle = 'INSTRUKSI PERUBAHAN TYPE (RETOOLING)';
+                    setAutoValue(titleInput, autoTitle, 'title');
+                    setAutoValue(fileNameInput, slugify(autoTitle), 'file');
+                }
 
                 if (type === AXLE_SCAN) {
                     const axleType = selectedRadioValue('axle_assy_type');
@@ -2738,7 +2750,8 @@
 
                 return String(value || '')
                     .trim()
-                    .toLowerCase();
+                    .toLowerCase()
+                    .replace(/[\s_]+/g, '');
             }
 
             function isRetooling() {
@@ -2769,12 +2782,26 @@
                     'aria-expanded',
                     'false'
                 );
+
+                input?.removeAttribute(
+                    'aria-activedescendant'
+                );
             }
 
             function openDropdown(
                 element,
                 input
             ) {
+
+                [
+                    [lineOptions, lineSearch],
+                    [fromOptions, fromSearch],
+                    [toOptions, toSearch],
+                ].forEach(([otherElement, otherInput]) => {
+                    if (otherElement !== element) {
+                        closeDropdown(otherElement, otherInput);
+                    }
+                });
 
                 element?.classList.remove(
                     'hidden'
@@ -2801,13 +2828,27 @@
                 element.textContent =
                     text;
 
+                element.setAttribute(
+                    'role',
+                    'status'
+                );
+
+                element.setAttribute(
+                    'aria-live',
+                    'polite'
+                );
+
                 return element;
             }
 
             function createOption(
                 primary,
                 secondary,
-                callback
+                callback,
+                dropdown,
+                input,
+                index,
+                selected
             ) {
 
                 const button =
@@ -2818,6 +2859,11 @@
                 button.type =
                     'button';
 
+                button.id =
+                    `${dropdown.id}-option-${index}`;
+
+                button.tabIndex = -1;
+
                 button.className =
                     'flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-blue-50 hover:text-blue-800 focus:bg-blue-50 focus:text-blue-800 focus:outline-none';
 
@@ -2825,6 +2871,18 @@
                     'role',
                     'option'
                 );
+
+                button.setAttribute(
+                    'aria-selected',
+                    String(selected)
+                );
+
+                if (selected) {
+                    button.classList.add(
+                        'bg-blue-50',
+                        'text-blue-800'
+                    );
+                }
 
                 const main =
                     document.createElement(
@@ -2858,7 +2916,123 @@
                     callback
                 );
 
+                button.addEventListener(
+                    'mousedown',
+                    event => event.preventDefault()
+                );
+
+                button.addEventListener(
+                    'mouseenter',
+                    () => setActiveOption(
+                        dropdown,
+                        input,
+                        index
+                    )
+                );
+
                 return button;
+            }
+
+            function setActiveOption(
+                dropdown,
+                input,
+                index
+            ) {
+                const options =
+                    Array.from(
+                        dropdown.querySelectorAll('[role="option"]')
+                    );
+
+                options.forEach((option, optionIndex) => {
+                    option.classList.toggle(
+                        'bg-blue-100',
+                        optionIndex === index
+                    );
+                    option.classList.toggle(
+                        'text-blue-900',
+                        optionIndex === index
+                    );
+                });
+
+                const active = options[index];
+                if (active) {
+                    input.setAttribute(
+                        'aria-activedescendant',
+                        active.id
+                    );
+                    active.scrollIntoView({ block: 'nearest' });
+                } else {
+                    input.removeAttribute(
+                        'aria-activedescendant'
+                    );
+                }
+            }
+
+            function attachKeyboard(
+                input,
+                dropdown,
+                renderAll
+            ) {
+                input.addEventListener('keydown', event => {
+                    if (event.key === 'Escape') {
+                        if (!dropdown.classList.contains('hidden')) {
+                            event.preventDefault();
+                            closeDropdown(dropdown, input);
+                        }
+                        return;
+                    }
+
+                    if (!['ArrowDown', 'ArrowUp', 'Enter'].includes(event.key)) {
+                        return;
+                    }
+
+                    const isOpen = !dropdown.classList.contains('hidden');
+                    if (event.key === 'Enter' && !isOpen) {
+                        return;
+                    }
+
+                    event.preventDefault();
+
+                    if (!isOpen) {
+                        renderAll();
+                        openDropdown(dropdown, input);
+                    }
+
+                    const options =
+                        Array.from(
+                            dropdown.querySelectorAll('[role="option"]')
+                        );
+                    if (options.length === 0) {
+                        return;
+                    }
+
+                    const current = options.findIndex(option =>
+                        option.id === input.getAttribute('aria-activedescendant')
+                    );
+
+                    if (event.key === 'Enter') {
+                        options[current]?.click();
+                        return;
+                    }
+
+                    const next = current < 0
+                        ? (event.key === 'ArrowDown' ? 0 : options.length - 1)
+                        : (current + (event.key === 'ArrowDown' ? 1 : -1)
+                            + options.length) % options.length;
+
+                    setActiveOption(dropdown, input, next);
+                });
+
+                input.addEventListener('click', () => {
+                    if (dropdown.classList.contains('hidden')) {
+                        renderAll();
+                        openDropdown(dropdown, input);
+                    }
+                });
+
+                input.addEventListener('blur', () => {
+                    closeDropdown(dropdown, input);
+                });
             }
 
             function filterItems(
@@ -2892,28 +3066,31 @@
                 });
             }
 
-            function renderLines() {
+            function renderLines(search = lineSearch.value) {
 
                 lineOptions.replaceChildren();
+                lineSearch.removeAttribute('aria-activedescendant');
 
                 const filtered =
                     filterItems(
                         lines,
-                        lineSearch.value
+                        search
                     );
 
                 if (filtered.length === 0) {
 
                     lineOptions.append(
                         emptyMessage(
-                            'Line tidak ditemukan.'
+                            lines.length === 0
+                                ? 'Tidak ada Line aktif.'
+                                : 'Line tidak ditemukan.'
                         )
                     );
 
                     return;
                 }
 
-                filtered.forEach(line => {
+                filtered.forEach((line, index) => {
 
                     lineOptions.append(
                         createOption(
@@ -2924,7 +3101,11 @@
                                     line,
                                     false
                                 );
-                            }
+                            },
+                            lineOptions,
+                            lineSearch,
+                            index,
+                            String(line.id) === lineId.value
                         )
                     );
                 });
@@ -2933,29 +3114,33 @@
             function renderProducts(
                 dropdown,
                 searchInput,
-                selectCallback
+                selectCallback,
+                search = searchInput.value
             ) {
 
                 dropdown.replaceChildren();
+                searchInput.removeAttribute('aria-activedescendant');
 
                 const filtered =
                     filterItems(
                         products,
-                        searchInput.value
+                        search
                     );
 
                 if (filtered.length === 0) {
 
                     dropdown.append(
                         emptyMessage(
-                            'Type tidak ditemukan pada Line ini.'
+                            products.length === 0
+                                ? 'Tidak ada Type untuk Line ini.'
+                                : 'Type tidak ditemukan.'
                         )
                     );
 
                     return;
                 }
 
-                filtered.forEach(product => {
+                filtered.forEach((product, index) => {
 
                     dropdown.append(
                         createOption(
@@ -2965,7 +3150,13 @@
                                 selectCallback(
                                     product
                                 );
-                            }
+                            },
+                            dropdown,
+                            searchInput,
+                            index,
+                            String(product.id) === (searchInput === fromSearch
+                                ? fromId.value
+                                : toId.value)
                         )
                     );
                 });
@@ -3116,10 +3307,10 @@
                     toSearch.disabled = false;
 
                     fromSearch.placeholder =
-                        'Cari Dari Type...';
+                        'Cari atau pilih Dari Type...';
 
                     toSearch.placeholder =
-                        'Cari Ke Type...';
+                        'Cari atau pilih Ke Type...';
 
                     if (restoreOld) {
 
@@ -3141,12 +3332,16 @@
                             selectFrom(
                                 oldFrom
                             );
+                        } else {
+                            resetFrom();
                         }
 
                         if (oldTo) {
                             selectTo(
                                 oldTo
                             );
+                        } else {
+                            resetTo();
                         }
                     }
 
@@ -3267,7 +3462,7 @@
                     lineSearch.disabled = false;
 
                     lineSearch.placeholder =
-                        'Cari Line...';
+                        'Cari atau pilih Line...';
 
                     if (oldLineId !== '') {
 
@@ -3284,7 +3479,16 @@
                                 oldLine,
                                 true
                             );
+                        } else {
+                            lineId.value = '';
+                            resetFrom();
+                            resetTo();
+                            await loadProducts(null);
                         }
+                    } else {
+                        resetFrom();
+                        resetTo();
+                        await loadProducts(null);
                     }
 
                 } catch (error) {
@@ -3343,6 +3547,11 @@
                 lineId.required =
                     retooling;
 
+                lineSearch.setAttribute(
+                    'aria-required',
+                    String(retooling)
+                );
+
                 /*
                  * Input Type manual tetap untuk Dokumen QC Lainnya.
                  * Production mengikuti perilaku lama: disembunyikan.
@@ -3382,6 +3591,16 @@
                 toId.required =
                     retooling;
 
+                fromSearch.setAttribute(
+                    'aria-required',
+                    String(retooling)
+                );
+
+                toSearch.setAttribute(
+                    'aria-required',
+                    String(retooling)
+                );
+
                 if (retooling) {
 
                     loadLines();
@@ -3415,7 +3634,11 @@
                 'focus',
                 () => {
 
-                    renderLines();
+                    renderLines('');
+
+                    if (lineId.value) {
+                        lineSearch.select();
+                    }
 
                     openDropdown(
                         lineOptions,
@@ -3462,8 +3685,13 @@
                     renderProducts(
                         fromOptions,
                         fromSearch,
-                        selectFrom
+                        selectFrom,
+                        ''
                     );
+
+                    if (fromId.value) {
+                        fromSearch.select();
+                    }
 
                     openDropdown(
                         fromOptions,
@@ -3510,8 +3738,13 @@
                     renderProducts(
                         toOptions,
                         toSearch,
-                        selectTo
+                        selectTo,
+                        ''
                     );
+
+                    if (toId.value) {
+                        toSearch.select();
+                    }
 
                     openDropdown(
                         toOptions,
@@ -3549,6 +3782,24 @@
                         toSearch
                     );
                 }
+            );
+
+            attachKeyboard(
+                lineSearch,
+                lineOptions,
+                () => renderLines('')
+            );
+
+            attachKeyboard(
+                fromSearch,
+                fromOptions,
+                () => renderProducts(fromOptions, fromSearch, selectFrom, '')
+            );
+
+            attachKeyboard(
+                toSearch,
+                toOptions,
+                () => renderProducts(toOptions, toSearch, selectTo, '')
             );
 
             document.addEventListener(
