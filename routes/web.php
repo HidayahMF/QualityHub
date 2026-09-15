@@ -166,11 +166,11 @@ Route::middleware([
 
     /*
     |--------------------------------------------------------------------------
-    | Retooling Master Data
+    | Scan Master Data
     |--------------------------------------------------------------------------
     |
-    | Endpoint JSON untuk dropdown Line dan Type / Casting pada workflow
-    | Retooling. Diletakkan sebelum /documents/{document}.
+    | Endpoint JSON untuk master produksi pada workflow Retooling, Axle Assy,
+    | dan Brake Assy. Diletakkan sebelum /documents/{document}.
     |
     */
 
@@ -189,6 +189,30 @@ Route::middleware([
         ->whereNumber('productionLine')
         ->middleware('throttle:120,1')
         ->name('documents.scan.master.products');
+
+
+    Route::get(
+        '/documents/scan/master/axle/types',
+        [RetoolingMasterDataController::class, 'axleTypes']
+    )
+        ->middleware('throttle:120,1')
+        ->name('documents.scan.master.axle-types');
+
+
+    Route::get(
+        '/documents/scan/master/axle/positions',
+        [RetoolingMasterDataController::class, 'axlePositions']
+    )
+        ->middleware('throttle:120,1')
+        ->name('documents.scan.master.axle-positions');
+
+
+    Route::get(
+        '/documents/scan/master/brake/part-numbers',
+        [RetoolingMasterDataController::class, 'brakePartNumbers']
+    )
+        ->middleware('throttle:120,1')
+        ->name('documents.scan.master.brake-part-numbers');
 
     Route::get(
         '/documents/{document}/edit',

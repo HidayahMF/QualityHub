@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AxlePosition;
+use App\Models\AxleType;
+use App\Models\BrakePartNumber;
 use App\Models\LineProduct;
 use App\Models\ProductionLine;
 use Illuminate\Database\Eloquent\Builder;
@@ -254,6 +257,178 @@ class RetoolingMasterDataController extends Controller
 
             'results' =>
                 $results,
+        ]);
+    }
+
+
+    /**
+     * Daftar Type Axle aktif untuk workflow Axle Assy.
+     */
+    public function axleTypes(): JsonResponse
+    {
+        $this->ensureAdmin();
+
+
+        $results =
+            AxleType::query()
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('code')
+                ->get([
+                    'id',
+                    'code',
+                    'name',
+                ])
+                ->map(
+                    fn (AxleType $axleType): array => [
+                        'id' =>
+                            $axleType->id,
+
+                        'text' =>
+                            $axleType->name,
+
+                        'code' =>
+                            $axleType->code,
+
+                        'name' =>
+                            $axleType->name,
+                    ]
+                )
+                ->values();
+
+
+        return response()->json([
+            'results' => $results,
+        ]);
+    }
+
+
+    /**
+     * Daftar Posisi Axle aktif untuk workflow Axle Assy.
+     */
+    public function axlePositions(): JsonResponse
+    {
+        $this->ensureAdmin();
+
+
+        $results =
+            AxlePosition::query()
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('code')
+                ->get([
+                    'id',
+                    'code',
+                    'name',
+                ])
+                ->map(
+                    fn (AxlePosition $axlePosition): array => [
+                        'id' =>
+                            $axlePosition->id,
+
+                        'text' =>
+                            $axlePosition->name,
+
+                        'code' =>
+                            $axlePosition->code,
+
+                        'name' =>
+                            $axlePosition->name,
+                    ]
+                )
+                ->values();
+
+
+        return response()->json([
+            'results' => $results,
+        ]);
+    }
+
+
+    /**
+     * Daftar Part Number Brake aktif untuk workflow Brake Assy.
+     */
+    public function brakePartNumbers(
+        Request $request
+    ): JsonResponse {
+        $this->ensureAdmin();
+
+
+        $search = $this->normalizeSearch(
+            $request->query('q')
+        );
+
+
+        $query = BrakePartNumber::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('prefix')
+            ->orderBy('variant');
+
+
+        if ($search !== null) {
+
+            $escapedSearch =
+                $this->escapeLike(
+                    $search
+                );
+
+            $query->where(
+                function (Builder $builder) use ($escapedSearch) {
+
+                    $builder
+                        ->where(
+                            'prefix',
+                            'like',
+                            '%' . $escapedSearch . '%'
+                        )
+                        ->orWhere(
+                            'variant',
+                            'like',
+                            '%' . $escapedSearch . '%'
+                        )
+                        ->orWhere(
+                            'display_name',
+                            'like',
+                            '%' . $escapedSearch . '%'
+                        );
+                }
+            );
+        }
+
+
+        $results =
+            $query
+                ->limit(100)
+                ->get([
+                    'id',
+                    'prefix',
+                    'variant',
+                    'display_name',
+                ])
+                ->map(
+                    fn (BrakePartNumber $partNumber): array => [
+                        'id' =>
+                            $partNumber->id,
+
+                        'text' =>
+                            $partNumber->display_name,
+
+                        'prefix' =>
+                            $partNumber->prefix,
+
+                        'variant' =>
+                            $partNumber->variant,
+
+                        'display_name' =>
+                            $partNumber->display_name,
+                    ]
+                )
+                ->values();
+
+
+        return response()->json([
+            'results' => $results,
         ]);
     }
 

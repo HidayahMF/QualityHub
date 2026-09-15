@@ -1652,6 +1652,129 @@
 
 
 
+            @php
+                $scanMetadata = $document->scanMetadata;
+                $axleProduction = $document->axleProduction;
+                $brakeProduction = $document->brakeProduction;
+                $scanType = $scanMetadata?->scan_type;
+                $productionMetadataTitle = null;
+                $productionMetadataSubtitle = null;
+                $productionMetadataItems = [];
+
+                $productionValue = static function ($value): ?string {
+                    if ($value === null || trim((string) $value) === '') {
+                        return null;
+                    }
+
+                    return (string) $value;
+                };
+
+                $productionTime = static function ($value) use ($productionValue): ?string {
+                    $value = $productionValue($value);
+
+                    return $value === null ? null : substr($value, 0, 5);
+                };
+
+                if (
+                    $axleProduction !== null
+                    || $scanType === 'Laporan Hasil Produksi - Axle Assy'
+                ) {
+                    $productionMetadataTitle = 'Informasi Produksi Axle Assy';
+
+                    if ($axleProduction !== null) {
+                        $lineName = $productionValue($axleProduction->snapshot_line_name);
+                        $lineCode = $productionValue($axleProduction->snapshot_line_code);
+                        $shift = $productionValue($axleProduction->shift);
+                        $productionMetadataSubtitle = 'Data produksi saat dokumen ini dibuat.';
+                        $productionMetadataItems = [
+                            ['label' => 'Type Axle', 'value' => $productionValue($axleProduction->snapshot_axle_type_name), 'detail' => $productionValue($axleProduction->snapshot_axle_type_code)],
+                            ['label' => 'Posisi', 'value' => $productionValue($axleProduction->snapshot_position_name), 'detail' => $productionValue($axleProduction->snapshot_position_code)],
+                            ['label' => 'Shift', 'value' => $shift === null ? null : 'Shift '.$shift],
+                            ['label' => 'Line', 'value' => $lineName ?? $lineCode, 'detail' => $lineName === null ? null : $lineCode],
+                            ['label' => 'Jam', 'value' => $productionTime($axleProduction->production_time)],
+                        ];
+                    } else {
+                        $shift = $productionValue($scanMetadata?->shift);
+                        $productionMetadataSubtitle = 'Metadata produksi dari dokumen lama.';
+                        $productionMetadataItems = [
+                            ['label' => 'Type Axle', 'value' => $productionValue($scanMetadata?->axle_assy_type)],
+                            ['label' => 'Posisi', 'value' => $productionValue($scanMetadata?->axle_side)],
+                            ['label' => 'Shift', 'value' => $shift === null ? null : 'Shift '.$shift],
+                            ['label' => 'Line', 'value' => $productionValue($scanMetadata?->line)],
+                            ['label' => 'Jam', 'value' => $productionTime($scanMetadata?->scan_time)],
+                        ];
+                    }
+                } elseif (
+                    $brakeProduction !== null
+                    || $scanType === 'Laporan Hasil Produksi - Brake Assy'
+                ) {
+                    $productionMetadataTitle = 'Informasi Produksi Brake Assy';
+
+                    if ($brakeProduction !== null) {
+                        $lineName = $productionValue($brakeProduction->snapshot_line_name);
+                        $lineCode = $productionValue($brakeProduction->snapshot_line_code);
+                        $shift = $productionValue($brakeProduction->shift);
+                        $productionMetadataSubtitle = 'Data produksi saat dokumen ini dibuat.';
+                        $productionMetadataItems = [
+                            ['label' => 'Prefix Part No', 'value' => $productionValue($brakeProduction->snapshot_prefix)],
+                            ['label' => 'Variant Part No', 'value' => $productionValue($brakeProduction->snapshot_variant)],
+                            ['label' => 'Part Number', 'value' => $productionValue($brakeProduction->snapshot_display_name)],
+                            ['label' => 'Shift', 'value' => $shift === null ? null : 'Shift '.$shift],
+                            ['label' => 'Line', 'value' => $lineName ?? $lineCode, 'detail' => $lineName === null ? null : $lineCode],
+                            ['label' => 'Jam', 'value' => $productionTime($brakeProduction->production_time)],
+                        ];
+                    } else {
+                        $legacyPrefix = $productionValue($scanMetadata?->brake_part_prefix);
+                        $legacyVariant = $productionValue($scanMetadata?->brake_part_variant);
+                        $legacyPartNumber = $productionValue($scanMetadata?->brake_part_number)
+                            ?? $productionValue(implode(' ', array_filter([$legacyPrefix, $legacyVariant])));
+                        $shift = $productionValue($scanMetadata?->shift);
+                        $productionMetadataSubtitle = 'Metadata produksi dari dokumen lama.';
+                        $productionMetadataItems = [
+                            ['label' => 'Prefix Part No', 'value' => $legacyPrefix],
+                            ['label' => 'Variant Part No', 'value' => $legacyVariant],
+                            ['label' => 'Part Number', 'value' => $legacyPartNumber],
+                            ['label' => 'Shift', 'value' => $shift === null ? null : 'Shift '.$shift],
+                            ['label' => 'Line', 'value' => $productionValue($scanMetadata?->line)],
+                            ['label' => 'Jam', 'value' => $productionTime($scanMetadata?->scan_time)],
+                        ];
+                    }
+                }
+            @endphp
+
+            @if($productionMetadataTitle !== null)
+                <section class="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
+                    <div class="border-b border-slate-100 px-6 py-5">
+                        <h2 class="font-bold text-slate-900">
+                            {{ $productionMetadataTitle }}
+                        </h2>
+                        <p class="mt-1 text-sm text-slate-500">
+                            {{ $productionMetadataSubtitle }}
+                        </p>
+                    </div>
+
+                    <dl class="grid gap-x-8 gap-y-5 p-6 sm:grid-cols-2">
+                        @foreach($productionMetadataItems as $item)
+                            <div>
+                                <dt class="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                                    {{ $item['label'] }}
+                                </dt>
+                                <dd class="mt-2 break-words text-sm font-semibold text-slate-800">
+                                    {{ $item['value'] ?? '-' }}
+                                </dd>
+                                @if(! empty($item['detail']))
+                                    <p class="mt-1 text-xs text-slate-400">
+                                        Kode: {{ $item['detail'] }}
+                                    </p>
+                                @endif
+                            </div>
+                        @endforeach
+                    </dl>
+                </section>
+            @endif
+
+
+
             {{-- ================================================= --}}
             {{-- DESCRIPTION & SEARCH INFORMATION --}}
             {{-- ================================================= --}}

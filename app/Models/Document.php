@@ -85,6 +85,16 @@ class Document extends Model
         return $this->hasOne(DocumentScanMetadata::class);
     }
 
+    public function axleProduction(): HasOne
+    {
+        return $this->hasOne(DocumentAxleProduction::class);
+    }
+
+    public function brakeProduction(): HasOne
+    {
+        return $this->hasOne(DocumentBrakeProduction::class);
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);

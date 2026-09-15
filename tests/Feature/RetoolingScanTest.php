@@ -334,37 +334,31 @@ class RetoolingScanTest extends TestCase
         $this->assertDatabaseCount('document_retoolings', 0);
     }
 
-    public function test_axle_and_brake_scans_remain_compatible_without_retooling_master_selection(): void
+    public function test_axle_and_brake_scans_require_database_master_ids(): void
     {
         $this->actingAs($this->admin);
 
-        $base = $this->basePayload();
-        $this->post(route('documents.scan.store'), array_merge($base, [
+        $this->post(route('documents.scan.store'), array_merge($this->basePayload(), [
             'scan_type' => 'Laporan Hasil Produksi - Axle Assy',
             'axle_assy_type' => 'Module Assy',
             'axle_side' => 'LH',
         ]))
             ->assertRedirect(route('documents.scan.create'))
-            ->assertSessionHasNoErrors();
+            ->assertSessionHasErrors([
+                'axle_type_id',
+                'axle_position_id',
+            ]);
 
         $this->post(route('documents.scan.store'), array_merge($this->basePayload(), [
             'scan_type' => 'Laporan Hasil Produksi - Brake Assy',
             'brake_part_variant' => '402 / 502',
         ]))
             ->assertRedirect(route('documents.scan.create'))
-            ->assertSessionHasNoErrors();
+            ->assertSessionHasErrors('brake_part_number_id');
 
-        $this->assertDatabaseCount('documents', 2);
+        $this->assertDatabaseCount('documents', 0);
         $this->assertDatabaseCount('document_retoolings', 0);
-        $this->assertDatabaseHas('document_scan_metadata', [
-            'scan_type' => 'Laporan Hasil Produksi - Axle Assy',
-            'axle_assy_type' => 'Module Assy',
-            'axle_side' => 'LH',
-        ]);
-        $this->assertDatabaseHas('document_scan_metadata', [
-            'scan_type' => 'Laporan Hasil Produksi - Brake Assy',
-            'brake_part_number' => 'A 4304200 402 / 502',
-        ]);
+        $this->assertSame([], Storage::disk('bmc_documents')->allFiles());
     }
 
     private function createMaster(): array

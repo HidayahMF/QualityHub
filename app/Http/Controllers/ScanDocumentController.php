@@ -3,8 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
+use App\Models\AxlePosition;
+use App\Models\AxleType;
+use App\Models\BrakePartNumber;
 use App\Models\Category;
 use App\Models\Document;
+use App\Models\DocumentAxleProduction;
+use App\Models\DocumentBrakeProduction;
 use App\Models\DocumentScanMetadata;
 use App\Models\DocumentRetooling;
 use App\Models\DocumentVersion;
@@ -32,8 +37,6 @@ class ScanDocumentController extends Controller
     private const SCAN_BRAKE = 'Laporan Hasil Produksi - Brake Assy';
     private const SCAN_OTHER = 'Lainnya';
 
-    private const BRAKE_PART_PREFIX = 'A 4304200';
-
     public function create(): View
     {
         $this->ensureAdmin();
@@ -48,7 +51,22 @@ class ScanDocumentController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('documents.scan', compact('categories'));
+        $axleTypes = AxleType::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('code')
+            ->get();
+
+        $axlePositions = AxlePosition::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('code')
+            ->get();
+
+        return view(
+            'documents.scan',
+            compact('categories', 'axleTypes', 'axlePositions')
+        );
     }
 
     /**
@@ -189,30 +207,35 @@ class ScanDocumentController extends Controller
 
             'scan_time' => ['nullable', 'date_format:H:i'],
 
-            'axle_assy_type' => [
+            'axle_type_id' => [
                 Rule::requiredIf(
                     fn () => $request->input('scan_type') === self::SCAN_AXLE
                 ),
                 'nullable',
-                Rule::in(['Module Assy', 'Axle Assy']),
+                'integer',
+                Rule::exists('axle_types', 'id')->where(
+                    fn ($query) => $query->where('is_active', true)
+                ),
             ],
-            'axle_side' => [
+            'axle_position_id' => [
                 Rule::requiredIf(
                     fn () => $request->input('scan_type') === self::SCAN_AXLE
                 ),
                 'nullable',
-                Rule::in(['LH', 'RH']),
+                'integer',
+                Rule::exists('axle_positions', 'id')->where(
+                    fn ($query) => $query->where('is_active', true)
+                ),
             ],
-            'brake_part_variant' => [
+            'brake_part_number_id' => [
                 Rule::requiredIf(
                     fn () => $request->input('scan_type') === self::SCAN_BRAKE
                 ),
                 'nullable',
-                Rule::in([
-                    '402 / 502',
-                    '201 / 301',
-                    '202 / 302',
-                ]),
+                'integer',
+                Rule::exists('brake_part_numbers', 'id')->where(
+                    fn ($query) => $query->where('is_active', true)
+                ),
             ],
 
             'capture_source' => [
@@ -302,29 +325,83 @@ class ScanDocumentController extends Controller
             ? $validated['scan_date']
             : null;
 
-        if (! $isAxle) {
+        $axleTypeMaster = null;
+        $axlePositionMaster = null;
+        $brakePartMaster = null;
+        $productionLineMaster = null;
+
+        if ($isAxle) {
+            $axleTypeMaster = AxleType::query()
+                ->whereKey($validated['axle_type_id'])
+                ->where('is_active', true)
+                ->first();
+
+            $axlePositionMaster = AxlePosition::query()
+                ->whereKey($validated['axle_position_id'])
+                ->where('is_active', true)
+                ->first();
+
+            if (! $axleTypeMaster) {
+                throw ValidationException::withMessages([
+                    'axle_type_id' => 'Type Axle yang dipilih sudah tidak tersedia.',
+                ]);
+            }
+
+            if (! $axlePositionMaster) {
+                throw ValidationException::withMessages([
+                    'axle_position_id' => 'Posisi Axle yang dipilih sudah tidak tersedia.',
+                ]);
+            }
+
+            $validated['axle_assy_type'] = $axleTypeMaster->name;
+            $validated['axle_side'] = $axlePositionMaster->name;
+        } else {
             $validated['axle_assy_type'] = null;
             $validated['axle_side'] = null;
         }
 
-        if (! $isBrake) {
+        if ($isBrake) {
+            $brakePartMaster = BrakePartNumber::query()
+                ->whereKey($validated['brake_part_number_id'])
+                ->where('is_active', true)
+                ->first();
+
+            if (! $brakePartMaster) {
+                throw ValidationException::withMessages([
+                    'brake_part_number_id' => 'Part Number Brake yang dipilih sudah tidak tersedia.',
+                ]);
+            }
+
+            $validated['brake_part_variant'] = $brakePartMaster->variant;
+        } else {
             $validated['brake_part_variant'] = null;
         }
 
         if ($isAxle || $isBrake) {
-            $validated['shift'] = null;
-            $validated['line'] = null;
+            if (($validated['production_line_id'] ?? null) !== null) {
+                $productionLineMaster = ProductionLine::query()
+                    ->whereKey($validated['production_line_id'])
+                    ->where('is_active', true)
+                    ->first();
+
+                if (! $productionLineMaster) {
+                    throw ValidationException::withMessages([
+                        'production_line_id' => 'Line yang dipilih sudah tidak tersedia.',
+                    ]);
+                }
+            }
+
+            $validated['line'] = $productionLineMaster?->code;
             $validated['from_type'] = null;
             $validated['to_type'] = null;
-            $validated['scan_time'] = null;
         }
 
         $brakePartPrefix = $isBrake
-            ? self::BRAKE_PART_PREFIX
+            ? $brakePartMaster->prefix
             : null;
 
         $brakePartNumber = $isBrake
-            ? self::BRAKE_PART_PREFIX . ' ' . $validated['brake_part_variant']
+            ? $brakePartMaster->display_name
             : null;
 
         if ($isRetooling) {
@@ -536,6 +613,10 @@ class ScanDocumentController extends Controller
                 $mimeType,
                 $verifiedFileSize,
                 $scanSecurityMetadata,
+                $axleTypeMaster,
+                $axlePositionMaster,
+                $brakePartMaster,
+                $productionLineMaster,
                 $brakePartPrefix,
                 $brakePartNumber,
                 $productionDate,
@@ -685,6 +766,42 @@ class ScanDocumentController extends Controller
                         'to_casting_id' => $retoolingMaster['to_casting_id'],
                         'from_cycle_time' => $retoolingMaster['from_cycle_time'],
                         'to_cycle_time' => $retoolingMaster['to_cycle_time'],
+                    ]);
+                }
+
+                if ($isAxle) {
+                    DocumentAxleProduction::create([
+                        'document_id' => $document->id,
+                        'axle_type_id' => $axleTypeMaster->id,
+                        'axle_position_id' => $axlePositionMaster->id,
+                        'production_line_id' => $productionLineMaster?->id,
+                        'shift' => isset($validated['shift'])
+                            ? (int) $validated['shift']
+                            : null,
+                        'production_time' => $validated['scan_time'] ?? null,
+                        'snapshot_axle_type_code' => $axleTypeMaster->code,
+                        'snapshot_axle_type_name' => $axleTypeMaster->name,
+                        'snapshot_position_code' => $axlePositionMaster->code,
+                        'snapshot_position_name' => $axlePositionMaster->name,
+                        'snapshot_line_code' => $productionLineMaster?->code,
+                        'snapshot_line_name' => $productionLineMaster?->name,
+                    ]);
+                }
+
+                if ($isBrake) {
+                    DocumentBrakeProduction::create([
+                        'document_id' => $document->id,
+                        'brake_part_number_id' => $brakePartMaster->id,
+                        'production_line_id' => $productionLineMaster?->id,
+                        'shift' => isset($validated['shift'])
+                            ? (int) $validated['shift']
+                            : null,
+                        'production_time' => $validated['scan_time'] ?? null,
+                        'snapshot_prefix' => $brakePartMaster->prefix,
+                        'snapshot_variant' => $brakePartMaster->variant,
+                        'snapshot_display_name' => $brakePartMaster->display_name,
+                        'snapshot_line_code' => $productionLineMaster?->code,
+                        'snapshot_line_name' => $productionLineMaster?->name,
                     ]);
                 }
 

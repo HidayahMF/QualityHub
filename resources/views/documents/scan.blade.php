@@ -532,7 +532,7 @@
                     {{-- ===================================================== --}}
                     <div
                         id="axleAssyFields"
-                        class="hidden overflow-hidden rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white"
+                        class="hidden overflow-visible rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white"
                     >
                         <div class="border-b border-blue-100 px-4 py-3">
                             <div class="flex items-start gap-3">
@@ -559,13 +559,14 @@
                                 </p>
 
                                 <div class="grid gap-2 sm:grid-cols-2">
-                                    @foreach (['Module Assy', 'Axle Assy'] as $axleType)
+                                    @forelse ($axleTypes as $axleType)
                                         <label data-radio-card class="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50/60">
                                             <input
                                                 type="radio"
-                                                name="axle_assy_type"
-                                                value="{{ $axleType }}"
-                                                @checked(old('axle_assy_type') === $axleType)
+                                                name="axle_type_id"
+                                                value="{{ $axleType->id }}"
+                                                data-master-name="{{ $axleType->name }}"
+                                                @checked((string) old('axle_type_id') === (string) $axleType->id)
                                                 class="peer sr-only"
                                             >
 
@@ -579,10 +580,16 @@
                                                 </svg>
                                             </span>
 
-                                            <span>{{ $axleType }}</span>
+                                            <span>{{ $axleType->name }}</span>
                                         </label>
-                                    @endforeach
+                                    @empty
+                                        <p class="text-sm text-slate-500">Master Type Axle aktif belum tersedia.</p>
+                                    @endforelse
                                 </div>
+
+                                @error('axle_type_id')
+                                    <p class="mt-1.5 text-xs font-medium text-red-600">{{ $message }}</p>
+                                @enderror
                             </div>
 
                             <div>
@@ -591,13 +598,14 @@
                                 </p>
 
                                 <div class="grid grid-cols-2 gap-2">
-                                    @foreach (['LH', 'RH'] as $axleSide)
+                                    @forelse ($axlePositions as $axlePosition)
                                         <label data-radio-card class="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50/60">
                                             <input
                                                 type="radio"
-                                                name="axle_side"
-                                                value="{{ $axleSide }}"
-                                                @checked(old('axle_side') === $axleSide)
+                                                name="axle_position_id"
+                                                value="{{ $axlePosition->id }}"
+                                                data-master-name="{{ $axlePosition->name }}"
+                                                @checked((string) old('axle_position_id') === (string) $axlePosition->id)
                                                 class="peer sr-only"
                                             >
 
@@ -611,10 +619,16 @@
                                                 </svg>
                                             </span>
 
-                                            <span>{{ $axleSide }}</span>
+                                            <span>{{ $axlePosition->name }}</span>
                                         </label>
-                                    @endforeach
+                                    @empty
+                                        <p class="text-sm text-slate-500">Master Posisi Axle aktif belum tersedia.</p>
+                                    @endforelse
                                 </div>
+
+                                @error('axle_position_id')
+                                    <p class="mt-1.5 text-xs font-medium text-red-600">{{ $message }}</p>
+                                @enderror
                             </div>
                         </div>
                     </div>
@@ -625,7 +639,7 @@
                     {{-- ===================================================== --}}
                     <div
                         id="brakeAssyFields"
-                        class="hidden overflow-hidden rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white"
+                        class="hidden overflow-visible rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white"
                     >
                         <div class="border-b border-blue-100 px-4 py-3">
                             <div class="flex items-start gap-3">
@@ -639,7 +653,7 @@
                                         Laporan Hasil Produksi - Brake Assy
                                     </p>
                                     <p class="mt-0.5 text-xs leading-5 text-slate-500">
-                                        Part No menggunakan prefix standar A 4304200 dengan variant sesuai checksheet.
+                                        Part No dipilih dari master produksi Brake Assy.
                                     </p>
                                 </div>
                             </div>
@@ -651,30 +665,61 @@
                                     Prefix Part No
                                 </label>
 
-                                <div class="flex items-center rounded-xl border border-slate-200 bg-slate-100 px-3 py-3 text-sm font-bold tracking-wide text-slate-700">
-                                    A 4304200
+                                <div
+                                    id="brakePartPrefix"
+                                    class="flex items-center rounded-xl border border-slate-200 bg-slate-100 px-3 py-3 text-sm font-bold tracking-wide text-slate-700"
+                                >
+                                    -
                                 </div>
                             </div>
 
-                            <div>
+                            <div
+                                id="brakeMasterField"
+                                data-brake-master="1"
+                                data-brake-parts-url="{{ route('documents.scan.master.brake-part-numbers') }}"
+                            >
                                 <label
-                                    for="brake_part_variant"
+                                    for="brakePartSearch"
                                     class="mb-1.5 block text-sm font-medium text-slate-700"
                                 >
                                     Variant Part No
                                     <span class="text-red-500">*</span>
                                 </label>
 
-                                <select
-                                    id="brake_part_variant"
-                                    name="brake_part_variant"
-                                    class="block w-full rounded-xl border-slate-300 bg-white text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                >
-                                    <option value="">Pilih variant</option>
-                                    <option value="402 / 502" @selected(old('brake_part_variant') === '402 / 502')>A 4304200 402 / 502</option>
-                                    <option value="201 / 301" @selected(old('brake_part_variant') === '201 / 301')>A 4304200 201 / 301</option>
-                                    <option value="202 / 302" @selected(old('brake_part_variant') === '202 / 302')>A 4304200 202 / 302</option>
-                                </select>
+                                <div class="relative">
+                                    <input
+                                        id="brakePartSearch"
+                                        type="search"
+                                        autocomplete="off"
+                                        placeholder="Memuat Variant Part No..."
+                                        disabled
+                                        class="block w-full rounded-xl border-slate-300 bg-white pr-10 text-sm shadow-sm disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 focus:border-blue-500 focus:ring-blue-500"
+                                        role="combobox"
+                                        aria-autocomplete="list"
+                                        aria-expanded="false"
+                                        aria-controls="brakePartOptions"
+                                        aria-required="true"
+                                    >
+
+                                    <span aria-hidden="true" class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400">⌄</span>
+
+                                    <input
+                                        type="hidden"
+                                        id="brake_part_number_id"
+                                        name="brake_part_number_id"
+                                        value="{{ old('brake_part_number_id') }}"
+                                    >
+
+                                    <div
+                                        id="brakePartOptions"
+                                        class="absolute left-0 right-0 top-full z-50 mt-1 hidden max-h-60 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1 shadow-xl"
+                                        role="listbox"
+                                    ></div>
+                                </div>
+
+                                @error('brake_part_number_id')
+                                    <p class="mt-1.5 text-xs font-medium text-red-600">{{ $message }}</p>
+                                @enderror
                             </div>
 
                             <div
@@ -698,6 +743,8 @@
                                 class="mb-1.5 block text-sm font-medium text-slate-700"
                             >
                                 Shift
+                                <span id="shiftRequiredIndicator" class="hidden text-red-500">*</span>
+                                <span id="shiftOptionalIndicator" class="hidden text-xs font-normal text-slate-400">(Opsional)</span>
                             </label>
 
                             <select
@@ -726,7 +773,7 @@
                             @enderror
                         </div>
 
-                        {{-- LINE MANUAL: tetap dipakai non-Retooling --}}
+                        {{-- LINE MANUAL: tetap dipakai Dokumen QC Lainnya --}}
                         <div id="manualLineField">
 
                             <label
@@ -746,7 +793,7 @@
 
                         </div>
 
-                        {{-- LINE MASTER: khusus Retooling --}}
+                        {{-- LINE MASTER: Retooling, Axle, dan Brake --}}
                         <div
                             id="retoolingLineField"
                             data-retooling-master="1"
@@ -759,7 +806,8 @@
                                 class="mb-1.5 block text-sm font-medium text-slate-700"
                             >
                                 Line
-                                <span class="text-red-500">*</span>
+                                <span id="lineRequiredIndicator" class="text-red-500">*</span>
+                                <span id="lineOptionalIndicator" class="hidden text-xs font-normal text-slate-400">(Opsional)</span>
                             </label>
 
                             <div class="relative">
@@ -796,6 +844,14 @@
                             <p class="mt-1 text-xs text-slate-500">
                                 Pilihan Line berasal dari master database produksi.
                             </p>
+
+                            <button
+                                id="lineClearButton"
+                                type="button"
+                                class="mt-1 hidden text-xs font-semibold text-blue-700 hover:text-blue-900"
+                            >
+                                Kosongkan pilihan Line
+                            </button>
 
                             @error('production_line_id')
                                 <p class="mt-1.5 text-xs font-medium text-red-600">
@@ -976,6 +1032,7 @@
                             class="mb-1.5 block text-sm font-medium text-slate-700"
                         >
                             Jam
+                            <span id="timeOptionalIndicator" class="hidden text-xs font-normal text-slate-400">(Opsional)</span>
                         </label>
 
                         <input
@@ -1211,9 +1268,14 @@
             const scanDateLabel = document.getElementById('scanDateLabel');
             const axleAssyFields = document.getElementById('axleAssyFields');
             const brakeAssyFields = document.getElementById('brakeAssyFields');
-            const brakePartVariant = document.getElementById('brake_part_variant');
+            const brakePartSearch = document.getElementById('brakePartSearch');
+            const brakePartNumberId = document.getElementById('brake_part_number_id');
             const brakePartPreview = document.getElementById('brakePartPreview');
             const retoolingFields = document.getElementById('retoolingFields');
+            const shiftRequiredIndicator = document.getElementById('shiftRequiredIndicator');
+            const shiftOptionalIndicator = document.getElementById('shiftOptionalIndicator');
+            const timeOptionalIndicator = document.getElementById('timeOptionalIndicator');
+            const scanTime = document.getElementById('scan_time');
             const titleInput = document.getElementById('title');
             const fileNameInput = document.getElementById('file_name');
             const categoryInput = document.getElementById('category_id');
@@ -1222,7 +1284,6 @@
             const AXLE_SCAN = 'Laporan Hasil Produksi - Axle Assy';
             const BRAKE_SCAN = 'Laporan Hasil Produksi - Brake Assy';
             const OTHER_SCAN = 'Lainnya';
-            const BRAKE_PREFIX = 'A 4304200';
 
             let lastAutoTitle = '';
             let lastAutoFileName = '';
@@ -1278,11 +1339,12 @@
             function setRequiredForGroup(selector, required) {
                 document.querySelectorAll(selector).forEach(input => {
                     input.required = required;
+                    input.setAttribute('aria-required', String(required));
                 });
             }
 
-            function selectedRadioValue(name) {
-                return document.querySelector(`input[name="${name}"]:checked`)?.value || '';
+            function selectedRadioMasterName(name) {
+                return document.querySelector(`input[name="${name}"]:checked`)?.dataset.masterName || '';
             }
 
             // ============================================================
@@ -1418,8 +1480,8 @@
                 }
 
                 if (type === AXLE_SCAN) {
-                    const axleType = selectedRadioValue('axle_assy_type');
-                    const axleSide = selectedRadioValue('axle_side');
+                    const axleType = selectedRadioMasterName('axle_type_id');
+                    const axleSide = selectedRadioMasterName('axle_position_id');
 
                     const titleParts = [
                         'LAPORAN HASIL PRODUKSI - AXLE ASSY',
@@ -1434,8 +1496,7 @@
                 }
 
                 if (type === BRAKE_SCAN) {
-                    const variant = brakePartVariant?.value || '';
-                    const fullPartNumber = variant ? `${BRAKE_PREFIX} ${variant}` : '';
+                    const fullPartNumber = brakePartSearch?.dataset.displayName || '';
 
                     if (brakePartPreview) {
                         brakePartPreview.classList.toggle('hidden', !fullPartNumber);
@@ -1465,6 +1526,7 @@
                 const isAxle = type === AXLE_SCAN;
                 const isBrake = type === BRAKE_SCAN;
                 const isProduction = isAxle || isBrake;
+                const isRetooling = type === 'Retooling';
                 const isOther = type === OTHER_SCAN;
 
                 customScanTypeWrapper?.classList.toggle('hidden', !isOther);
@@ -1477,17 +1539,22 @@
                     customScanType.disabled = !isOther;
                 }
 
-                setRequiredForGroup('input[name="axle_assy_type"]', isAxle);
-                setRequiredForGroup('input[name="axle_side"]', isAxle);
+                setRequiredForGroup('input[name="axle_type_id"]', isAxle);
+                setRequiredForGroup('input[name="axle_position_id"]', isAxle);
 
-                document.querySelectorAll('input[name="axle_assy_type"], input[name="axle_side"]').forEach(input => {
+                document.querySelectorAll('input[name="axle_type_id"], input[name="axle_position_id"]').forEach(input => {
                     input.disabled = !isAxle;
                 });
 
-                if (brakePartVariant) {
-                    brakePartVariant.required = isBrake;
-                    brakePartVariant.disabled = !isBrake;
+                if (brakePartNumberId) {
+                    brakePartNumberId.required = isBrake;
+                    brakePartNumberId.disabled = !isBrake;
                 }
+
+                shiftRequiredIndicator?.classList.toggle('hidden', !isRetooling);
+                shiftOptionalIndicator?.classList.toggle('hidden', !isProduction);
+                timeOptionalIndicator?.classList.toggle('hidden', !isProduction);
+                scanTime?.setAttribute('aria-required', 'false');
 
                 scanDateLabel.innerHTML = isProduction
                     ? 'Tanggal Produksi <span class="text-red-500">*</span>'
@@ -1518,9 +1585,9 @@
 
             scanType?.addEventListener('change', syncDocumentTypeUI);
             scanDate?.addEventListener('change', refreshProductionPreview);
-            brakePartVariant?.addEventListener('change', refreshProductionPreview);
+            brakePartNumberId?.addEventListener('change', refreshProductionPreview);
 
-            document.querySelectorAll('input[name="axle_assy_type"], input[name="axle_side"]').forEach(input => {
+            document.querySelectorAll('input[name="axle_type_id"], input[name="axle_position_id"]').forEach(input => {
                 input.addEventListener('change', () => {
                     refreshRadioCards();
                     refreshProductionPreview();
@@ -2641,6 +2708,11 @@
                     '[data-retooling-master="1"]'
                 );
 
+            const brakeMasterRoot =
+                document.querySelector(
+                    '[data-brake-master="1"]'
+                );
+
             if (!masterRoot) {
                 return;
             }
@@ -2678,6 +2750,15 @@
             const lineId =
                 document.getElementById('production_line_id');
 
+            const lineRequiredIndicator =
+                document.getElementById('lineRequiredIndicator');
+
+            const lineOptionalIndicator =
+                document.getElementById('lineOptionalIndicator');
+
+            const lineClearButton =
+                document.getElementById('lineClearButton');
+
             const manualTypeFields =
                 document.getElementById('retoolingFields');
 
@@ -2714,11 +2795,29 @@
             const toCycleTime =
                 document.getElementById('retoolingToCycleTime');
 
+            const brakePartSearch =
+                document.getElementById('brakePartSearch');
+
+            const brakePartOptions =
+                document.getElementById('brakePartOptions');
+
+            const brakePartId =
+                document.getElementById('brake_part_number_id');
+
+            const brakePartPrefix =
+                document.getElementById('brakePartPrefix');
+
+            const brakePartPreview =
+                document.getElementById('brakePartPreview');
+
             const linesUrl =
                 masterRoot.dataset.linesUrl;
 
             const productsUrlBase =
                 masterRoot.dataset.productsUrlBase;
+
+            const brakePartsUrl =
+                brakeMasterRoot?.dataset.brakePartsUrl || '';
 
             const oldLineId =
                 String(
@@ -2735,16 +2834,25 @@
                     toId?.value || ''
                 );
 
+            const oldBrakePartId =
+                String(
+                    brakePartId?.value || ''
+                );
+
             let lines = [];
             let products = [];
+            let brakeParts = [];
 
             let selectedLine = null;
             let selectedFrom = null;
             let selectedTo = null;
+            let selectedBrakePart = null;
 
             let linesLoaded = false;
             let linesLoading = false;
             let productRequestId = 0;
+            let brakePartsLoaded = false;
+            let brakePartsLoading = false;
 
             function normalize(value) {
 
@@ -2797,6 +2905,7 @@
                     [lineOptions, lineSearch],
                     [fromOptions, fromSearch],
                     [toOptions, toSearch],
+                    [brakePartOptions, brakePartSearch],
                 ].forEach(([otherElement, otherInput]) => {
                     if (otherElement !== element) {
                         closeDropdown(otherElement, otherInput);
@@ -3057,6 +3166,9 @@
                                 item.code,
                                 item.name,
                                 item.text,
+                                item.prefix,
+                                item.variant,
+                                item.display_name,
                             ].join(' ')
                         );
 
@@ -3160,6 +3272,176 @@
                         )
                     );
                 });
+            }
+
+            function renderBrakeParts(
+                search = brakePartSearch.value
+            ) {
+
+                brakePartOptions.replaceChildren();
+                brakePartSearch.removeAttribute('aria-activedescendant');
+
+                const filtered =
+                    filterItems(
+                        brakeParts,
+                        search
+                    );
+
+                if (filtered.length === 0) {
+
+                    brakePartOptions.append(
+                        emptyMessage(
+                            brakeParts.length === 0
+                                ? 'Tidak ada Part Number Brake aktif.'
+                                : 'Variant Part No tidak ditemukan.'
+                        )
+                    );
+
+                    return;
+                }
+
+                filtered.forEach((partNumber, index) => {
+
+                    brakePartOptions.append(
+                        createOption(
+                            partNumber.variant,
+                            partNumber.prefix,
+                            () => selectBrakePart(partNumber),
+                            brakePartOptions,
+                            brakePartSearch,
+                            index,
+                            String(partNumber.id) === brakePartId.value
+                        )
+                    );
+                });
+            }
+
+            function resetBrakePart(
+                preserveSearch = false,
+                emitChange = true
+            ) {
+
+                selectedBrakePart = null;
+                brakePartId.value = '';
+
+                if (!preserveSearch) {
+                    brakePartSearch.value = '';
+                }
+
+                delete brakePartSearch.dataset.displayName;
+                brakePartPrefix.textContent = '-';
+                brakePartPreview.textContent = '';
+                brakePartPreview.classList.add('hidden');
+
+                if (emitChange) {
+                    brakePartId.dispatchEvent(
+                        new Event('change', { bubbles: true })
+                    );
+                }
+            }
+
+            function selectBrakePart(
+                partNumber
+            ) {
+
+                selectedBrakePart = partNumber;
+                brakePartId.value = String(partNumber.id);
+                brakePartSearch.value = partNumber.variant;
+                brakePartSearch.dataset.displayName = partNumber.display_name;
+                brakePartPrefix.textContent = partNumber.prefix;
+                brakePartPreview.textContent =
+                    `Part No tersimpan: ${partNumber.display_name}`;
+                brakePartPreview.classList.remove('hidden');
+
+                closeDropdown(
+                    brakePartOptions,
+                    brakePartSearch
+                );
+
+                brakePartId.dispatchEvent(
+                    new Event('change', { bubbles: true })
+                );
+            }
+
+            async function loadBrakeParts() {
+
+                if (
+                    !brakeMasterRoot
+                    || brakePartsLoaded
+                    || brakePartsLoading
+                ) {
+                    return;
+                }
+
+                brakePartsLoading = true;
+                brakePartSearch.disabled = true;
+                brakePartSearch.placeholder =
+                    'Memuat Variant Part No...';
+
+                try {
+
+                    const response =
+                        await fetch(
+                            brakePartsUrl,
+                            {
+                                headers: {
+                                    'Accept':
+                                        'application/json',
+                                    'X-Requested-With':
+                                        'XMLHttpRequest',
+                                },
+
+                                credentials:
+                                    'same-origin',
+                            }
+                        );
+
+                    if (!response.ok) {
+                        throw new Error(
+                            `HTTP ${response.status}`
+                        );
+                    }
+
+                    const payload =
+                        await response.json();
+
+                    brakeParts =
+                        Array.isArray(payload.results)
+                            ? payload.results
+                            : [];
+
+                    brakePartsLoaded = true;
+                    brakePartSearch.disabled =
+                        scanType?.value !== BRAKE_SCAN;
+                    brakePartSearch.placeholder =
+                        'Cari atau pilih Variant Part No...';
+
+                    const oldPartNumber =
+                        brakeParts.find(
+                            partNumber =>
+                                String(partNumber.id)
+                                === oldBrakePartId
+                        );
+
+                    if (oldPartNumber) {
+                        selectBrakePart(oldPartNumber);
+                    } else {
+                        resetBrakePart();
+                    }
+
+                } catch (error) {
+
+                    console.error(
+                        'Gagal memuat Part Number Brake.',
+                        error
+                    );
+
+                    brakePartSearch.disabled = true;
+                    brakePartSearch.placeholder =
+                        'Gagal memuat Variant Part No';
+                } finally {
+                    brakePartsLoading = false;
+                }
             }
 
             function resetFrom() {
@@ -3459,7 +3741,9 @@
 
                     linesLoaded = true;
 
-                    lineSearch.disabled = false;
+                    lineSearch.disabled =
+                        !isRetooling()
+                        && !isProduction();
 
                     lineSearch.placeholder =
                         'Cari atau pilih Line...';
@@ -3494,7 +3778,7 @@
                 } catch (error) {
 
                     console.error(
-                        'Gagal memuat Line Retooling.',
+                        'Gagal memuat Line produksi.',
                         error
                     );
 
@@ -3507,6 +3791,99 @@
                 }
             }
 
+            function clearDirtyProductionState() {
+                if (shift) {
+                    shift.value = '';
+                    shift.required = false;
+                    shift.setAttribute('aria-required', 'false');
+                }
+
+                if (scanTime) {
+                    scanTime.value = '';
+                }
+
+                if (manualLine) {
+                    manualLine.value = '';
+                }
+
+                if (lineId) {
+                    lineId.value = '';
+                    lineId.required = false;
+                }
+
+                if (lineSearch) {
+                    lineSearch.value = '';
+                }
+
+                if (fromId) {
+                    fromId.value = '';
+                }
+
+                if (fromSearch) {
+                    fromSearch.value = '';
+                }
+
+                if (toId) {
+                    toId.value = '';
+                }
+
+                if (toSearch) {
+                    toSearch.value = '';
+                }
+
+                if (fromCycleTime) {
+                    fromCycleTime.textContent = 'Cycle Time: -';
+                }
+
+                if (toCycleTime) {
+                    toCycleTime.textContent = 'Cycle Time: -';
+                }
+
+                if (brakePartId) {
+                    brakePartId.value = '';
+                    brakePartId.required = false;
+                    brakePartId.disabled = true;
+                }
+
+                if (brakePartSearch) {
+                    brakePartSearch.value = '';
+                    brakePartSearch.disabled = true;
+                    delete brakePartSearch.dataset.displayName;
+                }
+
+                if (brakePartPrefix) {
+                    brakePartPrefix.textContent = '-';
+                }
+
+                if (brakePartPreview) {
+                    brakePartPreview.textContent = '';
+                    brakePartPreview.classList.add('hidden');
+                }
+
+                selectedLine = null;
+                selectedFrom = null;
+                selectedTo = null;
+                selectedBrakePart = null;
+                products = [];
+                fromOptions.replaceChildren();
+                toOptions.replaceChildren();
+                brakePartOptions.replaceChildren();
+            }
+
+            function clearBrakePartState() {
+                selectedBrakePart = null;
+                brakePartId.value = '';
+                brakePartSearch.value = '';
+                delete brakePartSearch.dataset.displayName;
+                brakePartPrefix.textContent = '-';
+                brakePartPreview.textContent = '';
+                brakePartPreview.classList.add('hidden');
+                brakePartId.required = false;
+                brakePartId.disabled = true;
+                brakePartSearch.disabled = true;
+                brakePartId.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
             function syncMode() {
 
                 const retooling =
@@ -3515,6 +3892,56 @@
                 const production =
                     isProduction();
 
+                const masterLineMode =
+                    retooling
+                    || production;
+
+                if (!retooling && !production && !scanType?.value) {
+                    clearDirtyProductionState();
+                }
+
+                if (!retooling) {
+                    if (shift) {
+                        shift.value = '';
+                    }
+                }
+
+                if (!masterLineMode) {
+                    if (manualLine) {
+                        manualLine.value = '';
+                    }
+                    if (lineId) {
+                        lineId.value = '';
+                    }
+                    if (lineSearch) {
+                        lineSearch.value = '';
+                    }
+                    if (fromId) {
+                        fromId.value = '';
+                    }
+                    if (toId) {
+                        toId.value = '';
+                    }
+                    if (fromSearch) {
+                        fromSearch.value = '';
+                    }
+                    if (toSearch) {
+                        toSearch.value = '';
+                    }
+                }
+
+                if (!production) {
+                    if (scanTime) {
+                        scanTime.value = '';
+                    }
+                }
+
+                if (!retooling && !production) {
+                    clearDirtyProductionState();
+                } else if (production && scanType?.value !== BRAKE_SCAN) {
+                    clearBrakePartState();
+                }
+
                 /*
                  * Shift tetap tersedia untuk workflow lama, tetapi diwajibkan
                  * oleh backend hanya ketika Retooling.
@@ -3522,35 +3949,62 @@
                 shift.required =
                     retooling;
 
+                shift.setAttribute(
+                    'aria-required',
+                    String(retooling)
+                );
+
                 /*
-                 * Line manual dipertahankan untuk Axle / Brake / Dokumen lain.
+                 * Line manual dipertahankan untuk Dokumen QC Lainnya.
                  */
                 manualLineField.classList.toggle(
                     'hidden',
-                    retooling
+                    masterLineMode
                 );
 
                 manualLine.disabled =
-                    retooling;
+                    masterLineMode;
 
                 /*
-                 * Line master hanya Retooling.
+                 * Line master dipakai Retooling, Axle, dan Brake.
                  */
                 retoolingLineField.classList.toggle(
                     'hidden',
-                    !retooling
+                    !masterLineMode
                 );
 
                 lineId.disabled =
-                    !retooling;
+                    !masterLineMode;
 
                 lineId.required =
                     retooling;
+
+                lineSearch.disabled =
+                    !masterLineMode
+                    || !linesLoaded;
 
                 lineSearch.setAttribute(
                     'aria-required',
                     String(retooling)
                 );
+
+                lineRequiredIndicator.classList.toggle(
+                    'hidden',
+                    !retooling
+                );
+
+                lineOptionalIndicator.classList.toggle(
+                    'hidden',
+                    !production
+                );
+
+                lineClearButton.classList.toggle(
+                    'hidden',
+                    !production
+                );
+
+                lineClearButton.disabled =
+                    !production;
 
                 /*
                  * Input Type manual tetap untuk Dokumen QC Lainnya.
@@ -3601,11 +4055,14 @@
                     String(retooling)
                 );
 
-                if (retooling) {
+                if (masterLineMode) {
 
                     loadLines();
 
-                    if (!lineId.value) {
+                    if (
+                        retooling
+                        && !lineId.value
+                    ) {
 
                         fromSearch.disabled = true;
                         toSearch.disabled = true;
@@ -3627,6 +4084,30 @@
                         toOptions,
                         toSearch
                     );
+                }
+
+                const brake =
+                    scanType?.value === BRAKE_SCAN;
+
+                if (brakePartId && brakePartSearch) {
+                    brakePartId.disabled = !brake;
+                    brakePartId.required = brake;
+                    brakePartSearch.setAttribute(
+                        'aria-required',
+                        String(brake)
+                    );
+
+                    if (brake) {
+                        brakePartSearch.disabled =
+                            !brakePartsLoaded;
+                        loadBrakeParts();
+                    } else {
+                        brakePartSearch.disabled = true;
+                        closeDropdown(
+                            brakePartOptions,
+                            brakePartSearch
+                        );
+                    }
                 }
             }
 
@@ -3674,6 +4155,63 @@
                     openDropdown(
                         lineOptions,
                         lineSearch
+                    );
+                }
+            );
+
+            lineClearButton.addEventListener(
+                'click',
+                () => {
+
+                    selectedLine = null;
+                    lineId.value = '';
+                    lineSearch.value = '';
+
+                    resetFrom();
+                    resetTo();
+                    loadProducts(null);
+
+                    closeDropdown(
+                        lineOptions,
+                        lineSearch
+                    );
+                }
+            );
+
+            brakePartSearch.addEventListener(
+                'focus',
+                () => {
+
+                    renderBrakeParts('');
+
+                    if (brakePartId.value) {
+                        brakePartSearch.select();
+                    }
+
+                    openDropdown(
+                        brakePartOptions,
+                        brakePartSearch
+                    );
+                }
+            );
+
+            brakePartSearch.addEventListener(
+                'input',
+                () => {
+
+                    if (
+                        selectedBrakePart
+                        && brakePartSearch.value
+                            !== selectedBrakePart.variant
+                    ) {
+                        resetBrakePart(true);
+                    }
+
+                    renderBrakeParts();
+
+                    openDropdown(
+                        brakePartOptions,
+                        brakePartSearch
                     );
                 }
             );
@@ -3802,6 +4340,12 @@
                 () => renderProducts(toOptions, toSearch, selectTo, '')
             );
 
+            attachKeyboard(
+                brakePartSearch,
+                brakePartOptions,
+                () => renderBrakeParts('')
+            );
+
             document.addEventListener(
                 'click',
                 event => {
@@ -3838,6 +4382,17 @@
                             toSearch
                         );
                     }
+
+                    if (
+                        !brakePartSearch.contains(event.target)
+                        && !brakePartOptions.contains(event.target)
+                    ) {
+
+                        closeDropdown(
+                            brakePartOptions,
+                            brakePartSearch
+                        );
+                    }
                 }
             );
 
@@ -3862,6 +4417,11 @@
                     closeDropdown(
                         toOptions,
                         toSearch
+                    );
+
+                    closeDropdown(
+                        brakePartOptions,
+                        brakePartSearch
                     );
                 }
             );

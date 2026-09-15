@@ -1908,6 +1908,9 @@ class DocumentController extends Controller
         $document->load([
             'category.department',
             'uploader',
+            'scanMetadata',
+            'axleProduction',
+            'brakeProduction',
         ]);
 
         /*
