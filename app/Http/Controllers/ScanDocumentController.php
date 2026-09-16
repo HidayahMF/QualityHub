@@ -321,6 +321,16 @@ class ScanDocumentController extends Controller
         $isAxle = $originalScanType === self::SCAN_AXLE;
         $isBrake = $originalScanType === self::SCAN_BRAKE;
 
+        if (
+            $isRetooling
+            && (int) $validated['from_casting_id']
+                === (int) $validated['to_casting_id']
+        ) {
+            throw ValidationException::withMessages([
+                'to_casting_id' => 'Dari Type dan Ke Type tidak boleh sama.',
+            ]);
+        }
+
         $productionDate = ($isAxle || $isBrake)
             ? $validated['scan_date']
             : null;

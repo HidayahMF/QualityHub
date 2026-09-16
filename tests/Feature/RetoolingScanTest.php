@@ -95,6 +95,30 @@ class RetoolingScanTest extends TestCase
         $this->assertStringContainsString('id="retoolingFromSearch"', $html);
         $this->assertStringContainsString('id="retoolingToSearch"', $html);
         $this->assertStringContainsString('id="retoolingMasterTypeFields"', $html);
+        $this->assertMatchesRegularExpression(
+            '/id="scan_time"\s+type="text"/',
+            $html
+        );
+        $this->assertMatchesRegularExpression(
+            '/id="retoolingTimeOptions"[^>]*role="listbox"/',
+            $html
+        );
+        $this->assertStringContainsString(
+            "scanTime.setAttribute('role', 'combobox');",
+            $html
+        );
+        $this->assertMatchesRegularExpression(
+            "/scanTime\\.setAttribute\\(\\s*'aria-controls',\\s*'retoolingTimeOptions'\\s*\\)/",
+            $html
+        );
+        $this->assertStringContainsString(
+            'function renderTimeSuggestions(',
+            $html
+        );
+        $this->assertStringContainsString(
+            'function availableProductsFor(searchInput)',
+            $html
+        );
     }
 
     public function test_retooling_post_saves_master_snapshot_and_ignores_browser_supplied_values(): void
@@ -158,6 +182,130 @@ class RetoolingScanTest extends TestCase
         $master['line2e']->update(['cycle_time' => 41]);
         $this->assertSame('25.00', $retooling->fresh()->from_cycle_time);
         $this->assertSame('22.00', $retooling->fresh()->to_cycle_time);
+    }
+
+    public function test_retooling_rejects_manipulated_same_casting_without_artifacts(): void
+    {
+        $master = $this->createMaster();
+        $payload = $this->retoolingPayload($master);
+        $payload['to_casting_id'] = (string) $payload['from_casting_id'];
+
+        $this->actingAs($this->admin)
+            ->post(route('documents.scan.store'), $payload)
+            ->assertRedirect(route('documents.scan.create'))
+            ->assertSessionHasErrors([
+                'to_casting_id' => 'Dari Type dan Ke Type tidak boleh sama.',
+            ]);
+
+        $this->assertDatabaseCount('documents', 0);
+        $this->assertDatabaseCount('document_retoolings', 0);
+        $this->assertDatabaseCount('document_scan_metadata', 0);
+        $this->assertDatabaseCount('document_versions', 0);
+        $this->assertDatabaseCount('activity_logs', 0);
+        $this->assertSame([], Storage::disk('bmc_documents')->allFiles());
+    }
+
+    public function test_retooling_accepts_different_castings_on_selected_line(): void
+    {
+        $master = $this->createMaster();
+        $productB = Casting::create([
+            'code' => 'product_B',
+            'name' => 'Type B',
+            'is_active' => true,
+        ]);
+
+        LineProduct::query()
+            ->where('production_line_id', $master['line1']->id)
+            ->where('casting_id', $master['a']->id)
+            ->update(['cycle_time' => 20]);
+
+        LineProduct::create([
+            'production_line_id' => $master['line1']->id,
+            'casting_id' => $productB->id,
+            'cycle_time' => 24,
+            'is_active' => true,
+        ]);
+
+        $payload = $this->retoolingPayload($master);
+        $payload['production_line_id'] = $master['line1']->id;
+        $payload['from_casting_id'] = $master['a']->id;
+        $payload['to_casting_id'] = $productB->id;
+
+        $this->actingAs($this->admin)
+            ->post(route('documents.scan.store'), $payload)
+            ->assertRedirect(route('documents.scan.create'))
+            ->assertSessionHasNoErrors();
+
+        $retooling = DocumentRetooling::query()->sole();
+        $this->assertSame($master['line1']->id, $retooling->production_line_id);
+        $this->assertSame($master['a']->id, $retooling->from_casting_id);
+        $this->assertSame($productB->id, $retooling->to_casting_id);
+        $this->assertSame('20.00', $retooling->from_cycle_time);
+        $this->assertSame('24.00', $retooling->to_cycle_time);
+    }
+
+    public function test_retooling_accepts_typed_time_in_hh_mm_format(): void
+    {
+        $master = $this->createMaster();
+
+        $this->actingAs($this->admin)
+            ->post(route('documents.scan.store'), array_merge(
+                $this->retoolingPayload($master),
+                ['scan_time' => '16:05']
+            ))
+            ->assertRedirect(route('documents.scan.create'))
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('success');
+
+        $scan = DocumentScanMetadata::query()->sole();
+        $version = DocumentVersion::query()->sole();
+
+        $this->assertSame('16:05', substr((string) $scan->scan_time, 0, 5));
+        $this->assertSame(
+            '16:05',
+            $version->metadata_snapshot['scan_metadata']['scan_time']
+        );
+        $this->assertDatabaseCount('documents', 1);
+        $this->assertDatabaseCount('document_retoolings', 1);
+    }
+
+    public function test_retooling_rejects_invalid_typed_time_without_records(): void
+    {
+        $master = $this->createMaster();
+
+        $this->actingAs($this->admin)
+            ->post(route('documents.scan.store'), array_merge(
+                $this->retoolingPayload($master),
+                ['scan_time' => '25:00']
+            ))
+            ->assertRedirect(route('documents.scan.create'))
+            ->assertSessionHasErrors('scan_time')
+            ->assertSessionHasInput('scan_time', '25:00');
+
+        $response = $this->get(route('documents.scan.create'))
+            ->assertOk();
+
+        $html = $response->baseResponse->getContent();
+        $this->assertMatchesRegularExpression(
+            '/id="scan_time"\s+type="text"[^>]+value="25:00"/',
+            $html
+        );
+
+        foreach (['12:99', 'abc', '8 pagi'] as $invalidTime) {
+            $this->post(route('documents.scan.store'), array_merge(
+                $this->retoolingPayload($master),
+                ['scan_time' => $invalidTime]
+            ))
+                ->assertRedirect(route('documents.scan.create'))
+                ->assertSessionHasErrors('scan_time');
+        }
+
+        $this->assertDatabaseCount('documents', 0);
+        $this->assertDatabaseCount('document_retoolings', 0);
+        $this->assertDatabaseCount('document_scan_metadata', 0);
+        $this->assertDatabaseCount('document_versions', 0);
+        $this->assertDatabaseCount('activity_logs', 0);
+        $this->assertSame([], Storage::disk('bmc_documents')->allFiles());
     }
 
     public function test_retooling_rejects_missing_empty_and_invalid_shift(): void

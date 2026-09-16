@@ -1035,13 +1035,44 @@
                             <span id="timeOptionalIndicator" class="hidden text-xs font-normal text-slate-400">(Opsional)</span>
                         </label>
 
-                        <input
-                            id="scan_time"
-                            type="time"
-                            name="scan_time"
-                            value="{{ old('scan_time') }}"
-                            class="block w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        <div class="relative">
+                            <input
+                                id="scan_time"
+                                type="{{ old('scan_type', 'Retooling') === 'Retooling' ? 'text' : 'time' }}"
+                                name="scan_time"
+                                value="{{ old('scan_time') }}"
+                                placeholder="Ketik atau pilih Jam (HH:mm)..."
+                                pattern="(?:[01][0-9]|2[0-3]):[0-5][0-9]"
+                                maxlength="5"
+                                aria-describedby="retoolingTimeHint"
+                                class="block w-full rounded-xl border-slate-300 bg-white pr-10 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            >
+
+                            <span
+                                id="retoolingTimeIndicator"
+                                aria-hidden="true"
+                                class="pointer-events-none absolute inset-y-0 right-3 hidden items-center text-slate-400"
+                            >⌄</span>
+
+                            <div
+                                id="retoolingTimeOptions"
+                                class="absolute left-0 right-0 top-full z-50 mt-1 hidden max-h-60 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1 shadow-xl"
+                                role="listbox"
+                            ></div>
+                        </div>
+
+                        <p
+                            id="retoolingTimeHint"
+                            class="mt-1 hidden text-xs text-slate-500"
                         >
+                            Ketik format 24 jam HH:mm atau pilih saran waktu.
+                        </p>
+
+                        @error('scan_time')
+                            <p class="mt-1.5 text-xs font-medium text-red-600">
+                                {{ $message }}
+                            </p>
+                        @enderror
                     </div>
 
 
@@ -2735,6 +2766,15 @@
             const scanTime =
                 document.getElementById('scan_time');
 
+            const retoolingTimeOptions =
+                document.getElementById('retoolingTimeOptions');
+
+            const retoolingTimeIndicator =
+                document.getElementById('retoolingTimeIndicator');
+
+            const retoolingTimeHint =
+                document.getElementById('retoolingTimeHint');
+
             const manualLineField =
                 document.getElementById('manualLineField');
 
@@ -2842,6 +2882,23 @@
                     brakePartId?.value || ''
                 );
 
+            const timeSuggestions =
+                Array.from(
+                    { length: 48 },
+                    (_, index) => {
+                        const hours =
+                            String(Math.floor(index / 2))
+                                .padStart(2, '0');
+
+                        const minutes =
+                            index % 2 === 0
+                                ? '00'
+                                : '30';
+
+                        return `${hours}:${minutes}`;
+                    }
+                );
+
             let lines = [];
             let products = [];
             let brakeParts = [];
@@ -2889,10 +2946,16 @@
                     'hidden'
                 );
 
-                input?.setAttribute(
-                    'aria-expanded',
-                    'false'
-                );
+                if (input?.hasAttribute('aria-controls')) {
+                    input.setAttribute(
+                        'aria-expanded',
+                        'false'
+                    );
+                } else {
+                    input?.removeAttribute(
+                        'aria-expanded'
+                    );
+                }
 
                 input?.removeAttribute(
                     'aria-activedescendant'
@@ -2909,6 +2972,7 @@
                     [fromOptions, fromSearch],
                     [toOptions, toSearch],
                     [brakePartOptions, brakePartSearch],
+                    [retoolingTimeOptions, scanTime],
                 ].forEach(([otherElement, otherInput]) => {
                     if (otherElement !== element) {
                         closeDropdown(otherElement, otherInput);
@@ -3083,9 +3147,14 @@
             function attachKeyboard(
                 input,
                 dropdown,
-                renderAll
+                renderAll,
+                isEnabled = () => true
             ) {
                 input.addEventListener('keydown', event => {
+                    if (!isEnabled()) {
+                        return;
+                    }
+
                     if (event.key === 'Escape') {
                         if (!dropdown.classList.contains('hidden')) {
                             event.preventDefault();
@@ -3136,6 +3205,10 @@
                 });
 
                 input.addEventListener('click', () => {
+                    if (!isEnabled()) {
+                        return;
+                    }
+
                     if (dropdown.classList.contains('hidden')) {
                         renderAll();
                         openDropdown(dropdown, input);
@@ -3226,6 +3299,25 @@
                 });
             }
 
+            function availableProductsFor(searchInput) {
+
+                const oppositeId =
+                    String(
+                        searchInput === fromSearch
+                            ? toId.value
+                            : fromId.value
+                    );
+
+                if (oppositeId === '') {
+                    return products;
+                }
+
+                return products.filter(
+                    product =>
+                        String(product.id) !== oppositeId
+                );
+            }
+
             function renderProducts(
                 dropdown,
                 searchInput,
@@ -3236,9 +3328,14 @@
                 dropdown.replaceChildren();
                 searchInput.removeAttribute('aria-activedescendant');
 
+                const availableProducts =
+                    availableProductsFor(
+                        searchInput
+                    );
+
                 const filtered =
                     filterItems(
-                        products,
+                        availableProducts,
                         search
                     );
 
@@ -3248,6 +3345,8 @@
                         emptyMessage(
                             products.length === 0
                                 ? 'Tidak ada Type untuk Line ini.'
+                                : availableProducts.length === 0
+                                    ? 'Tidak ada Type lain yang dapat dipilih.'
                                 : 'Type tidak ditemukan.'
                         )
                     );
@@ -3275,6 +3374,121 @@
                         )
                     );
                 });
+            }
+
+            function isValidTime(value) {
+                return /^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/
+                    .test(String(value || ''));
+            }
+
+            function validateRetoolingTime() {
+                if (
+                    !isRetooling()
+                    || scanTime.value === ''
+                    || isValidTime(scanTime.value)
+                ) {
+                    scanTime.setCustomValidity('');
+                    return true;
+                }
+
+                scanTime.setCustomValidity(
+                    'Gunakan format Jam HH:mm yang valid, misalnya 08:30.'
+                );
+
+                return false;
+            }
+
+            function selectTimeSuggestion(value) {
+                scanTime.value = value;
+                scanTime.setCustomValidity('');
+
+                closeDropdown(
+                    retoolingTimeOptions,
+                    scanTime
+                );
+
+                scanTime.dispatchEvent(
+                    new Event('change', { bubbles: true })
+                );
+            }
+
+            function renderTimeSuggestions(
+                search = scanTime.value
+            ) {
+                retoolingTimeOptions.replaceChildren();
+                scanTime.removeAttribute('aria-activedescendant');
+
+                const query =
+                    String(search || '');
+
+                const filtered =
+                    timeSuggestions.filter(
+                        value => value.includes(query)
+                    );
+
+                if (filtered.length === 0) {
+                    retoolingTimeOptions.append(
+                        emptyMessage(
+                            isValidTime(query)
+                                ? `${query} dapat digunakan. Tekan Enter atau Tab.`
+                                : 'Ketik Jam dengan format HH:mm.'
+                        )
+                    );
+
+                    return;
+                }
+
+                filtered.forEach((value, index) => {
+                    retoolingTimeOptions.append(
+                        createOption(
+                            value,
+                            '',
+                            () => selectTimeSuggestion(value),
+                            retoolingTimeOptions,
+                            scanTime,
+                            index,
+                            value === scanTime.value
+                        )
+                    );
+                });
+            }
+
+            function syncTimeMode(retooling) {
+                if (retooling) {
+                    scanTime.type = 'text';
+                    scanTime.placeholder =
+                        'Ketik atau pilih Jam (HH:mm)...';
+                    scanTime.autocomplete = 'off';
+                    scanTime.setAttribute('role', 'combobox');
+                    scanTime.setAttribute('aria-autocomplete', 'list');
+                    scanTime.setAttribute(
+                        'aria-controls',
+                        'retoolingTimeOptions'
+                    );
+                    scanTime.setAttribute('aria-expanded', 'false');
+                    retoolingTimeIndicator.classList.remove('hidden');
+                    retoolingTimeIndicator.classList.add('flex');
+                    retoolingTimeHint.classList.remove('hidden');
+
+                    return;
+                }
+
+                closeDropdown(
+                    retoolingTimeOptions,
+                    scanTime
+                );
+
+                scanTime.type = 'time';
+                scanTime.placeholder = '';
+                scanTime.removeAttribute('autocomplete');
+                scanTime.removeAttribute('role');
+                scanTime.removeAttribute('aria-autocomplete');
+                scanTime.removeAttribute('aria-controls');
+                scanTime.removeAttribute('aria-expanded');
+                scanTime.setCustomValidity('');
+                retoolingTimeIndicator.classList.add('hidden');
+                retoolingTimeIndicator.classList.remove('flex');
+                retoolingTimeHint.classList.add('hidden');
             }
 
             function renderBrakeParts(
@@ -3473,6 +3687,13 @@
                 product
             ) {
 
+                if (
+                    String(toId.value)
+                    === String(product.id)
+                ) {
+                    resetTo();
+                }
+
                 selectedFrom =
                     product;
 
@@ -3494,6 +3715,13 @@
             function selectTo(
                 product
             ) {
+
+                if (
+                    String(fromId.value)
+                    === String(product.id)
+                ) {
+                    resetFrom();
+                }
 
                 selectedTo =
                     product;
@@ -3621,7 +3849,11 @@
                             resetFrom();
                         }
 
-                        if (oldTo) {
+                        if (
+                            oldTo
+                            && String(oldTo.id)
+                                !== String(fromId.value)
+                        ) {
                             selectTo(
                                 oldTo
                             );
@@ -3933,11 +4165,13 @@
                     }
                 }
 
-                if (!production) {
+                if (!retooling && !production) {
                     if (scanTime) {
                         scanTime.value = '';
                     }
                 }
+
+                syncTimeMode(retooling);
 
                 if (!retooling && !production) {
                     clearDirtyProductionState();
@@ -4181,6 +4415,74 @@
                 }
             );
 
+            scanTime.addEventListener(
+                'focus',
+                () => {
+                    if (!isRetooling()) {
+                        return;
+                    }
+
+                    renderTimeSuggestions('');
+
+                    openDropdown(
+                        retoolingTimeOptions,
+                        scanTime
+                    );
+                }
+            );
+
+            scanTime.addEventListener(
+                'input',
+                () => {
+                    if (!isRetooling()) {
+                        return;
+                    }
+
+                    scanTime.setCustomValidity('');
+                    renderTimeSuggestions();
+
+                    openDropdown(
+                        retoolingTimeOptions,
+                        scanTime
+                    );
+                }
+            );
+
+            scanTime.addEventListener(
+                'change',
+                validateRetoolingTime
+            );
+
+            scanTime.addEventListener(
+                'blur',
+                validateRetoolingTime
+            );
+
+            scanTime.addEventListener(
+                'keydown',
+                event => {
+                    if (
+                        !isRetooling()
+                        || event.key !== 'Enter'
+                        || retoolingTimeOptions.classList.contains('hidden')
+                        || scanTime.hasAttribute('aria-activedescendant')
+                    ) {
+                        return;
+                    }
+
+                    event.preventDefault();
+
+                    if (validateRetoolingTime()) {
+                        closeDropdown(
+                            retoolingTimeOptions,
+                            scanTime
+                        );
+                    } else {
+                        scanTime.reportValidity();
+                    }
+                }
+            );
+
             brakePartSearch.addEventListener(
                 'focus',
                 () => {
@@ -4349,6 +4651,13 @@
                 () => renderBrakeParts('')
             );
 
+            attachKeyboard(
+                scanTime,
+                retoolingTimeOptions,
+                () => renderTimeSuggestions(''),
+                () => isRetooling()
+            );
+
             document.addEventListener(
                 'click',
                 event => {
@@ -4396,6 +4705,17 @@
                             brakePartSearch
                         );
                     }
+
+                    if (
+                        !scanTime.contains(event.target)
+                        && !retoolingTimeOptions.contains(event.target)
+                    ) {
+
+                        closeDropdown(
+                            retoolingTimeOptions,
+                            scanTime
+                        );
+                    }
                 }
             );
 
@@ -4425,6 +4745,11 @@
                     closeDropdown(
                         brakePartOptions,
                         brakePartSearch
+                    );
+
+                    closeDropdown(
+                        retoolingTimeOptions,
+                        scanTime
                     );
                 }
             );
