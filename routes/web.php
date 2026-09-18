@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\AiSmartSearchController;
 use App\Http\Controllers\CategoryManagementController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
@@ -141,6 +142,13 @@ Route::middleware([
     )
         ->middleware('throttle:120,1')
         ->name('documents.search.live');
+
+    Route::post(
+        '/documents/search/ai',
+        AiSmartSearchController::class
+    )
+        ->middleware('throttle:30,1')
+        ->name('documents.search.ai');
 
     /*
     |--------------------------------------------------------------------------

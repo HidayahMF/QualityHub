@@ -715,6 +715,145 @@
 
 
     {{-- ========================================================= --}}
+    {{-- AI SMART SEARCH --}}
+    {{-- ========================================================= --}}
+
+    <section
+        x-data="aiSmartSearch"
+        class="mb-6"
+        aria-labelledby="ai-smart-search-title"
+    >
+        <div class="rounded-2xl border border-indigo-200/70 bg-white p-5 shadow-sm">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div class="flex items-start gap-3">
+                    <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M12 3a4 4 0 0 0-4 4v1a4 4 0 0 0-2 7.5A4 4 0 0 0 10 21h2"/>
+                            <path d="M12 3a4 4 0 0 1 4 4v1a4 4 0 0 1 2 7.5A4 4 0 0 1 14 21h-2"/>
+                            <path d="M9 8h6M8 13h8M12 8v13"/>
+                        </svg>
+                    </div>
+
+                    <div>
+                        <h2 id="ai-smart-search-title" class="font-bold text-slate-900">
+                            AI Smart Search
+                        </h2>
+                        <p class="mt-0.5 text-xs text-slate-500">
+                            Cari dokumen menggunakan bahasa sehari-hari dari metadata QualityHub.
+                        </p>
+                    </div>
+                </div>
+
+                <span class="inline-flex w-fit items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
+                    <span class="h-2 w-2 rounded-full bg-indigo-500"></span>
+                    AI Lokal
+                </span>
+            </div>
+
+            <form class="mt-5" @submit.prevent="performAiSearch()">
+                <label for="ai-smart-search-query" class="block text-sm font-semibold text-slate-700">
+                    Permintaan pencarian
+                </label>
+
+                <div class="mt-2 flex flex-col gap-3 sm:flex-row">
+                    <input
+                        id="ai-smart-search-query"
+                        x-model="query"
+                        type="search"
+                        maxlength="500"
+                        autocomplete="off"
+                        required
+                        placeholder="Contoh: cari dokumen retooling line 2 bulan September"
+                        aria-describedby="ai-smart-search-help ai-smart-search-status"
+                        :aria-invalid="error ? 'true' : 'false'"
+                        class="min-w-0 flex-1 rounded-xl border-slate-200 bg-slate-50 px-4 py-3 text-sm placeholder:text-slate-400 focus:border-indigo-500 focus:ring-indigo-500"
+                    >
+
+                    <button
+                        type="submit"
+                        :disabled="loading"
+                        :aria-busy="loading"
+                        aria-controls="ai-smart-search-results"
+                        class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                    >
+                        <svg x-show="loading" class="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true" x-cloak>
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"></path>
+                        </svg>
+                        <span x-text="loading ? 'Mencari...' : 'Cari dengan AI'"></span>
+                    </button>
+                </div>
+
+                <p id="ai-smart-search-help" class="mt-2 text-xs text-slate-500">
+                    Contoh: “cari axle assy posisi LH terbaru” atau “dokumen brake assy part number 402 502”.
+                </p>
+            </form>
+
+            <p id="ai-smart-search-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true" x-text="statusMessage"></p>
+
+            <div x-show="loading" class="mt-4 rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm text-indigo-700" role="status" x-cloak>
+                AI lokal sedang memahami permintaan dan mengurutkan metadata dokumen.
+            </div>
+
+            <div x-show="error || fallback" class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3" role="alert" x-cloak>
+                <p
+                    class="text-sm font-semibold text-amber-800"
+                    x-text="fallback ? 'AI Smart Search lokal sedang tidak tersedia.' : error"
+                ></p>
+                <p x-show="fallback" class="mt-1 text-xs text-amber-700" x-text="message"></p>
+                <p x-show="error" class="mt-1 text-xs text-amber-700">
+                    Pencarian QualityHub biasa di bawah tetap dapat digunakan.
+                </p>
+                <a
+                    x-show="fallbackUrl"
+                    :href="fallbackUrl"
+                    class="mt-3 inline-flex items-center rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+                >
+                    Cari dengan pencarian biasa
+                </a>
+            </div>
+
+            <div id="ai-smart-search-results" x-show="searched && !loading && !error" :aria-busy="loading" class="mt-5" x-cloak>
+                <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-800" x-text="fallback ? 'Hasil pencarian biasa' : 'Hasil AI Smart Search'"></h3>
+                        <p x-show="message && !fallback" class="mt-0.5 text-xs text-slate-500" x-text="message"></p>
+                    </div>
+                    <span class="text-xs font-semibold text-indigo-700" x-text="results.length + ' dokumen'"></span>
+                </div>
+
+                <div x-show="results.length === 0" class="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-5 py-6 text-center">
+                    <p class="text-sm font-semibold text-slate-700">Dokumen yang sesuai tidak ditemukan</p>
+                    <p class="mt-1 text-xs text-slate-500">Coba deskripsi yang lebih singkat atau gunakan pencarian biasa.</p>
+                </div>
+
+                <div x-show="results.length > 0" class="mt-3 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">
+                    <template x-for="document in results" :key="document.id">
+                        <a
+                            :href="document.url"
+                            class="group flex items-start gap-3 bg-white px-4 py-4 transition hover:bg-indigo-50/50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
+                        >
+                            <div class="min-w-0 flex-1">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <p class="min-w-0 truncate text-sm font-semibold text-slate-800" x-text="document.title"></p>
+                                    <span x-show="document.extension" class="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500" x-text="document.extension"></span>
+                                </div>
+                                <p x-show="document.explanation" class="mt-1 text-xs font-medium text-indigo-700" x-text="document.explanation"></p>
+                                <p x-show="document.metadata" class="mt-1 text-xs text-slate-500" x-text="document.metadata"></p>
+                            </div>
+
+                            <svg class="mt-1 flex-shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-indigo-600" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path d="m9 18 6-6-6-6"/>
+                            </svg>
+                        </a>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    {{-- ========================================================= --}}
     {{-- SMART SEARCH ENGINE --}}
     <div
         id="document-search"
@@ -3391,6 +3530,246 @@
     {{-- ========================================================= --}}
 
     <script nonce="{{ $cspNonce }}">
+        function aiSmartSearch() {
+
+            const endpoint = @js(route('documents.search.ai'));
+            const normalSearchUrl = @js(route('documents.index'));
+
+            const text = (value, fallback = '') => {
+                if (!['string', 'number'].includes(typeof value)) {
+                    return fallback;
+                }
+
+                return String(value).trim() || fallback;
+            };
+
+            const localUrl = (value) => {
+                if (typeof value !== 'string' || value.trim() === '') {
+                    return '';
+                }
+
+                try {
+                    const parsed = new URL(value, window.location.origin);
+
+                    return parsed.origin === window.location.origin
+                        ? parsed.pathname + parsed.search + parsed.hash
+                        : '';
+                } catch (error) {
+                    return '';
+                }
+            };
+
+            const keywordFallbackUrl = (query) => {
+                try {
+                    const parsed = new URL(normalSearchUrl, window.location.origin);
+                    parsed.searchParams.set('search', query.slice(0, 160));
+
+                    return localUrl(parsed.toString());
+                } catch (error) {
+                    return '#document-search';
+                }
+            };
+
+            const normalizeResult = (result) => {
+                if (result === null || typeof result !== 'object') {
+                    return null;
+                }
+
+                const id = Number(result.id ?? result.document_id);
+                const url = localUrl(result.url);
+
+                if (!Number.isInteger(id) || id < 1 || url === '') {
+                    return null;
+                }
+
+                const matchedBy = Array.isArray(result.matched_by)
+                    ? result.matched_by.map((item) => text(item)).filter(Boolean)
+                    : [];
+
+                const explanation = text(
+                    result.explanation ?? result.match_explanation
+                ) || (
+                    matchedBy.length > 0
+                        ? 'Cocok dengan: ' + matchedBy.join(' • ')
+                        : ''
+                );
+
+                const metadata = [
+                    text(result.qc_type_label ?? result.scan_type),
+                    text(result.qc_detail),
+                    text(result.category),
+                    text(result.department),
+                    text(result.date),
+                ].filter(Boolean).join(' • ');
+
+                return {
+                    id,
+                    url,
+                    title: text(
+                        result.title,
+                        text(result.file_name, 'Dokumen QualityHub')
+                    ),
+                    extension: text(result.extension).toUpperCase(),
+                    explanation,
+                    metadata,
+                };
+            };
+
+            return {
+                query: '',
+                results: [],
+                loading: false,
+                searched: false,
+                fallback: false,
+                fallbackUrl: '',
+                message: '',
+                error: '',
+                statusMessage: '',
+                requestController: null,
+                requestId: 0,
+
+                async performAiSearch() {
+                    const cleanQuery = this.query.trim();
+
+                    if (cleanQuery === '') {
+                        this.searched = false;
+                        this.error = 'Masukkan permintaan pencarian terlebih dahulu.';
+                        this.statusMessage = this.error;
+                        return;
+                    }
+
+                    if (this.requestController) {
+                        this.requestController.abort();
+                    }
+
+                    const controller = new AbortController();
+                    const currentRequestId = ++this.requestId;
+
+                    this.requestController = controller;
+                    this.loading = true;
+                    this.searched = true;
+                    this.fallback = false;
+                    this.fallbackUrl = '';
+                    this.results = [];
+                    this.message = '';
+                    this.error = '';
+                    this.statusMessage = 'AI lokal sedang mencari dokumen.';
+
+                    try {
+                        const csrfToken = document
+                            .querySelector('meta[name="csrf-token"]')
+                            ?.getAttribute('content');
+
+                        if (!csrfToken) {
+                            throw new Error(
+                                'Sesi pencarian tidak valid. Muat ulang halaman lalu coba kembali.'
+                            );
+                        }
+
+                        const response = await fetch(endpoint, {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken,
+                                'X-Requested-With': 'XMLHttpRequest',
+                            },
+                            body: JSON.stringify({ query: cleanQuery }),
+                            signal: controller.signal,
+                        });
+
+                        let data = null;
+
+                        try {
+                            data = await response.json();
+                        } catch (parseError) {
+                            throw new Error(
+                                'Respons AI Smart Search lokal tidak valid.'
+                            );
+                        }
+
+                        if (currentRequestId !== this.requestId) {
+                            return;
+                        }
+
+                        if (data === null || typeof data !== 'object') {
+                            throw new Error(
+                                'Respons AI Smart Search lokal tidak valid.'
+                            );
+                        }
+
+                        this.fallbackUrl = cleanQuery.length <= 160
+                            ? localUrl(data.fallback_url)
+                            : '';
+                        this.fallbackUrl = this.fallbackUrl
+                            || keywordFallbackUrl(cleanQuery);
+
+                        if (!response.ok) {
+                            this.error = text(
+                                data.message,
+                                'AI Smart Search lokal sedang tidak tersedia.'
+                            );
+                            this.statusMessage = this.error;
+                            return;
+                        }
+
+                        if (!Array.isArray(data.results)) {
+                            throw new Error(
+                                'Respons AI Smart Search lokal tidak valid.'
+                            );
+                        }
+
+                        this.fallback = data.fallback === true
+                            || data.available === false
+                            || text(data.mode) === 'keyword_fallback';
+                        this.results = data.results
+                            .map(normalizeResult)
+                            .filter(Boolean);
+                        this.message = text(
+                            data.message,
+                            this.fallback
+                                ? 'Hasil berikut berasal dari pencarian metadata biasa.'
+                                : 'Dokumen diurutkan berdasarkan metadata yang paling relevan.'
+                        );
+                        this.statusMessage = this.fallback
+                            ? 'AI lokal tidak tersedia. '
+                                + this.results.length
+                                + ' hasil pencarian biasa ditampilkan.'
+                            : this.results.length
+                                + ' hasil AI Smart Search ditemukan.';
+                    } catch (error) {
+                        if (error instanceof Error && error.name === 'AbortError') {
+                            return;
+                        }
+
+                        if (currentRequestId !== this.requestId) {
+                            return;
+                        }
+
+                        const safeMessage = error instanceof Error
+                            && (
+                                error.message.startsWith('Respons AI')
+                                || error.message.startsWith('Sesi pencarian')
+                            )
+                                ? error.message
+                                : 'AI Smart Search lokal sedang tidak tersedia.';
+
+                        this.fallback = false;
+                        this.results = [];
+                        this.fallbackUrl = keywordFallbackUrl(cleanQuery);
+                        this.error = safeMessage;
+                        this.statusMessage = safeMessage;
+                    } finally {
+                        if (currentRequestId === this.requestId) {
+                            this.loading = false;
+                            this.requestController = null;
+                        }
+                    }
+                },
+            };
+        }
+
         function documentSearch() {
 
             return {
@@ -4089,6 +4468,7 @@
         |
         */
         document.addEventListener('alpine:init', () => {
+            Alpine.data('aiSmartSearch', aiSmartSearch);
             Alpine.data('documentSearch', documentSearch);
         });
 </script>
