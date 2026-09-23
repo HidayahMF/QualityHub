@@ -1,4 +1,4 @@
-<section class="qh-profile-section">
+<section class="qh-profile-section flex h-full flex-col">
 
     <header
         class="qh-profile-section-header
@@ -41,7 +41,7 @@
             </h2>
 
             <p class="mt-1 text-sm leading-6 text-slate-500">
-                {{ __('Gunakan kata sandi yang kuat dan sulit ditebak untuk menjaga keamanan akun Anda.') }}
+                {{ __('Gunakan kata sandi yang kuat dan tidak digunakan pada layanan lain.') }}
             </p>
         </div>
     </header>
@@ -51,6 +51,9 @@
         method="post"
         action="{{ route('password.update') }}"
         class="qh-profile-form
+               flex
+               flex-1
+               flex-col
                space-y-5
                px-5
                sm:px-6
@@ -71,6 +74,7 @@
                 name="current_password"
                 type="password"
                 class="qh-profile-input mt-2 block w-full"
+                required
                 autocomplete="current-password"
             />
 
@@ -93,6 +97,7 @@
                 name="password"
                 type="password"
                 class="qh-profile-input mt-2 block w-full"
+                required
                 autocomplete="new-password"
             />
 
@@ -115,6 +120,7 @@
                 name="password_confirmation"
                 type="password"
                 class="qh-profile-input mt-2 block w-full"
+                required
                 autocomplete="new-password"
             />
 
@@ -131,7 +137,8 @@
                    flex-wrap
                    items-center
                    gap-4
-                   pt-1"
+                   mt-auto
+                   pt-6"
         >
             <x-primary-button class="qh-profile-primary">
                 {{ __('Perbarui Kata Sandi') }}
@@ -140,11 +147,8 @@
 
             @if (session('status') === 'password-updated')
                 <p
-                    x-data="{ show: true }"
-                    x-show="show"
-                    x-transition
-                    x-init="setTimeout(() => show = false, 2000)"
                     class="text-sm font-semibold text-emerald-700"
+                    role="status"
                 >
                     {{ __('Kata sandi diperbarui.') }}
                 </p>

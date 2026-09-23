@@ -686,10 +686,12 @@
                         'deactivate_category' => 'Nonaktifkan Kategori',
                         'deactivate_department' => 'Nonaktifkan Departemen',
                         'deactivate_user' => 'Nonaktifkan Pengguna',
+                        'delete_category' => 'Hapus Kategori',
                         'download_document' => 'Unduh Dokumen',
                         'download_document_revision' => 'Unduh Revisi Dokumen',
                         'open_document' => 'Buka Dokumen',
                         'open_document_revision' => 'Buka Revisi Dokumen',
+                        'permanent_delete_document' => 'Hapus Permanen Dokumen',
                         'reject_user' => 'Tolak Pengguna',
                         'remove_favorite' => 'Hapus Favorit',
                         'restore_document' => 'Pulihkan Dokumen',
@@ -1180,6 +1182,9 @@
                                     'archive_document' =>
                                         'bg-amber-50 text-amber-700',
 
+                                    'permanent_delete_document' =>
+                                        'bg-red-50 text-red-700',
+
                                     'restore_document' =>
                                         'bg-emerald-50 text-emerald-700',
 
@@ -1210,6 +1215,9 @@
 
                                     'deactivate_user' =>
                                         'bg-amber-50 text-amber-700',
+
+                                    'delete_category' =>
+                                        'bg-red-50 text-red-700',
 
                                     'create_category',
                                     'create_department',

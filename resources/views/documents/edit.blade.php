@@ -260,59 +260,12 @@
                 {{-- CATEGORY --}}
                 <div>
 
-                    <label
-                        for="category_id"
-                        class="block
-                               mb-2
-                               text-sm
-                               font-semibold
-                               text-slate-700"
-                    >
-                        Kategori
-                        <span class="text-red-500">*</span>
-                    </label>
-
-
-                    <select
-                        id="category_id"
-                        name="category_id"
-                        required
-
-                        class="w-full
-                               rounded-xl
-                               border-slate-200
-                               bg-slate-50
-                               px-4
-                               py-3"
-                    >
-
-                        @foreach($categories as $category)
-
-                            <option
-                                value="{{ $category->id }}"
-
-                                @selected(
-                                    old(
-                                        'category_id',
-                                        $document->category_id
-                                    )
-                                    == $category->id
-                                )
-                            >
-
-                                {{ $category->department?->name ?? '-' }}
-                                —
-                                {{ $category->name }}
-
-                                @unless($category->is_active)
-                                    (Tidak Aktif)
-                                @endunless
-
-                            </option>
-
-                        @endforeach
-
-                    </select>
+                    <x-category-combobox
+                        :categories="$categories"
+                        :departments="$departments"
+                        :allow-create="false"
+                        :selected-category-id="old('category_id', $document->category_id)"
+                    />
 
                 </div>
 

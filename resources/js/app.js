@@ -1,8 +1,174 @@
-import './bootstrap';
+﻿import './bootstrap';
+import { initializeCategoryComboboxes } from './category-combobox';
 
 import Alpine from '@alpinejs/csp';
 
 window.Alpine = Alpine;
+
+Alpine.data('documentFileUpload', () => ({
+    fileName: '',
+    fileSize: '',
+
+    handleFile(event) {
+        const file = event.target.files?.[0];
+
+        if (!file) {
+            this.fileName = '';
+            this.fileSize = '';
+            return;
+        }
+
+        this.fileName = file.name;
+
+        if (file.size >= 1048576) {
+            this.fileSize = `${(file.size / 1048576).toFixed(2)} MB`;
+        } else {
+            this.fileSize = `${(file.size / 1024).toFixed(1)} KB`;
+        }
+    },
+}));
+
+Alpine.data('qualityHubModal', () => ({
+    show: false,
+    name: '',
+    focusable: false,
+
+    init() {
+        this.name = this.$el.dataset.qhModalName ?? '';
+        this.show = this.$el.dataset.qhModalShow === 'true';
+        this.focusable =
+            this.$el.dataset.qhModalFocusable === 'true';
+
+        this.syncBodyLock(this.show);
+
+        this.$watch('show', (value) => {
+            this.syncBodyLock(value);
+        });
+    },
+
+    eventName(event) {
+        if (typeof event.detail === 'string') {
+            return event.detail;
+        }
+
+        return event.detail?.name ?? '';
+    },
+
+    open(event) {
+        if (this.eventName(event) === this.name) {
+            this.show = true;
+        }
+    },
+
+    closeRequested(event) {
+        if (this.eventName(event) === this.name) {
+            this.close();
+        }
+    },
+
+    close() {
+        this.show = false;
+    },
+
+    syncBodyLock(open) {
+        document.body.classList.toggle(
+            'overflow-y-hidden',
+            open
+        );
+
+        if (open && this.focusable) {
+            window.setTimeout(() => {
+                this.focusables()[0]?.focus();
+            }, 100);
+        }
+    },
+
+    focusables() {
+        const selector = [
+            'a',
+            'button',
+            "input:not([type='hidden'])",
+            'textarea',
+            'select',
+            'details',
+            "[tabindex]:not([tabindex='-1'])",
+        ].join(',');
+
+        return [...this.$el.querySelectorAll(selector)]
+            .filter((element) =>
+                ! element.hasAttribute('disabled')
+                && element.getClientRects().length > 0
+            );
+    },
+
+    handleTab(event) {
+        const focusables = this.focusables();
+
+        if (focusables.length === 0) {
+            return;
+        }
+
+        const currentIndex = focusables.indexOf(
+            document.activeElement
+        );
+
+        const nextIndex = event.shiftKey
+            ? (currentIndex <= 0
+                ? focusables.length - 1
+                : currentIndex - 1)
+            : (currentIndex + 1) % focusables.length;
+
+        focusables[nextIndex].focus();
+    },
+}));
+
+Alpine.data('qualityHubTypedConfirmation', () => ({
+    step: 1,
+    confirmation: '',
+    submitting: false,
+
+    get firstStep() {
+        return this.step === 1;
+    },
+
+    get secondStep() {
+        return this.step === 2;
+    },
+
+    get cannotSubmit() {
+        return ! this.secondStep
+            || this.confirmation.trim() !== 'HAPUS'
+            || this.submitting;
+    },
+
+    resetOnOpen(event) {
+        const name = typeof event.detail === 'string'
+            ? event.detail
+            : event.detail?.name;
+
+        if (name !== this.$el.dataset.qhTypedModalName) {
+            return;
+        }
+
+        this.step = 1;
+        this.confirmation = '';
+        this.submitting = false;
+    },
+
+    advance() {
+        this.step = 2;
+        this.$nextTick(() => this.$refs.confirmationInput?.focus());
+    },
+
+    submit(event) {
+        if (this.cannotSubmit) {
+            event.preventDefault();
+            return;
+        }
+
+        this.submitting = true;
+    },
+}));
 
 Alpine.start();
 
@@ -18,27 +184,14 @@ Alpine.start();
 
 document.addEventListener('DOMContentLoaded', () => {
 
+    initializeCategoryComboboxes();
+
     /*
     | Dashboard period auto-submit
     */
     document.querySelectorAll('[data-auto-submit]').forEach((element) => {
         element.addEventListener('change', () => {
             const form = element.form;
-
-            if (form) {
-                form.requestSubmit();
-            }
-        });
-    });
-
-    /*
-    | Logout links
-    */
-    document.querySelectorAll('[data-submit-form]').forEach((element) => {
-        element.addEventListener('click', (event) => {
-            event.preventDefault();
-
-            const form = element.closest('form');
 
             if (form) {
                 form.requestSubmit();

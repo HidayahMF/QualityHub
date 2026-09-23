@@ -255,6 +255,7 @@ class ActivityLogController extends Controller
             'download_document',
             'update_document',
             'archive_document',
+            'permanent_delete_document',
             'restore_document',
             'add_favorite',
             'remove_favorite',

@@ -46,9 +46,58 @@ class AuthenticationTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $response = $this->actingAs($user)->post('/logout');
+        $response = $this
+            ->actingAs($user)
+            ->withSession(['logout_probe' => 'must-be-invalidated'])
+            ->post('/logout');
 
         $this->assertGuest();
-        $response->assertRedirect(route('login'));
+        $response
+            ->assertRedirect(route('login'))
+            ->assertSessionMissing('logout_probe');
+    }
+
+    public function test_logout_does_not_accept_get_requests(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->get('/logout')
+            ->assertMethodNotAllowed();
+
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_main_and_legacy_navigation_render_only_post_logout_forms(): void
+    {
+        $user = User::factory()->create();
+        $logoutUrl = route('logout');
+
+        $mainLayout = $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertOk();
+
+        $mainLayout
+            ->assertSee('method="POST"', false)
+            ->assertSee('action="'.$logoutUrl.'"', false)
+            ->assertSee('name="_token"', false)
+            ->assertDontSee('href="'.$logoutUrl.'"', false)
+            ->assertDontSee('data-submit-form', false);
+
+        $legacyNavigation = $this->view('layouts.navigation');
+        $legacyNavigation
+            ->assertSee('method="POST"', false)
+            ->assertSee('action="'.$logoutUrl.'"', false)
+            ->assertSee('name="_token"', false)
+            ->assertDontSee('href="'.$logoutUrl.'"', false)
+            ->assertDontSee('data-submit-form', false);
+
+        $this->assertSame(
+            2,
+            substr_count(
+                (string) $legacyNavigation,
+                'action="'.$logoutUrl.'"'
+            )
+        );
     }
 }

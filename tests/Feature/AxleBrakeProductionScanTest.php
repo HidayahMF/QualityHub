@@ -347,7 +347,7 @@ class AxleBrakeProductionScanTest extends TestCase
         $payload = array_merge($this->brakePayload(), [
             'shift' => '3',
             'production_line_id' => $this->productionLine->id,
-            'scan_time' => '14:45',
+            'scan_time' => '23:45',
             'brake_part_prefix' => 'FORGED PREFIX',
             'brake_part_variant' => 'FORGED VARIANT',
             'brake_part_number' => 'FORGED PART NUMBER',
@@ -378,7 +378,7 @@ class AxleBrakeProductionScanTest extends TestCase
         $this->assertSame($this->brake402->id, $snapshot->brake_part_number_id);
         $this->assertSame($this->productionLine->id, $snapshot->production_line_id);
         $this->assertSame(3, $snapshot->shift);
-        $this->assertSame('14:45', substr((string) $snapshot->production_time, 0, 5));
+        $this->assertSame('23:45', substr((string) $snapshot->production_time, 0, 5));
         $this->assertSame('A 4304200', $snapshot->snapshot_prefix);
         $this->assertSame('402 / 502', $snapshot->snapshot_variant);
         $this->assertSame('A 4304200 402 / 502', $snapshot->snapshot_display_name);
@@ -406,7 +406,7 @@ class AxleBrakeProductionScanTest extends TestCase
             ->assertSeeText('Data produksi saat dokumen ini dibuat.')
             ->assertSeeText('A 4304200 402 / 502')
             ->assertSeeText('MOP 3')
-            ->assertSeeText('14:45')
+            ->assertSeeText('23:45')
             ->assertDontSeeText('FORGED LEGACY PART')
             ->assertDontSeeText('CHANGED MASTER PART');
     }
@@ -453,6 +453,103 @@ class AxleBrakeProductionScanTest extends TestCase
             $this->assertNull($metadata->line);
             $this->assertNull($metadata->scan_time);
         }
+    }
+
+    public function test_axle_and_brake_allow_shift_without_time(): void
+    {
+        $axlePayload = $this->axlePayload();
+        $axlePayload['shift'] = '1';
+
+        $brakePayload = $this->brakePayload();
+        $brakePayload['shift'] = '3';
+
+        $this->actingAs($this->admin)
+            ->post(route('documents.scan.store'), $axlePayload)
+            ->assertRedirect(route('documents.scan.create'))
+            ->assertSessionHasNoErrors();
+
+        $this->post(route('documents.scan.store'), $brakePayload)
+            ->assertRedirect(route('documents.scan.create'))
+            ->assertSessionHasNoErrors();
+
+        $axleSnapshot = DocumentAxleProduction::query()->sole();
+        $brakeSnapshot = DocumentBrakeProduction::query()->sole();
+
+        $this->assertSame(1, $axleSnapshot->shift);
+        $this->assertNull($axleSnapshot->production_time);
+        $this->assertSame(3, $brakeSnapshot->shift);
+        $this->assertNull($brakeSnapshot->production_time);
+
+        $metadataRows = DocumentScanMetadata::query()
+            ->orderBy('id')
+            ->get();
+
+        $this->assertCount(2, $metadataRows);
+        $this->assertSame('1', (string) $metadataRows[0]->shift);
+        $this->assertNull($metadataRows[0]->scan_time);
+        $this->assertSame('3', (string) $metadataRows[1]->shift);
+        $this->assertNull($metadataRows[1]->scan_time);
+    }
+
+    public function test_axle_and_brake_reject_time_without_shift_before_artifacts(): void
+    {
+        $this->actingAs($this->admin);
+
+        foreach ([$this->axlePayload(), $this->brakePayload()] as $payload) {
+            $payload['scan_time'] = '08:30';
+
+            $this->post(route('documents.scan.store'), $payload)
+                ->assertRedirect(route('documents.scan.create'))
+                ->assertSessionHasErrors([
+                    'shift' => 'Pilih Shift ketika Jam diisi.',
+                ])
+                ->assertSessionHasInput('scan_time', '08:30');
+        }
+
+        $this->assertNoScanArtifacts();
+    }
+
+    public function test_axle_and_brake_reject_time_outside_selected_shift_before_artifacts(): void
+    {
+        $this->actingAs($this->admin);
+
+        $cases = [
+            [$this->axlePayload(), '1', '20:00', '07:00–15:59'],
+            [$this->brakePayload(), '3', '17:20', '23:00–06:59'],
+        ];
+
+        foreach ($cases as [$payload, $shift, $time, $rangeLabel]) {
+            $payload['shift'] = $shift;
+            $payload['scan_time'] = $time;
+
+            $this->post(route('documents.scan.store'), $payload)
+                ->assertRedirect(route('documents.scan.create'))
+                ->assertSessionHasErrors([
+                    'scan_time' => "Jam {$time} tidak sesuai dengan Shift {$shift} ({$rangeLabel}).",
+                ]);
+        }
+
+        $this->assertNoScanArtifacts();
+    }
+
+    public function test_other_scan_rejects_mismatched_shift_time_before_artifacts(): void
+    {
+        $payload = array_merge($this->basePayload(), [
+            'scan_type' => 'Lainnya',
+            'scan_type_other' => 'Audit Internal QC',
+            'title' => 'Dokumen Audit Internal',
+            'shift' => '2',
+            'scan_time' => '11:05',
+        ]);
+
+        $this->actingAs($this->admin)
+            ->post(route('documents.scan.store'), $payload)
+            ->assertRedirect(route('documents.scan.create'))
+            ->assertSessionHasErrors([
+                'scan_time' => 'Jam 11:05 tidak sesuai dengan Shift 2 (16:00–22:59).',
+            ]);
+
+        $this->assertNoScanArtifacts();
     }
 
     public function test_inactive_and_unknown_axle_master_ids_are_rejected_without_artifacts(): void
@@ -629,7 +726,7 @@ class AxleBrakeProductionScanTest extends TestCase
             'title' => 'Dokumen Audit Internal',
             'line' => 'LEGACY FREE TEXT LINE',
             'shift' => '2',
-            'scan_time' => '11:05',
+            'scan_time' => '16:05',
         ]);
 
         $this->actingAs($this->admin)
@@ -644,7 +741,7 @@ class AxleBrakeProductionScanTest extends TestCase
         $this->assertSame('Audit Internal QC', $metadata->scan_type);
         $this->assertSame('LEGACY FREE TEXT LINE', $metadata->line);
         $this->assertSame('2', (string) $metadata->shift);
-        $this->assertSame('11:05', substr((string) $metadata->scan_time, 0, 5));
+        $this->assertSame('16:05', substr((string) $metadata->scan_time, 0, 5));
         $this->assertDatabaseCount('document_axle_productions', 0);
         $this->assertDatabaseCount('document_brake_productions', 0);
         $this->assertDatabaseCount('document_retoolings', 0);
@@ -678,5 +775,17 @@ class AxleBrakeProductionScanTest extends TestCase
             'capture_source' => 'upload',
             'files' => [UploadedFile::fake()->image('scan.png', 2, 2)],
         ];
+    }
+
+    private function assertNoScanArtifacts(): void
+    {
+        $this->assertDatabaseCount('documents', 0);
+        $this->assertDatabaseCount('document_scan_metadata', 0);
+        $this->assertDatabaseCount('document_axle_productions', 0);
+        $this->assertDatabaseCount('document_brake_productions', 0);
+        $this->assertDatabaseCount('document_retoolings', 0);
+        $this->assertDatabaseCount('document_versions', 0);
+        $this->assertDatabaseCount('activity_logs', 0);
+        $this->assertSame([], Storage::disk('bmc_documents')->allFiles());
     }
 }

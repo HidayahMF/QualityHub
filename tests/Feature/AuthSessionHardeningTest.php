@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Services\SessionSecurityService;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -219,10 +220,10 @@ class AuthSessionHardeningTest extends TestCase
         );
     }
 
-    public function test_admin_deactivation_immediately_revokes_target_sessions_and_remember_token(): void
+    public function test_super_admin_deactivation_immediately_revokes_target_sessions_and_remember_token(): void
     {
         $admin = User::factory()->create([
-            'role' => 'admin',
+            'role' => 'super_admin',
             'account_status' => 'active',
         ]);
 
@@ -271,6 +272,100 @@ class AuthSessionHardeningTest extends TestCase
         );
     }
 
+    public function test_expired_csrf_token_renders_branded_419_without_updating_profile(): void
+    {
+        config([
+            'smartfind_security.csp.enabled' => true,
+        ]);
+        $this->enforceCsrfValidation();
+
+        $user = User::factory()->create([
+            'name' => 'Nama Sebelum Request',
+            'email' => 'sebelum.request@example.com',
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->withSession([
+                '_token' => 'current-session-token',
+            ])
+            ->patch('/profile', [
+                '_token' => 'expired-form-token',
+                'name' => 'Nama Tidak Boleh Tersimpan',
+                'email' => 'tidak-boleh-tersimpan@example.com',
+            ]);
+
+        $response
+            ->assertStatus(419)
+            ->assertSee('BMC QualityHub')
+            ->assertSee('Sesi Anda Telah Berakhir')
+            ->assertSee('Masuk Kembali')
+            ->assertSee('href="'.route('login').'"', false)
+            ->assertDontSee('TokenMismatchException', false)
+            ->assertDontSee('CSRF token mismatch', false)
+            ->assertDontSee('vendor/laravel/framework', false)
+            ->assertHeader('X-Frame-Options', 'DENY');
+
+        $policy = (string) $response->headers->get(
+            'Content-Security-Policy'
+        );
+
+        $this->assertNotSame('', $policy);
+        $this->assertStringNotContainsString(
+            '__SMARTFIND_CSP_NONCE__',
+            $policy
+        );
+        $this->assertMatchesRegularExpression(
+            '/<style nonce="[^"]+">/',
+            (string) $response->getContent()
+        );
+
+        $user->refresh();
+
+        $this->assertSame('Nama Sebelum Request', $user->name);
+        $this->assertSame('sebelum.request@example.com', $user->email);
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_stale_login_form_renders_419_and_login_remains_accessible(): void
+    {
+        $this->enforceCsrfValidation();
+
+        $user = User::factory()->create([
+            'last_login_at' => null,
+        ]);
+
+        $response = $this
+            ->withSession([
+                '_token' => 'current-session-token',
+            ])
+            ->post('/login', [
+                '_token' => 'expired-form-token',
+                'email' => $user->email,
+                'password' => 'password',
+            ]);
+
+        $response
+            ->assertStatus(419)
+            ->assertSee('Sesi Anda Telah Berakhir')
+            ->assertSee('Data yang belum dikirim mungkin perlu dimasukkan kembali.');
+
+        $this->assertGuest();
+        $this->assertNull($user->refresh()->last_login_at);
+
+        $this->get(route('login'))
+            ->assertOk()
+            ->assertSee('Selamat datang kembali');
+    }
+
+    private function enforceCsrfValidation(): void
+    {
+        $this->app->bind(
+            ValidateCsrfToken::class,
+            EnforcedCsrfTokenForSessionExpiredTest::class
+        );
+    }
+
     private function insertSession(
         string $sessionId,
         int $userId
@@ -283,5 +378,13 @@ class AuthSessionHardeningTest extends TestCase
             'payload' => '',
             'last_activity' => time(),
         ]);
+    }
+}
+
+class EnforcedCsrfTokenForSessionExpiredTest extends ValidateCsrfToken
+{
+    protected function runningUnitTests(): bool
+    {
+        return false;
     }
 }

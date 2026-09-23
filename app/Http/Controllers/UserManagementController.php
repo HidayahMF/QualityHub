@@ -23,7 +23,7 @@ class UserManagementController extends Controller
         Request $request,
         InputSanitizationService $input
     ): View {
-        $this->ensureAdmin();
+        $this->ensureSuperAdmin();
 
         /*
         |--------------------------------------------------------------------------
@@ -179,7 +179,7 @@ class UserManagementController extends Controller
         Request $request,
         User $user
     ): RedirectResponse {
-        $this->ensureAdmin();
+        $this->ensureSuperAdmin();
         $this->ensureTargetCanBeManaged($user);
 
         abort_if(
@@ -220,7 +220,7 @@ class UserManagementController extends Controller
         User $user,
         SessionSecurityService $sessionSecurity
     ): RedirectResponse {
-        $this->ensureAdmin();
+        $this->ensureSuperAdmin();
         $this->ensureTargetCanBeManaged($user);
 
         abort_if(
@@ -265,7 +265,7 @@ class UserManagementController extends Controller
         User $user,
         SessionSecurityService $sessionSecurity
     ): RedirectResponse {
-        $this->ensureAdmin();
+        $this->ensureSuperAdmin();
         $this->ensureTargetCanBeManaged($user);
 
         abort_if(
@@ -315,7 +315,7 @@ class UserManagementController extends Controller
         Request $request,
         User $user
     ): RedirectResponse {
-        $this->ensureAdmin();
+        $this->ensureSuperAdmin();
         $this->ensureTargetCanBeManaged($user);
 
         abort_unless(
@@ -352,11 +352,11 @@ class UserManagementController extends Controller
         );
     }
 
-    private function ensureAdmin(): void
+    private function ensureSuperAdmin(): void
     {
         abort_unless(
             Auth::check()
-            && Auth::user()->isAdmin(),
+            && Auth::user()->isSuperAdmin(),
             403
         );
     }

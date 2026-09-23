@@ -8,8 +8,10 @@ use App\Models\Department;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class CategoryManagementController extends Controller
@@ -369,50 +371,99 @@ class CategoryManagementController extends Controller
 
 
     /**
-     * Aktif / nonaktif kategori.
+     * Nonaktifkan kategori.
      */
-    public function toggleStatus(
+    public function deactivate(
+        Request $request,
+        Category $category
+    ): RedirectResponse {
+
+        return $this->setStatus(
+            request: $request,
+            category: $category,
+            isActive: false
+        );
+    }
+
+
+    /**
+     * Aktifkan kembali kategori.
+     */
+    public function activate(
+        Request $request,
+        Category $category
+    ): RedirectResponse {
+
+        return $this->setStatus(
+            request: $request,
+            category: $category,
+            isActive: true
+        );
+    }
+
+
+    /**
+     * Hapus permanen kategori yang belum digunakan.
+     */
+    public function destroy(
         Request $request,
         Category $category
     ): RedirectResponse {
 
         $this->ensureSuperAdmin();
 
-        $newStatus = ! $category->is_active;
+        $categoryName = DB::transaction(
+            function () use ($request, $category): string {
+                $lockedCategory = Category::query()
+                    ->with('department')
+                    ->lockForUpdate()
+                    ->findOrFail($category->getKey());
 
-        $category->update([
-            'is_active' => $newStatus,
-        ]);
+                $documentCount = $lockedCategory
+                    ->documents()
+                    ->count();
 
-        $action = $newStatus
-            ? 'activate_category'
-            : 'deactivate_category';
+                if ($documentCount > 0) {
+                    throw ValidationException::withMessages([
+                        'category' =>
+                            'Kategori "'
+                            . $lockedCategory->name
+                            . '" digunakan oleh '
+                            . $documentCount
+                            . ' dokumen dan tidak dapat dihapus permanen.',
+                    ]);
+                }
 
-        $statusText = $newStatus
-            ? 'activated'
-            : 'deactivated';
+                $this->logActivity(
+                    request: $request,
+                    category: $lockedCategory,
+                    action: 'delete_category',
+                    description:
+                        Auth::user()->name
+                        . ' deleted category "'
+                        . $lockedCategory->name
+                        . '".',
+                    additionalMetadata: [
+                        'document_count' => $documentCount,
+                    ]
+                );
 
-        $this->logActivity(
-            request: $request,
-            category: $category,
-            action: $action,
-            description:
-                Auth::user()->name
-                . ' '
-                . $statusText
-                . ' category "'
-                . $category->name
-                . '".'
+                $categoryName = $lockedCategory->name;
+
+                $lockedCategory->delete();
+
+                return $categoryName;
+            }
         );
 
-        return back()->with(
-            'success',
-            'Category "'
-            . $category->name
-            . '" successfully '
-            . $statusText
-            . '.'
-        );
+        return redirect()
+            ->route('categories.index')
+            ->with(
+                'success',
+                'Kategori "'
+                . $categoryName
+                . '" berhasil dihapus permanen.'
+            );
     }
 
 
@@ -430,6 +481,89 @@ class CategoryManagementController extends Controller
 
 
     /**
+     * Ubah status kategori secara eksplisit dan atomik.
+     */
+    private function setStatus(
+        Request $request,
+        Category $category,
+        bool $isActive
+    ): RedirectResponse {
+
+        $this->ensureSuperAdmin();
+
+        $categoryName = DB::transaction(
+            function () use ($request, $category, $isActive): string {
+                $lockedCategory = Category::query()
+                    ->with('department')
+                    ->lockForUpdate()
+                    ->findOrFail($category->getKey());
+
+                $documentCount = $lockedCategory
+                    ->documents()
+                    ->count();
+
+                if (
+                    $isActive
+                    && ! $lockedCategory->department?->is_active
+                ) {
+                    throw ValidationException::withMessages([
+                        'category' =>
+                            'Kategori tidak dapat diaktifkan karena departemennya tidak aktif.',
+                    ]);
+                }
+
+                if ((bool) $lockedCategory->is_active === $isActive) {
+                    return $lockedCategory->name;
+                }
+
+                $lockedCategory->update([
+                    'is_active' => $isActive,
+                ]);
+
+                $action = $isActive
+                    ? 'activate_category'
+                    : 'deactivate_category';
+
+                $statusText = $isActive
+                    ? 'activated'
+                    : 'deactivated';
+
+                $this->logActivity(
+                    request: $request,
+                    category: $lockedCategory,
+                    action: $action,
+                    description:
+                        Auth::user()->name
+                        . ' '
+                        . $statusText
+                        . ' category "'
+                        . $lockedCategory->name
+                        . '".',
+                    additionalMetadata: [
+                        'document_count' => $documentCount,
+                    ]
+                );
+
+                return $lockedCategory->name;
+            }
+        );
+
+        $statusText = $isActive
+            ? 'activated'
+            : 'deactivated';
+
+        return back()->with(
+            'success',
+            'Category "'
+            . $categoryName
+            . '" successfully '
+            . $statusText
+            . '.'
+        );
+    }
+
+
+    /**
      * Catat activity category.
      */
     private function logActivity(
@@ -439,6 +573,17 @@ class CategoryManagementController extends Controller
         string $description,
         array $additionalMetadata = []
     ): void {
+
+        $category->loadMissing('department:id,name');
+
+        $actor = Auth::user();
+
+        $documentCount = array_key_exists(
+            'document_count',
+            $additionalMetadata
+        )
+            ? (int) $additionalMetadata['document_count']
+            : $category->documents()->count();
 
         ActivityLog::create([
             'user_id' =>
@@ -464,7 +609,13 @@ class CategoryManagementController extends Controller
                     'target_category_id' =>
                         $category->id,
 
+                    'category_id' =>
+                        $category->id,
+
                     'target_category_name' =>
+                        $category->name,
+
+                    'category_name' =>
                         $category->name,
 
                     'target_category_slug' =>
@@ -472,6 +623,21 @@ class CategoryManagementController extends Controller
 
                     'department_id' =>
                         $category->department_id,
+
+                    'department_name' =>
+                        $category->department?->name,
+
+                    'actor_user_id' =>
+                        $actor?->id,
+
+                    'actor_user_name' =>
+                        $actor?->name,
+
+                    'document_count' =>
+                        $documentCount,
+
+                    'timestamp' =>
+                        now()->toIso8601String(),
 
                     'category_status' =>
                         $category->is_active

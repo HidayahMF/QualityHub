@@ -1530,7 +1530,7 @@
 
                             @elseif(request()->routeIs('profile.*'))
 
-                                My Profile
+                                Akun & Keamanan
 
 
                             @else

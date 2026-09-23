@@ -1,4 +1,4 @@
-<section class="qh-profile-section">
+<section class="qh-profile-section flex h-full flex-col">
 
     <header
         class="qh-profile-section-header
@@ -60,6 +60,9 @@
         method="post"
         action="{{ route('profile.update') }}"
         class="qh-profile-form
+               flex
+               flex-1
+               flex-col
                space-y-5
                px-5
                sm:px-6
@@ -164,7 +167,8 @@
                    flex-wrap
                    items-center
                    gap-4
-                   pt-1"
+                   mt-auto
+                   pt-6"
         >
             <x-primary-button class="qh-profile-primary">
                 {{ __('Simpan Perubahan') }}
@@ -173,11 +177,8 @@
 
             @if (session('status') === 'profile-updated')
                 <p
-                    x-data="{ show: true }"
-                    x-show="show"
-                    x-transition
-                    x-init="setTimeout(() => show = false, 2000)"
                     class="text-sm font-semibold text-emerald-700"
+                    role="status"
                 >
                     {{ __('Perubahan tersimpan.') }}
                 </p>

@@ -106,7 +106,7 @@ class InputHardeningTest extends TestCase
     public function test_user_management_rejects_invalid_filter_values(): void
     {
         $admin = User::factory()->create([
-            'role' => 'admin',
+            'role' => 'super_admin',
             'account_status' => 'active',
             'employee_id' => 'ADMIN-SEC-001',
         ]);
@@ -127,7 +127,7 @@ class InputHardeningTest extends TestCase
     public function test_super_admin_status_is_protected_on_backend(): void
     {
         $admin = User::factory()->create([
-            'role' => 'admin',
+            'role' => 'super_admin',
             'account_status' => 'active',
             'employee_id' => 'ADMIN-SEC-003',
         ]);
@@ -146,5 +146,62 @@ class InputHardeningTest extends TestCase
 
         $superAdmin->refresh();
         $this->assertSame('inactive', $superAdmin->account_status);
+    }
+
+    public function test_regular_admin_cannot_manage_user_accounts(): void
+    {
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'account_status' => 'active',
+            'employee_id' => 'ADMIN-SEC-004',
+        ]);
+
+        $target = User::factory()->create([
+            'role' => 'user',
+            'account_status' => 'active',
+            'employee_id' => 'USER-SEC-004',
+        ]);
+
+        $this
+            ->actingAs($admin)
+            ->get(route('users.index'))
+            ->assertForbidden();
+
+        $this
+            ->actingAs($admin)
+            ->patch(route('users.deactivate', $target))
+            ->assertForbidden();
+
+        $this->assertSame(
+            'active',
+            $target->refresh()->account_status
+        );
+    }
+
+    public function test_last_super_admin_cannot_deactivate_own_account(): void
+    {
+        $superAdmin = User::factory()->create([
+            'role' => 'super_admin',
+            'account_status' => 'active',
+            'employee_id' => 'SUPER-SEC-LAST',
+        ]);
+
+        $this
+            ->actingAs($superAdmin)
+            ->patch(route('users.deactivate', $superAdmin))
+            ->assertForbidden();
+
+        $this->assertSame(
+            'active',
+            $superAdmin->refresh()->account_status
+        );
+
+        $this->assertSame(
+            1,
+            User::query()
+                ->where('role', 'super_admin')
+                ->where('account_status', 'active')
+                ->count()
+        );
     }
 }

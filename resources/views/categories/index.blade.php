@@ -124,14 +124,9 @@
     @if(session('success'))
 
         <div
-            x-data="{ show: true }"
-            x-show="show"
-            x-transition
-
             class="mb-6
                    flex
                    items-center
-                   justify-between
                    gap-4
                    rounded-2xl
                    border
@@ -151,14 +146,31 @@
                 </p>
             </div>
 
-            <button
-                type="button"
-                @click="show = false"
-                class="text-emerald-700"
-            >
-                ✕
-            </button>
 
+        </div>
+
+    @endif
+
+
+    @if($errors->has('category'))
+
+        <div
+            class="mb-6
+                   rounded-2xl
+                   border
+                   border-red-200
+                   bg-red-50
+                   px-5
+                   py-4"
+            role="alert"
+        >
+            <p class="text-sm font-bold text-red-900">
+                Tindakan tidak dapat diproses
+            </p>
+
+            <p class="mt-1 text-sm text-red-700">
+                {{ $errors->first('category') }}
+            </p>
         </div>
 
     @endif
@@ -662,63 +674,58 @@
                                         </a>
 
 
-                                        <form
-                                            method="POST"
-                                            action="{{ route(
-                                                'categories.toggle-status',
-                                                $category
-                                            ) }}"
-
-                                            data-confirm-title="{{ $category->is_active
-                                                ? 'Nonaktifkan Kategori?'
-                                                : 'Aktifkan Kategori?'
-                                            }}"
-                                            data-confirm-message="{{ $category->is_active
-                                                ? 'Kategori akan dinonaktifkan. Dokumen yang sudah menggunakan kategori ini tetap tersedia.'
-                                                : 'Kategori akan diaktifkan kembali dan dapat digunakan untuk dokumen baru.'
-                                            }}"
-                                            data-confirm-button="{{ $category->is_active
-                                                ? 'Nonaktifkan'
-                                                : 'Aktifkan'
-                                            }}"
-                                            x-on:submit.prevent="$dispatch('qualityhub-confirm', {
-                                                form: $event.currentTarget,
-                                                title: $event.currentTarget.dataset.confirmTitle,
-                                                message: $event.currentTarget.dataset.confirmMessage,
-                                                confirmText: $event.currentTarget.dataset.confirmButton
-                                            })"
-                                        >
-
-                                            @csrf
-                                            @method('PATCH')
-
+                                        @if($category->is_active)
 
                                             <button
-                                                type="submit"
-
-                                                class="
-                                                    rounded-lg
-                                                    px-3
-                                                    py-2
-                                                    text-xs
-                                                    font-semibold
-
-                                                    {{
-                                                        $category->is_active
-
-                                                        ? 'bg-amber-50 text-amber-700 hover:bg-amber-100'
-
-                                                        : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                                                    }}
-                                                "
+                                                type="button"
+                                                x-on:click.prevent="$dispatch('open-modal', '{{ (int) $category->documents_count === 0
+                                                    ? 'delete-category-' . $category->id
+                                                    : 'deactivate-category-' . $category->id
+                                                }}')"
+                                                class="rounded-lg
+                                                       px-3
+                                                       py-2
+                                                       text-xs
+                                                       font-semibold
+                                                       {{ (int) $category->documents_count === 0
+                                                           ? 'bg-red-50 text-red-700 hover:bg-red-100'
+                                                           : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+                                                       }}"
                                             >
-                                                {{ $category->is_active
-                                                    ? 'Nonaktifkan'
-                                                    : 'Aktifkan'
+                                                {{ (int) $category->documents_count === 0
+                                                    ? 'Hapus'
+                                                    : 'Nonaktifkan'
                                                 }}
                                             </button>
 
-                                        </form>
+                                        @else
+
+                                            <form
+                                                method="POST"
+                                                action="{{ route(
+                                                    'categories.activate',
+                                                    $category
+                                                ) }}"
+                                            >
+                                                @csrf
+                                                @method('PATCH')
+
+                                                <button
+                                                    type="submit"
+                                                    class="rounded-lg
+                                                           bg-emerald-50
+                                                           px-3
+                                                           py-2
+                                                           text-xs
+                                                           font-semibold
+                                                           text-emerald-700
+                                                           hover:bg-emerald-100"
+                                                >
+                                                    Aktifkan Kembali
+                                                </button>
+                                            </form>
+
+                                        @endif
 
                                     </div>
 
@@ -766,130 +773,33 @@
 
     </section>
 
-    {{-- ========================================================= --}}
-    {{-- BMC QUALITYHUB CUSTOM CONFIRMATION MODAL --}}
-    {{-- Menggantikan native browser confirm() dengan modal biru-putih --}}
-    {{-- ========================================================= --}}
+    @foreach($categories as $category)
 
-    <style nonce="{{ $cspNonce }}">
-        [x-cloak] { display: none !important; }
-    </style>
+        @if($category->is_active && (int) $category->documents_count === 0)
 
-    <div
-        x-data="{
-            open: false,
-            form: null,
-            title: 'Konfirmasi Tindakan',
-            message: 'Pastikan tindakan ini memang ingin dilanjutkan.',
-            confirmText: 'Lanjutkan'
-        }"
-        x-on:qualityhub-confirm.window="
-            form = $event.detail.form;
-            title = $event.detail.title || 'Konfirmasi Tindakan';
-            message = $event.detail.message || 'Pastikan tindakan ini memang ingin dilanjutkan.';
-            confirmText = $event.detail.confirmText || 'Lanjutkan';
-            open = true;
-        "
-        x-on:keydown.escape.window="
-            open = false;
-            form = null;
-        "
-        x-show="open"
-        x-cloak
-        class="fixed inset-0 z-[100] flex items-center justify-center p-4"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="qualityhub-confirm-title"
-    >
-        <div
-            x-show="open"
-            x-transition.opacity
-            class="absolute inset-0 bg-slate-950/45 backdrop-blur-[2px]"
-            x-on:click="
-                open = false;
-                form = null;
-            "
-        ></div>
+            <x-confirmation-modal
+                name="delete-category-{{ $category->id }}"
+                :action="route('categories.destroy', $category)"
+                method="DELETE"
+                variant="danger"
+                title="Hapus Kategori?"
+                description="Kategori {{ $category->name }} belum digunakan oleh dokumen dan akan dihapus permanen."
+                confirmLabel="Hapus Permanen"
+            />
 
-        <section
-            x-show="open"
-            x-transition:enter="transition ease-out duration-200"
-            x-transition:enter-start="opacity-0 scale-95 translate-y-2"
-            x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-            x-transition:leave="transition ease-in duration-150"
-            x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-            x-transition:leave-end="opacity-0 scale-95 translate-y-2"
-            class="relative w-full max-w-md overflow-hidden rounded-3xl border border-blue-100 bg-white shadow-2xl shadow-blue-950/20"
-        >
-            <div class="h-1.5 w-full bg-blue-800"></div>
+        @elseif($category->is_active)
 
-            <div class="p-6 sm:p-7">
-                <div class="flex items-start gap-4">
-                    <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 ring-1 ring-blue-100">
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="22"
-                            height="22"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            aria-hidden="true"
-                        >
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
-                            <path d="M9 12l2 2 4-4"/>
-                        </svg>
-                    </div>
+            <x-confirmation-modal
+                name="deactivate-category-{{ $category->id }}"
+                :action="route('categories.deactivate', $category)"
+                variant="warning"
+                title="Nonaktifkan Kategori?"
+                description="Kategori {{ $category->name }} digunakan oleh {{ number_format($category->documents_count) }} dokumen dan tidak dapat dihapus permanen."
+                secondaryDescription="Kategori tidak akan tersedia untuk dokumen baru, tetapi tetap dipertahankan pada dokumen historis."
+                confirmLabel="Nonaktifkan"
+            />
 
-                    <div class="min-w-0 flex-1">
-                        <p class="text-xs font-bold uppercase tracking-[0.18em] text-blue-600">
-                            BMC QualityHub
-                        </p>
+        @endif
 
-                        <h3
-                            id="qualityhub-confirm-title"
-                            class="mt-1.5 text-xl font-bold text-slate-900"
-                            x-text="title"
-                        ></h3>
-
-                        <p
-                            class="mt-2 text-sm leading-6 text-slate-600"
-                            x-text="message"
-                        ></p>
-                    </div>
-                </div>
-
-                <div class="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                    <button
-                        type="button"
-                        class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:ring-offset-2"
-                        x-on:click="
-                            open = false;
-                            form = null;
-                        "
-                    >
-                        Batal
-                    </button>
-
-                    <button
-                        type="button"
-                        class="inline-flex items-center justify-center rounded-xl bg-blue-800 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-900/15 transition hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                        x-text="confirmText"
-                        x-on:click="
-                            const target = form;
-                            open = false;
-                            form = null;
-
-                            if (target) {
-                                target.submit();
-                            }
-                        "
-                    ></button>
-                </div>
-            </div>
-        </section>
-    </div>
-
+    @endforeach
 </x-app-layout>

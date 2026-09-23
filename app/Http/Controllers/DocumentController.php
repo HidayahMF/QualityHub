@@ -10,6 +10,8 @@ use App\Models\Document;
 use App\Models\DocumentAnalytics;
 use App\Models\DocumentScanMetadata;
 use App\Models\DocumentVersion;
+use App\Services\CategoryAssignmentService;
+use App\Services\DocumentPurgeService;
 use App\Services\DocumentUploadSecurityService;
 use App\Services\InputSanitizationService;
 use App\Services\PrivateDocumentStorageService;
@@ -22,6 +24,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
@@ -198,9 +201,20 @@ class DocumentController extends Controller
             ->orderBy('name')
             ->get();
 
+        $departments = Department::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        $allowCategoryCreation = Auth::user()->isSuperAdmin();
+
         return view(
             'documents.create',
-            compact('categories')
+            compact(
+                'categories',
+                'departments',
+                'allowCategoryCreation'
+            )
         );
     }
 
@@ -221,10 +235,13 @@ class DocumentController extends Controller
         Request $request,
         DocumentUploadSecurityService $uploadSecurity,
         PrivateDocumentStorageService $privateStorage,
-        InputSanitizationService $input
+        InputSanitizationService $input,
+        CategoryAssignmentService $categoryAssignment
     ): RedirectResponse
     {
         $this->ensureAdmin();
+
+        $categoryAssignment->prepareRequest($request);
 
         /*
         |--------------------------------------------------------------------------
@@ -270,21 +287,7 @@ class DocumentController extends Controller
         */
 
         $validated = $request->validate([
-            'category_id' => [
-                'required',
-                'integer',
-
-                Rule::exists(
-                    'categories',
-                    'id'
-                )->where(
-                    fn ($query) =>
-                    $query->where(
-                        'is_active',
-                        true
-                    )
-                ),
-            ],
+            ...$categoryAssignment->validationRules($request),
 
             'title' => [
                 'required',
@@ -338,29 +341,7 @@ class DocumentController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $category = Category::query()
-            ->with('department')
-            ->where('is_active', true)
-            ->whereHas(
-                'department',
-                fn (Builder $query) =>
-                $query->where(
-                    'is_active',
-                    true
-                )
-            )
-            ->find(
-                $validated['category_id']
-            );
-
-        if (! $category) {
-            return back()
-                ->withInput()
-                ->withErrors([
-                    'category_id' =>
-                        'Kategori atau departemen yang dipilih sudah tidak aktif.',
-                ]);
-        }
+        $categorySelection = $categoryAssignment->prepare($validated);
 
         /*
         |--------------------------------------------------------------------------
@@ -426,11 +407,11 @@ class DocumentController extends Controller
         */
 
         $departmentSlug = Str::slug(
-            $category->department->name
+            $categorySelection['department_name']
         );
 
         $categorySlug =
-            $category->slug;
+            $categorySelection['slug'];
 
         $year =
             now()->format('Y');
@@ -539,7 +520,8 @@ class DocumentController extends Controller
                 function () use (
                     $request,
                     $validated,
-                    $category,
+                    $categoryAssignment,
+                    $categorySelection,
                     $file,
                     $extension,
                     $safeOriginalName,
@@ -548,6 +530,12 @@ class DocumentController extends Controller
                     $security,
                     $storedPath
                 ) {
+
+                    $category = $categoryAssignment->resolve(
+                        $request,
+                        $categorySelection,
+                        'inline_document_upload'
+                    );
 
                     /*
                     |--------------------------------------------------------------------------
@@ -774,6 +762,16 @@ class DocumentController extends Controller
                 }
             );
 
+        } catch (ValidationException $exception) {
+
+            Storage::disk(
+                'bmc_documents'
+            )->delete(
+                $storedPath
+            );
+
+            throw $exception;
+
         } catch (Throwable $exception) {
 
             /*
@@ -897,6 +895,7 @@ class DocumentController extends Controller
                 'uploader',
                 'archivedBy',
             ])
+            ->withCount('versions')
             ->where(
                 'is_active',
                 false
@@ -1175,11 +1174,17 @@ class DocumentController extends Controller
             ->orderBy('name')
             ->get();
 
+        $departments = Department::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
         return view(
             'documents.edit',
             compact(
                 'document',
-                'categories'
+                'categories',
+                'departments'
             )
         );
     }
@@ -1878,6 +1883,63 @@ class DocumentController extends Controller
                 'success',
                 'Dokumen berhasil dipulihkan ke pustaka aktif.'
             );
+    }
+
+
+    /**
+     * Hapus permanen dokumen yang sudah diarsipkan.
+     */
+    public function forceDestroy(
+        Request $request,
+        Document $document,
+        DocumentPurgeService $purgeService
+    ): RedirectResponse {
+        abort_unless(
+            Auth::check() && Auth::user()->isSuperAdmin(),
+            403
+        );
+
+        $validated = $request->validate([
+            'confirmation' => ['required', 'string', 'max:20'],
+        ]);
+
+        if (trim($validated['confirmation']) !== 'HAPUS') {
+            throw ValidationException::withMessages([
+                'confirmation' => 'Ketik HAPUS untuk mengonfirmasi penghapusan permanen.',
+            ]);
+        }
+
+        try {
+            $result = $purgeService->purge(
+                $document->id,
+                Auth::user(),
+                $request->ip(),
+                $request->userAgent()
+            );
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return redirect()
+                ->route('documents.archived')
+                ->withErrors([
+                    'document' => 'Penghapusan dokumen tidak dapat diselesaikan. Hubungi administrator.',
+                ]);
+        }
+
+        if ($result['failed_file_count'] > 0) {
+            return redirect()
+                ->route('documents.archived')
+                ->with(
+                    'warning',
+                    'Data dokumen telah dihapus, tetapi beberapa file belum berhasil dibersihkan. Hubungi administrator untuk menindaklanjuti log server.'
+                );
+        }
+
+        return redirect()
+            ->route('documents.archived')
+            ->with('success', 'Dokumen berhasil dihapus permanen.');
     }
 
 

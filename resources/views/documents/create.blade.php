@@ -370,74 +370,13 @@
 
                     <div>
 
-                        <label
-                            for="category_id"
-
-                            class="block
-
-                                   mb-2
-
-                                   text-sm
-                                   font-semibold
-                                   text-slate-700"
-                        >
-
-                            Kategori Dokumen
-
-                            <span class="text-red-500">
-                                *
-                            </span>
-
-                        </label>
-
-
-                        <select
-                            id="category_id"
-                            name="category_id"
-
-                            required
-
-                            class="w-full
-
-                                   rounded-xl
-
-                                   border-slate-200
-
-                                   bg-slate-50
-
-                                   px-4
-                                   py-3
-
-                                   text-slate-900
-
-                                   focus:border-blue-500
-                                   focus:ring-blue-500"
-                        >
-
-                            <option value="">
-                                Pilih Kategori Dokumen
-                            </option>
-
-
-                            @foreach($categories as $category)
-
-                                <option
-                                    value="{{ $category->id }}"
-
-                                    @selected(
-                                        old('category_id') == $category->id
-                                    )
-                                >
-
-                                    {{ $category->department->name }}
-                                    —
-                                    {{ $category->name }}
-
-                                </option>
-
-                            @endforeach
-
-                        </select>
+                        <x-category-combobox
+                            :categories="$categories"
+                            :departments="$departments"
+                            :allow-create="$allowCategoryCreation"
+                            label="Kategori Dokumen"
+                            placeholder="Cari atau ketik kategori..."
+                        />
 
                     </div>
 
@@ -727,29 +666,7 @@
             {{-- ================================================= --}}
 
             <section
-                x-data="{
-                    fileName: '',
-                    fileSize: '',
-                    handleFile(event) {
-                        const file = event.target.files[0];
-
-                        if (!file) {
-                            this.fileName = '';
-                            this.fileSize = '';
-                            return;
-                        }
-
-                        this.fileName = file.name;
-
-                        if (file.size >= 1048576) {
-                            this.fileSize =
-                                (file.size / 1048576).toFixed(2) + ' MB';
-                        } else {
-                            this.fileSize =
-                                (file.size / 1024).toFixed(1) + ' KB';
-                        }
-                    }
-                }"
+                x-data="documentFileUpload"
 
                 class="bg-white
 
@@ -1200,4 +1117,4 @@
 
     </form>
 
-</x-app-layout> 
+</x-app-layout>

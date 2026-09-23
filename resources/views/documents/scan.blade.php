@@ -407,39 +407,12 @@
                     {{-- CATEGORY --}}
                     <div>
 
-                        <label
-                            for="category_id"
-                            class="mb-1.5 block text-sm font-medium text-slate-700"
-                        >
-                            Kategori
-                            <span class="text-red-500">*</span>
-                        </label>
-
-                        <select
-                            id="category_id"
-                            name="category_id"
-                            required
-                            class="block w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                        >
-
-                            <option value="">
-                                Pilih kategori
-                            </option>
-
-                            @foreach ($categories as $category)
-
-                                <option
-                                    value="{{ $category->id }}"
-                                    data-category-name="{{ strtolower($category->name) }}"
-                                    @selected(old('category_id') == $category->id)
-                                >
-                                    {{ $category->name }}
-                                    {{ $category->department ? ' · '.$category->department->name : '' }}
-                                </option>
-
-                            @endforeach
-
-                        </select>
+                        <x-category-combobox
+                            :categories="$categories"
+                            :departments="$departments"
+                            :allow-create="$allowCategoryCreation"
+                            placeholder="Cari atau ketik kategori..."
+                        />
 
                     </div>
 
@@ -1038,7 +1011,7 @@
                         <div class="relative">
                             <input
                                 id="scan_time"
-                                type="{{ old('scan_type', 'Retooling') === 'Retooling' ? 'text' : 'time' }}"
+                                type="text"
                                 name="scan_time"
                                 value="{{ old('scan_time') }}"
                                 placeholder="Ketik atau pilih Jam (HH:mm)..."
@@ -1310,6 +1283,7 @@
             const titleInput = document.getElementById('title');
             const fileNameInput = document.getElementById('file_name');
             const categoryInput = document.getElementById('category_id');
+            const newCategoryNameInput = document.querySelector('[name="new_category_name"]');
             const captureSourceInput = document.getElementById('captureSource');
 
             const AXLE_SCAN = 'Laporan Hasil Produksi - Axle Assy';
@@ -1488,7 +1462,11 @@
             }
 
             function autoSelectChecksheetCategory() {
-                if (!categoryInput || categoryInput.value) {
+                if (
+                    !categoryInput
+                    || categoryInput.value
+                    || newCategoryNameInput?.value.trim()
+                ) {
                     return;
                 }
 
@@ -1583,8 +1561,11 @@
                 }
 
                 shiftRequiredIndicator?.classList.toggle('hidden', !isRetooling);
-                shiftOptionalIndicator?.classList.toggle('hidden', !isProduction);
-                timeOptionalIndicator?.classList.toggle('hidden', !isProduction);
+                shiftOptionalIndicator?.classList.toggle(
+                    'hidden',
+                    !type || isRetooling
+                );
+                timeOptionalIndicator?.classList.toggle('hidden', !type);
                 scanTime?.setAttribute('aria-required', 'false');
 
                 scanDateLabel.innerHTML = isProduction
@@ -2757,6 +2738,9 @@
             const BRAKE_SCAN =
                 'Laporan Hasil Produksi - Brake Assy';
 
+            const shiftTimeRanges =
+                @json($shiftTimeRanges);
+
             const scanType =
                 document.getElementById('scan_type');
 
@@ -2880,23 +2864,6 @@
             const oldBrakePartId =
                 String(
                     brakePartId?.value || ''
-                );
-
-            const timeSuggestions =
-                Array.from(
-                    { length: 48 },
-                    (_, index) => {
-                        const hours =
-                            String(Math.floor(index / 2))
-                                .padStart(2, '0');
-
-                        const minutes =
-                            index % 2 === 0
-                                ? '00'
-                                : '30';
-
-                        return `${hours}:${minutes}`;
-                    }
                 );
 
             let lines = [];
@@ -3381,18 +3348,96 @@
                     .test(String(value || ''));
             }
 
+            function shiftTimeRange(shiftValue = shift?.value) {
+                return shiftTimeRanges[String(shiftValue || '')]
+                    || null;
+            }
+
+            function timeToMinutes(value) {
+                if (!isValidTime(value)) {
+                    return null;
+                }
+
+                const [hours, minutes] = value
+                    .split(':')
+                    .map(Number);
+
+                return (hours * 60) + minutes;
+            }
+
+            function isTimeAllowedForShift(shiftValue, value) {
+                const range = shiftTimeRange(shiftValue);
+                const minutes = timeToMinutes(value);
+
+                if (!range || minutes === null) {
+                    return false;
+                }
+
+                if (range.start_minutes < range.end_minutes) {
+                    return minutes >= range.start_minutes
+                        && minutes < range.end_minutes;
+                }
+
+                return minutes >= range.start_minutes
+                    || minutes < range.end_minutes;
+            }
+
+            function formatTime(minutes) {
+                const normalized =
+                    ((minutes % 1440) + 1440) % 1440;
+
+                return `${String(Math.floor(normalized / 60)).padStart(2, '0')}:${String(normalized % 60).padStart(2, '0')}`;
+            }
+
+            function timeSuggestionsForShift(shiftValue = shift?.value) {
+                const range = shiftTimeRange(shiftValue);
+
+                if (!range) {
+                    return [];
+                }
+
+                const suggestions = [];
+                let minutes = range.start_minutes;
+
+                while (minutes !== range.end_minutes) {
+                    suggestions.push(formatTime(minutes));
+                    minutes = (minutes + 30) % 1440;
+                }
+
+                return suggestions;
+            }
+
             function validateRetoolingTime() {
-                if (
-                    !isRetooling()
-                    || scanTime.value === ''
-                    || isValidTime(scanTime.value)
-                ) {
+                if (scanTime.value === '') {
                     scanTime.setCustomValidity('');
                     return true;
                 }
 
+                if (!isValidTime(scanTime.value)) {
+                    scanTime.setCustomValidity(
+                        'Gunakan format Jam HH:mm yang valid, misalnya 08:30.'
+                    );
+
+                    return false;
+                }
+
+                if (!shift?.value) {
+                    scanTime.setCustomValidity(
+                        'Pilih Shift terlebih dahulu ketika Jam diisi.'
+                    );
+
+                    return false;
+                }
+
+                if (isTimeAllowedForShift(shift.value, scanTime.value)) {
+                    scanTime.setCustomValidity('');
+                    return true;
+                }
+
+                const range = shiftTimeRange();
+
                 scanTime.setCustomValidity(
-                    'Gunakan format Jam HH:mm yang valid, misalnya 08:30.'
+                    `Jam ${scanTime.value} tidak sesuai dengan Shift ${shift.value} (${range.label}).`
                 );
 
                 return false;
@@ -3422,16 +3467,22 @@
                     String(search || '');
 
                 const filtered =
-                    timeSuggestions.filter(
+                    timeSuggestionsForShift().filter(
                         value => value.includes(query)
                     );
 
                 if (filtered.length === 0) {
+                    const range = shiftTimeRange();
+
                     retoolingTimeOptions.append(
                         emptyMessage(
-                            isValidTime(query)
+                            !range
+                                ? 'Pilih Shift terlebih dahulu.'
+                                : isTimeAllowedForShift(shift.value, query)
                                 ? `${query} dapat digunakan. Tekan Enter atau Tab.`
-                                : 'Ketik Jam dengan format HH:mm.'
+                                : isValidTime(query)
+                                    ? `Jam harus berada pada rentang ${range.label}.`
+                                    : 'Ketik Jam dengan format HH:mm.'
                         )
                     );
 
@@ -3453,42 +3504,46 @@
                 });
             }
 
-            function syncTimeMode(retooling) {
-                if (retooling) {
-                    scanTime.type = 'text';
-                    scanTime.placeholder =
-                        'Ketik atau pilih Jam (HH:mm)...';
-                    scanTime.autocomplete = 'off';
-                    scanTime.setAttribute('role', 'combobox');
-                    scanTime.setAttribute('aria-autocomplete', 'list');
-                    scanTime.setAttribute(
-                        'aria-controls',
-                        'retoolingTimeOptions'
-                    );
-                    scanTime.setAttribute('aria-expanded', 'false');
-                    retoolingTimeIndicator.classList.remove('hidden');
-                    retoolingTimeIndicator.classList.add('flex');
-                    retoolingTimeHint.classList.remove('hidden');
+            function syncTimeMode(clearInvalid = false) {
+                const range = shiftTimeRange();
 
-                    return;
+                if (
+                    clearInvalid
+                    && scanTime.value
+                    && !isTimeAllowedForShift(shift?.value, scanTime.value)
+                ) {
+                    scanTime.value = '';
                 }
 
-                closeDropdown(
-                    retoolingTimeOptions,
-                    scanTime
+                scanTime.type = 'text';
+                scanTime.placeholder = range
+                    ? 'Ketik atau pilih Jam (HH:mm)...'
+                    : 'Pilih Shift terlebih dahulu';
+                scanTime.autocomplete = 'off';
+                scanTime.readOnly = !range;
+                scanTime.setAttribute('aria-disabled', String(!range));
+                scanTime.setAttribute('role', 'combobox');
+                scanTime.setAttribute('aria-autocomplete', 'list');
+                scanTime.setAttribute(
+                    'aria-controls',
+                    'retoolingTimeOptions'
                 );
+                scanTime.setAttribute('aria-expanded', 'false');
+                retoolingTimeIndicator.classList.toggle('hidden', !range);
+                retoolingTimeIndicator.classList.toggle('flex', Boolean(range));
+                retoolingTimeHint.classList.remove('hidden');
+                retoolingTimeHint.textContent = range
+                    ? `Jam Shift ${shift.value}: ${range.label}`
+                    : 'Pilih Shift terlebih dahulu untuk menentukan rentang Jam.';
 
-                scanTime.type = 'time';
-                scanTime.placeholder = '';
-                scanTime.removeAttribute('autocomplete');
-                scanTime.removeAttribute('role');
-                scanTime.removeAttribute('aria-autocomplete');
-                scanTime.removeAttribute('aria-controls');
-                scanTime.removeAttribute('aria-expanded');
-                scanTime.setCustomValidity('');
-                retoolingTimeIndicator.classList.add('hidden');
-                retoolingTimeIndicator.classList.remove('flex');
-                retoolingTimeHint.classList.add('hidden');
+                if (!range) {
+                    closeDropdown(
+                        retoolingTimeOptions,
+                        scanTime
+                    );
+                }
+
+                validateRetoolingTime();
             }
 
             function renderBrakeParts(
@@ -4027,20 +4082,6 @@
             }
 
             function clearDirtyProductionState() {
-                if (shift) {
-                    shift.value = '';
-                    shift.required = false;
-                    shift.setAttribute('aria-required', 'false');
-                }
-
-                if (scanTime) {
-                    scanTime.value = '';
-                }
-
-                if (manualLine) {
-                    manualLine.value = '';
-                }
-
                 if (lineId) {
                     lineId.value = '';
                     lineId.required = false;
@@ -4135,16 +4176,7 @@
                     clearDirtyProductionState();
                 }
 
-                if (!retooling) {
-                    if (shift) {
-                        shift.value = '';
-                    }
-                }
-
                 if (!masterLineMode) {
-                    if (manualLine) {
-                        manualLine.value = '';
-                    }
                     if (lineId) {
                         lineId.value = '';
                     }
@@ -4165,13 +4197,7 @@
                     }
                 }
 
-                if (!retooling && !production) {
-                    if (scanTime) {
-                        scanTime.value = '';
-                    }
-                }
-
-                syncTimeMode(retooling);
+                syncTimeMode();
 
                 if (!retooling && !production) {
                     clearDirtyProductionState();
@@ -4418,10 +4444,6 @@
             scanTime.addEventListener(
                 'focus',
                 () => {
-                    if (!isRetooling()) {
-                        return;
-                    }
-
                     renderTimeSuggestions('');
 
                     openDropdown(
@@ -4434,11 +4456,7 @@
             scanTime.addEventListener(
                 'input',
                 () => {
-                    if (!isRetooling()) {
-                        return;
-                    }
-
-                    scanTime.setCustomValidity('');
+                    validateRetoolingTime();
                     renderTimeSuggestions();
 
                     openDropdown(
@@ -4462,8 +4480,7 @@
                 'keydown',
                 event => {
                     if (
-                        !isRetooling()
-                        || event.key !== 'Enter'
+                        event.key !== 'Enter'
                         || retoolingTimeOptions.classList.contains('hidden')
                         || scanTime.hasAttribute('aria-activedescendant')
                     ) {
@@ -4655,7 +4672,7 @@
                 scanTime,
                 retoolingTimeOptions,
                 () => renderTimeSuggestions(''),
-                () => isRetooling()
+                () => Boolean(shift?.value)
             );
 
             document.addEventListener(
@@ -4757,6 +4774,11 @@
             scanType?.addEventListener(
                 'change',
                 syncMode
+            );
+
+            shift?.addEventListener(
+                'change',
+                () => syncTimeMode(true)
             );
 
             syncMode();

@@ -100,6 +100,18 @@
     @endif
 
 
+    @if(session('warning'))
+        <div class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm font-semibold text-amber-800" role="alert">
+            {{ session('warning') }}
+        </div>
+    @endif
+
+    @if($errors->has('document') || $errors->has('confirmation'))
+        <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700" role="alert">
+            {{ $errors->first('document') ?: $errors->first('confirmation') }}
+        </div>
+    @endif
+
 
     {{-- SEARCH --}}
     <form
@@ -489,6 +501,16 @@
 
                                         </form>
 
+                                        @if(auth()->user()?->isSuperAdmin())
+                                            <button
+                                                type="button"
+                                                x-on:click.prevent="$dispatch('open-modal', 'purge-document-{{ $document->id }}')"
+                                                class="rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                                            >
+                                                Hapus Permanen
+                                            </button>
+                                        @endif
+
                                     </div>
 
                                 </td>
@@ -543,5 +565,42 @@
         @endif
 
     </section>
+
+    @if(auth()->user()?->isSuperAdmin())
+        @foreach($documents as $document)
+            <x-confirmation-modal
+                name="purge-document-{{ $document->id }}"
+                :action="route('documents.force-destroy', $document)"
+                method="DELETE"
+                variant="danger"
+                title="Hapus Dokumen Permanen?"
+                description="Dokumen ini akan dihapus permanen beserta metadata dan file terkait. Tindakan ini tidak dapat dibatalkan."
+                confirmLabel="Lanjutkan"
+                typedConfirmation
+            >
+                <dl class="mt-4 space-y-2 rounded-xl border border-red-100 bg-red-50/50 p-4 text-sm">
+                    <div>
+                        <dt class="font-semibold text-slate-700">Dokumen</dt>
+                        <dd class="break-words text-slate-900">{{ $document->title }}</dd>
+                    </div>
+                    <div>
+                        <dt class="font-semibold text-slate-700">Kode</dt>
+                        <dd class="break-words text-slate-900">{{ $document->document_code ?: 'Tidak ada kode' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="font-semibold text-slate-700">File</dt>
+                        <dd class="break-all text-slate-900">{{ $document->file_name }}</dd>
+                    </div>
+                    <div>
+                        <dt class="font-semibold text-slate-700">Kategori dan versi</dt>
+                        <dd class="text-slate-900">
+                            {{ $document->category?->name ?? 'Tanpa Kategori' }} ·
+                            {{ number_format($document->versions_count) }} versi/revisi
+                        </dd>
+                    </div>
+                </dl>
+            </x-confirmation-modal>
+        @endforeach
+    @endif
 
 </x-app-layout>

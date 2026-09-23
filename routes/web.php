@@ -250,6 +250,13 @@ Route::middleware([
         ->whereNumber('document')
         ->name('documents.restore');
 
+    Route::delete(
+        '/documents/{document}/permanent',
+        [DocumentController::class, 'forceDestroy']
+    )
+        ->whereNumber('document')
+        ->name('documents.force-destroy');
+
     Route::post(
         '/documents/{document}/favorite',
         [FavoriteController::class, 'store']
@@ -337,11 +344,25 @@ Route::middleware([
         ->name('categories.update');
 
     Route::patch(
-        '/categories/{category}/toggle-status',
-        [CategoryManagementController::class, 'toggleStatus']
+        '/categories/{category}/deactivate',
+        [CategoryManagementController::class, 'deactivate']
     )
         ->whereNumber('category')
-        ->name('categories.toggle-status');
+        ->name('categories.deactivate');
+
+    Route::patch(
+        '/categories/{category}/activate',
+        [CategoryManagementController::class, 'activate']
+    )
+        ->whereNumber('category')
+        ->name('categories.activate');
+
+    Route::delete(
+        '/categories/{category}',
+        [CategoryManagementController::class, 'destroy']
+    )
+        ->whereNumber('category')
+        ->name('categories.destroy');
 
 
     /*
@@ -446,11 +467,6 @@ Route::middleware([
         '/profile',
         [ProfileController::class, 'update']
     )->name('profile.update');
-
-    Route::delete(
-        '/profile',
-        [ProfileController::class, 'destroy']
-    )->name('profile.destroy');
 });
 
 

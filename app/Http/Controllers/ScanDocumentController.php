@@ -7,6 +7,7 @@ use App\Models\AxlePosition;
 use App\Models\AxleType;
 use App\Models\BrakePartNumber;
 use App\Models\Category;
+use App\Models\Department;
 use App\Models\Document;
 use App\Models\DocumentAxleProduction;
 use App\Models\DocumentBrakeProduction;
@@ -15,9 +16,11 @@ use App\Models\DocumentRetooling;
 use App\Models\DocumentVersion;
 use App\Models\LineProduct;
 use App\Models\ProductionLine;
+use App\Services\CategoryAssignmentService;
 use App\Services\MultiPageScanPdfService;
 use App\Services\PrivateDocumentStorageService;
 use App\Services\ScanImageSecurityService;
+use App\Services\ShiftTimeRule;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -51,6 +54,14 @@ class ScanDocumentController extends Controller
             ->orderBy('name')
             ->get();
 
+        $departments = Department::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        $allowCategoryCreation = Auth::user()->isSuperAdmin();
+        $shiftTimeRanges = ShiftTimeRule::frontendRanges();
+
         $axleTypes = AxleType::query()
             ->where('is_active', true)
             ->orderBy('sort_order')
@@ -65,7 +76,14 @@ class ScanDocumentController extends Controller
 
         return view(
             'documents.scan',
-            compact('categories', 'axleTypes', 'axlePositions')
+            compact(
+                'categories',
+                'departments',
+                'allowCategoryCreation',
+                'shiftTimeRanges',
+                'axleTypes',
+                'axlePositions'
+            )
         );
     }
 
@@ -80,14 +98,16 @@ class ScanDocumentController extends Controller
         Request $request,
         ScanImageSecurityService $imageSecurity,
         MultiPageScanPdfService $pdfService,
-        PrivateDocumentStorageService $privateStorage
+        PrivateDocumentStorageService $privateStorage,
+        CategoryAssignmentService $categoryAssignment
     ): RedirectResponse {
         try {
             return $this->storeScan(
                 $request,
                 $imageSecurity,
                 $pdfService,
-                $privateStorage
+                $privateStorage,
+                $categoryAssignment
             );
         } catch (ValidationException $exception) {
             throw $exception->redirectTo(route('documents.scan.create'));
@@ -98,9 +118,12 @@ class ScanDocumentController extends Controller
         Request $request,
         ScanImageSecurityService $imageSecurity,
         MultiPageScanPdfService $pdfService,
-        PrivateDocumentStorageService $privateStorage
+        PrivateDocumentStorageService $privateStorage,
+        CategoryAssignmentService $categoryAssignment
     ): RedirectResponse {
         $this->ensureAdmin();
+
+        $categoryAssignment->prepareRequest($request);
 
         /*
          * Backward compatibility untuk client lama yang masih mengirim `file`.
@@ -128,13 +151,7 @@ class ScanDocumentController extends Controller
         );
 
         $validated = $request->validate([
-            'category_id' => [
-                'required',
-                'integer',
-                Rule::exists('categories', 'id')->where(
-                    fn ($query) => $query->where('is_active', true)
-                ),
-            ],
+            ...$categoryAssignment->validationRules($request),
             'title' => ['required', 'string', 'max:255'],
             'file_name' => ['required', 'string', 'max:180'],
             'scan_type' => [
@@ -285,6 +302,11 @@ class ScanDocumentController extends Controller
             ]);
         }
 
+        ShiftTimeRule::validate(
+            $validated['shift'] ?? null,
+            $validated['scan_time'] ?? null
+        );
+
         $originalScanType = $validated['scan_type'];
 
         if ($originalScanType === self::SCAN_OTHER) {
@@ -432,22 +454,7 @@ class ScanDocumentController extends Controller
 
         $captureSource = $validated['capture_source'] ?? 'upload';
 
-        $category = Category::query()
-            ->with('department')
-            ->where('is_active', true)
-            ->whereHas(
-                'department',
-                fn (Builder $query) => $query->where('is_active', true)
-            )
-            ->find($validated['category_id']);
-
-        if (! $category) {
-            return redirect()->route('documents.scan.create')
-                ->withInput()
-                ->withErrors([
-                    'category_id' => 'Kategori atau departemen yang dipilih sudah tidak aktif.',
-                ]);
-        }
+        $categorySelection = $categoryAssignment->prepare($validated);
 
         /** @var array<int, \Illuminate\Http\UploadedFile> $files */
         $files = array_values(
@@ -535,8 +542,8 @@ class ScanDocumentController extends Controller
         $displayFileName = $safeBaseName . '.' . $extension;
 
         $directory = implode('/', [
-            Str::slug($category->department->name),
-            $category->slug,
+            Str::slug($categorySelection['department_name']),
+            $categorySelection['slug'],
             now()->format('Y'),
             now()->format('m'),
             'scans',
@@ -616,7 +623,8 @@ class ScanDocumentController extends Controller
             $document = DB::transaction(function () use (
                 $request,
                 $validated,
-                $category,
+                $categoryAssignment,
+                $categorySelection,
                 $displayFileName,
                 $extension,
                 $storedPath,
@@ -636,6 +644,12 @@ class ScanDocumentController extends Controller
                 $isMultiPhoto,
                 $sourceCount
             ) {
+                $category = $categoryAssignment->resolve(
+                    $request,
+                    $categorySelection,
+                    'inline_scan'
+                );
+
                 // Resolve names and Cycle Time from active master records.
                 $retoolingMaster = null;
 

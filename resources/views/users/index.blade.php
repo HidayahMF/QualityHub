@@ -789,67 +789,39 @@
                                             </form>
 
 
-                                            <form
-                                                method="POST"
-                                                action="{{ route('users.reject', $user) }}"
-
-                                            data-qualityhub-user-confirm="1"
-                                            data-confirm-title="Tolak Permintaan Akun?"
-                                            data-confirm-message="Permintaan akun ini akan ditandai sebagai ditolak dan pengguna tidak dapat masuk ke BMC QualityHub."
-                                            data-confirm-button="Tolak Akun"
+                                            <button
+                                                type="button"
+                                                x-on:click.prevent="$dispatch('open-modal', 'reject-user-{{ $user->id }}')"
+                                                class="rounded-lg
+                                                       bg-red-50
+                                                       px-3 py-2
+                                                       text-xs
+                                                       font-semibold
+                                                       text-red-700
+                                                       hover:bg-red-100
+                                                       transition"
                                             >
-                                                @csrf
-                                                @method('PATCH')
-
-                                                <button
-                                                    type="submit"
-
-                                                    class="rounded-lg
-                                                           bg-red-50
-                                                           px-3 py-2
-                                                           text-xs
-                                                           font-semibold
-                                                           text-red-700
-                                                           hover:bg-red-100
-                                                           transition"
-                                                >
-                                                    Tolak
-                                                </button>
-
-                                            </form>
+                                                Tolak
+                                            </button>
 
 
                                         {{-- ACTIVE --}}
                                         @elseif($user->account_status === 'active')
 
-                                            <form
-                                                method="POST"
-                                                action="{{ route('users.deactivate', $user) }}"
-
-                                            data-qualityhub-user-confirm="1"
-                                            data-confirm-title="Nonaktifkan Pengguna?"
-                                            data-confirm-message="Pengguna tidak akan dapat masuk ke BMC QualityHub sampai akun diaktifkan kembali."
-                                            data-confirm-button="Nonaktifkan"
+                                            <button
+                                                type="button"
+                                                x-on:click.prevent="$dispatch('open-modal', 'deactivate-user-{{ $user->id }}')"
+                                                class="rounded-lg
+                                                       bg-amber-50
+                                                       px-3 py-2
+                                                       text-xs
+                                                       font-semibold
+                                                       text-amber-700
+                                                       hover:bg-amber-100
+                                                       transition"
                                             >
-                                                @csrf
-                                                @method('PATCH')
-
-                                                <button
-                                                    type="submit"
-
-                                                    class="rounded-lg
-                                                           bg-amber-50
-                                                           px-3 py-2
-                                                           text-xs
-                                                           font-semibold
-                                                           text-amber-700
-                                                           hover:bg-amber-100
-                                                           transition"
-                                                >
-                                                    Nonaktifkan
-                                                </button>
-
-                                            </form>
+                                                Nonaktifkan
+                                            </button>
 
 
                                         {{-- INACTIVE / REJECTED --}}
@@ -926,446 +898,25 @@
 
     </section>
 
-    {{-- ========================================================= --}}
-    {{-- ========================================================= --}}
-
-    {{-- BMC QUALITYHUB CSP-SAFE USER CONFIRMATION --}}
-
-    {{-- ========================================================= --}}
-
-
-
-    <div
-
-        id="qualityhub-user-confirm"
-
-        class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4"
-
-        role="dialog"
-
-        aria-modal="true"
-
-        aria-labelledby="qualityhub-user-confirm-title"
-
-        aria-hidden="true"
-
-    >
-
-        <div
-
-            data-qualityhub-user-confirm-backdrop
-
-            class="absolute inset-0 bg-slate-950/45 backdrop-blur-[2px]"
-
-        ></div>
-
-
-
-        <section
-
-            class="relative w-full max-w-md overflow-hidden rounded-3xl border border-blue-100 bg-white shadow-2xl shadow-blue-950/20"
-
-        >
-
-            <div class="h-1.5 w-full bg-blue-800"></div>
-
-
-
-            <div class="p-6 sm:p-7">
-
-                <div class="flex items-start gap-4">
-
-
-
-                    <div
-
-                        class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 ring-1 ring-blue-100"
-
-                    >
-
-                        <svg
-
-                            xmlns="http://www.w3.org/2000/svg"
-
-                            width="22"
-
-                            height="22"
-
-                            viewBox="0 0 24 24"
-
-                            fill="none"
-
-                            stroke="currentColor"
-
-                            stroke-width="2"
-
-                            stroke-linecap="round"
-
-                            stroke-linejoin="round"
-
-                            aria-hidden="true"
-
-                        >
-
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
-
-                            <path d="M9 12l2 2 4-4"/>
-
-                        </svg>
-
-                    </div>
-
-
-
-                    <div class="min-w-0 flex-1">
-
-                        <p
-
-                            class="text-xs font-bold uppercase tracking-[0.18em] text-blue-600"
-
-                        >
-
-                            BMC QualityHub
-
-                        </p>
-
-
-
-                        <h3
-
-                            id="qualityhub-user-confirm-title"
-
-                            class="mt-1.5 text-xl font-bold text-slate-900"
-
-                        >
-
-                            Konfirmasi Tindakan
-
-                        </h3>
-
-
-
-                        <p
-
-                            data-qualityhub-user-confirm-message
-
-                            class="mt-2 text-sm leading-6 text-slate-600"
-
-                        >
-
-                            Pastikan tindakan ini memang ingin dilanjutkan.
-
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-
-                <div
-
-                    class="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"
-
-                >
-
-                    <button
-
-                        type="button"
-
-                        data-qualityhub-user-confirm-cancel
-
-                        class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:ring-offset-2"
-
-                    >
-
-                        Batal
-
-                    </button>
-
-
-
-                    <button
-
-                        type="button"
-
-                        data-qualityhub-user-confirm-submit
-
-                        class="inline-flex items-center justify-center rounded-xl bg-blue-800 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-900/15 transition hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-
-                    >
-
-                        Lanjutkan
-
-                    </button>
-
-                </div>
-
-            </div>
-
-        </section>
-
-    </div>
-
-
-
-    <script nonce="{{ $cspNonce }}">
-
-        (() => {
-
-            const modal =
-
-                document.getElementById(
-
-                    'qualityhub-user-confirm'
-
-                );
-
-
-
-            if (!modal) {
-
-                return;
-
-            }
-
-
-
-            const title =
-
-                modal.querySelector(
-
-                    '#qualityhub-user-confirm-title'
-
-                );
-
-
-
-            const message =
-
-                modal.querySelector(
-
-                    '[data-qualityhub-user-confirm-message]'
-
-                );
-
-
-
-            const submitButton =
-
-                modal.querySelector(
-
-                    '[data-qualityhub-user-confirm-submit]'
-
-                );
-
-
-
-            const cancelButton =
-
-                modal.querySelector(
-
-                    '[data-qualityhub-user-confirm-cancel]'
-
-                );
-
-
-
-            const backdrop =
-
-                modal.querySelector(
-
-                    '[data-qualityhub-user-confirm-backdrop]'
-
-                );
-
-
-
-            let pendingForm = null;
-
-
-
-            const closeModal = () => {
-
-                modal.classList.add('hidden');
-
-                modal.setAttribute('aria-hidden', 'true');
-
-                pendingForm = null;
-
-            };
-
-
-
-            const openModal = (form) => {
-
-                pendingForm = form;
-
-
-
-                title.textContent =
-
-                    form.dataset.confirmTitle
-
-                    || 'Konfirmasi Tindakan';
-
-
-
-                message.textContent =
-
-                    form.dataset.confirmMessage
-
-                    || 'Pastikan tindakan ini memang ingin dilanjutkan.';
-
-
-
-                submitButton.textContent =
-
-                    form.dataset.confirmButton
-
-                    || 'Lanjutkan';
-
-
-
-                modal.classList.remove('hidden');
-
-                modal.setAttribute('aria-hidden', 'false');
-
-                submitButton.focus();
-
-            };
-
-
-
-            document
-
-                .querySelectorAll(
-
-                    'form[data-qualityhub-user-confirm="1"]'
-
-                )
-
-                .forEach((form) => {
-
-                    form.addEventListener(
-
-                        'submit',
-
-                        (event) => {
-
-                            if (
-
-                                form.dataset.confirmBypass
-
-                                === '1'
-
-                            ) {
-
-                                delete form.dataset.confirmBypass;
-
-                                return;
-
-                            }
-
-
-
-                            event.preventDefault();
-
-                            openModal(form);
-
-                        }
-
-                    );
-
-                });
-
-
-
-            cancelButton.addEventListener(
-
-                'click',
-
-                closeModal
-
-            );
-
-
-
-            backdrop.addEventListener(
-
-                'click',
-
-                closeModal
-
-            );
-
-
-
-            document.addEventListener(
-
-                'keydown',
-
-                (event) => {
-
-                    if (
-
-                        event.key === 'Escape'
-
-                        && ! modal.classList.contains('hidden')
-
-                    ) {
-
-                        closeModal();
-
-                    }
-
-                }
-
-            );
-
-
-
-            submitButton.addEventListener(
-
-                'click',
-
-                () => {
-
-                    const form = pendingForm;
-
-
-
-                    if (!form) {
-
-                        closeModal();
-
-                        return;
-
-                    }
-
-
-
-                    form.dataset.confirmBypass = '1';
-
-
-
-                    modal.classList.add('hidden');
-
-                    modal.setAttribute('aria-hidden', 'true');
-
-
-
-                    pendingForm = null;
-
-
-
-                    form.requestSubmit();
-
-                }
-
-            );
-
-        })();
-
-    </script>
+    @foreach($users as $user)
+        @if(! $user->isSuperAdmin() && $user->account_status === 'pending')
+            <x-confirmation-modal
+                name="reject-user-{{ $user->id }}"
+                :action="route('users.reject', $user)"
+                variant="danger"
+                title="Tolak Permintaan Akun?"
+                description="Permintaan akun {{ $user->name }} akan ditandai sebagai ditolak dan pengguna tidak dapat masuk ke BMC QualityHub."
+                confirmLabel="Tolak Akun"
+            />
+        @elseif(! $user->isSuperAdmin() && $user->account_status === 'active')
+            <x-confirmation-modal
+                name="deactivate-user-{{ $user->id }}"
+                :action="route('users.deactivate', $user)"
+                variant="warning"
+                title="Nonaktifkan Pengguna?"
+                description="Pengguna {{ $user->name }} tidak akan dapat masuk ke BMC QualityHub sampai akun diaktifkan kembali."
+                confirmLabel="Nonaktifkan"
+            />
+        @endif
+    @endforeach
 </x-app-layout>

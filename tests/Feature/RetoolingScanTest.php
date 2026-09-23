@@ -17,6 +17,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class RetoolingScanTest extends TestCase
@@ -113,6 +114,22 @@ class RetoolingScanTest extends TestCase
         );
         $this->assertStringContainsString(
             'function renderTimeSuggestions(',
+            $html
+        );
+        $this->assertStringContainsString(
+            'function isTimeAllowedForShift(',
+            $html
+        );
+        $this->assertStringContainsString(
+            'function timeSuggestionsForShift(',
+            $html
+        );
+        $this->assertStringContainsString(
+            'Jam Shift ${shift.value}: ${range.label}',
+            $html
+        );
+        $this->assertStringContainsString(
+            '() => syncTimeMode(true)',
             $html
         );
         $this->assertStringContainsString(
@@ -251,7 +268,7 @@ class RetoolingScanTest extends TestCase
         $this->actingAs($this->admin)
             ->post(route('documents.scan.store'), array_merge(
                 $this->retoolingPayload($master),
-                ['scan_time' => '16:05']
+                ['scan_time' => '08:05']
             ))
             ->assertRedirect(route('documents.scan.create'))
             ->assertSessionHasNoErrors()
@@ -260,13 +277,110 @@ class RetoolingScanTest extends TestCase
         $scan = DocumentScanMetadata::query()->sole();
         $version = DocumentVersion::query()->sole();
 
-        $this->assertSame('16:05', substr((string) $scan->scan_time, 0, 5));
+        $this->assertSame('08:05', substr((string) $scan->scan_time, 0, 5));
         $this->assertSame(
-            '16:05',
+            '08:05',
             $version->metadata_snapshot['scan_metadata']['scan_time']
         );
         $this->assertDatabaseCount('documents', 1);
         $this->assertDatabaseCount('document_retoolings', 1);
+    }
+
+    #[DataProvider('retoolingShiftTimeBoundaryProvider')]
+    public function test_retooling_enforces_shift_time_half_open_ranges(
+        string $shift,
+        string $time,
+        bool $isValid,
+        string $rangeLabel
+    ): void {
+        $master = $this->createMaster();
+
+        $response = $this->actingAs($this->admin)
+            ->post(route('documents.scan.store'), array_merge(
+                $this->retoolingPayload($master),
+                [
+                    'shift' => $shift,
+                    'scan_time' => $time,
+                ]
+            ))
+            ->assertRedirect(route('documents.scan.create'));
+
+        if ($isValid) {
+            $response
+                ->assertSessionHasNoErrors()
+                ->assertSessionHas('success');
+
+            $this->assertDatabaseCount('documents', 1);
+            $this->assertDatabaseCount('document_scan_metadata', 1);
+            $this->assertDatabaseCount('document_retoolings', 1);
+            $this->assertDatabaseCount('document_versions', 1);
+            $this->assertDatabaseCount('activity_logs', 1);
+            $this->assertCount(1, Storage::disk('bmc_documents')->allFiles());
+
+            $metadata = DocumentScanMetadata::query()->sole();
+            $this->assertSame($shift, (string) $metadata->shift);
+            $this->assertSame($time, substr((string) $metadata->scan_time, 0, 5));
+
+            return;
+        }
+
+        $response->assertSessionHasErrors([
+            'scan_time' => "Jam {$time} tidak sesuai dengan Shift {$shift} ({$rangeLabel}).",
+        ]);
+
+        $this->assertDatabaseCount('documents', 0);
+        $this->assertDatabaseCount('document_scan_metadata', 0);
+        $this->assertDatabaseCount('document_retoolings', 0);
+        $this->assertDatabaseCount('document_versions', 0);
+        $this->assertDatabaseCount('activity_logs', 0);
+        $this->assertSame([], Storage::disk('bmc_documents')->allFiles());
+    }
+
+    public static function retoolingShiftTimeBoundaryProvider(): array
+    {
+        return [
+            'shift 1 starts at 07:00' => ['1', '07:00', true, '07:00–15:59'],
+            'shift 1 accepts 08:30' => ['1', '08:30', true, '07:00–15:59'],
+            'shift 1 ends at 15:59' => ['1', '15:59', true, '07:00–15:59'],
+            'shift 1 rejects 06:59' => ['1', '06:59', false, '07:00–15:59'],
+            'shift 1 excludes 16:00' => ['1', '16:00', false, '07:00–15:59'],
+            'shift 2 starts at 16:00' => ['2', '16:00', true, '16:00–22:59'],
+            'shift 2 accepts 18:00' => ['2', '18:00', true, '16:00–22:59'],
+            'shift 2 ends at 22:59' => ['2', '22:59', true, '16:00–22:59'],
+            'shift 2 rejects 15:59' => ['2', '15:59', false, '16:00–22:59'],
+            'shift 2 excludes 23:00' => ['2', '23:00', false, '16:00–22:59'],
+            'shift 3 starts at 23:00' => ['3', '23:00', true, '23:00–06:59'],
+            'shift 3 accepts 23:59' => ['3', '23:59', true, '23:00–06:59'],
+            'shift 3 accepts midnight' => ['3', '00:00', true, '23:00–06:59'],
+            'shift 3 accepts 00:30' => ['3', '00:30', true, '23:00–06:59'],
+            'shift 3 ends at 06:59' => ['3', '06:59', true, '23:00–06:59'],
+            'shift 3 excludes 07:00' => ['3', '07:00', false, '23:00–06:59'],
+            'shift 3 rejects 22:59' => ['3', '22:59', false, '23:00–06:59'],
+        ];
+    }
+
+    public function test_retooling_rejects_manipulated_shift_time_without_artifacts(): void
+    {
+        $master = $this->createMaster();
+
+        $this->actingAs($this->admin)
+            ->post(route('documents.scan.store'), array_merge(
+                $this->retoolingPayload($master),
+                ['scan_time' => '20:00']
+            ))
+            ->assertRedirect(route('documents.scan.create'))
+            ->assertSessionHasErrors([
+                'scan_time' => 'Jam 20:00 tidak sesuai dengan Shift 1 (07:00–15:59).',
+            ])
+            ->assertSessionHasInput('shift', '1')
+            ->assertSessionHasInput('scan_time', '20:00');
+
+        $this->assertDatabaseCount('documents', 0);
+        $this->assertDatabaseCount('document_scan_metadata', 0);
+        $this->assertDatabaseCount('document_retoolings', 0);
+        $this->assertDatabaseCount('document_versions', 0);
+        $this->assertDatabaseCount('activity_logs', 0);
+        $this->assertSame([], Storage::disk('bmc_documents')->allFiles());
     }
 
     public function test_retooling_rejects_invalid_typed_time_without_records(): void
@@ -291,7 +405,7 @@ class RetoolingScanTest extends TestCase
             $html
         );
 
-        foreach (['12:99', 'abc', '8 pagi'] as $invalidTime) {
+        foreach (['7:00', '12:99', 'abc', '8 pagi'] as $invalidTime) {
             $this->post(route('documents.scan.store'), array_merge(
                 $this->retoolingPayload($master),
                 ['scan_time' => $invalidTime]
