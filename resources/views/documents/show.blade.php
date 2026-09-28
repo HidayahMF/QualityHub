@@ -1675,6 +1675,12 @@
                     return $value === null ? null : substr($value, 0, 5);
                 };
 
+                $productionDate = static function ($value): ?string {
+                    return $value === null
+                        ? null
+                        : $value->locale('id')->translatedFormat('d M Y');
+                };
+
                 if (
                     $axleProduction !== null
                     || $scanType === 'Laporan Hasil Produksi - Axle Assy'
@@ -1758,6 +1764,8 @@
                         $productionMetadataItems = [
                             ['label' => 'Shift', 'value' => $shift === null ? null : 'Shift '.$shift],
                             ['label' => 'Line', 'value' => $lineName ?? $lineCode, 'detail' => $lineName === null ? null : $lineCode],
+                            ['label' => 'Tanggal Proses', 'value' => $productionDate($retoolingProcessDate)],
+                            ['label' => 'Tanggal Retooling', 'value' => $productionDate($retoolingDate)],
                             ['label' => 'Dari Type', 'value' => $fromName],
                             ['label' => 'Cycle Time Dari', 'value' => $fromCycle === null ? null : number_format((float) $fromCycle, 2, '.', '')],
                             ['label' => 'Ke Type', 'value' => $toName],
@@ -1769,6 +1777,8 @@
                         $productionMetadataItems = [
                             ['label' => 'Shift', 'value' => $shift === null ? null : 'Shift '.$shift],
                             ['label' => 'Line', 'value' => $productionValue($scanMetadata?->line)],
+                            ['label' => 'Tanggal Proses', 'value' => $productionDate($retoolingProcessDate)],
+                            ['label' => 'Tanggal Retooling', 'value' => $productionDate($retoolingDate)],
                             ['label' => 'Dari Type', 'value' => $productionValue($scanMetadata?->from_type)],
                             ['label' => 'Cycle Time Dari', 'value' => null],
                             ['label' => 'Ke Type', 'value' => $productionValue($scanMetadata?->to_type)],

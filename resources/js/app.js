@@ -1,5 +1,6 @@
 ﻿import './bootstrap';
 import { initializeCategoryComboboxes } from './category-combobox';
+import { initializeCategoryDocumentsModal } from './category-documents-modal';
 
 import Alpine from '@alpinejs/csp';
 
@@ -32,6 +33,7 @@ Alpine.data('qualityHubModal', () => ({
     show: false,
     name: '',
     focusable: false,
+    returnFocusTo: null,
 
     init() {
         this.name = this.$el.dataset.qhModalName ?? '';
@@ -56,6 +58,9 @@ Alpine.data('qualityHubModal', () => ({
 
     open(event) {
         if (this.eventName(event) === this.name) {
+            this.returnFocusTo = document.activeElement instanceof HTMLElement
+                ? document.activeElement
+                : null;
             this.show = true;
         }
     },
@@ -67,7 +72,13 @@ Alpine.data('qualityHubModal', () => ({
     },
 
     close() {
+        const wasOpen = this.show;
+
         this.show = false;
+
+        if (wasOpen && this.returnFocusTo?.isConnected) {
+            window.setTimeout(() => this.returnFocusTo?.focus(), 0);
+        }
     },
 
     syncBodyLock(open) {
@@ -78,6 +89,18 @@ Alpine.data('qualityHubModal', () => ({
 
         if (open && this.focusable) {
             window.setTimeout(() => {
+                const preferred = this.$el.querySelector(
+                    '[data-qh-modal-initial-focus]'
+                );
+                const preferredIsAvailable = preferred
+                    && ! preferred.hasAttribute('disabled')
+                    && preferred.getClientRects().length > 0;
+
+                if (preferredIsAvailable) {
+                    preferred.focus();
+                    return;
+                }
+
                 this.focusables()[0]?.focus();
             }, 100);
         }
@@ -185,6 +208,7 @@ Alpine.start();
 document.addEventListener('DOMContentLoaded', () => {
 
     initializeCategoryComboboxes();
+    initializeCategoryDocumentsModal();
 
     /*
     | Dashboard period auto-submit

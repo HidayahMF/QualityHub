@@ -331,6 +331,14 @@ Route::middleware([
     )->name('categories.store');
 
     Route::get(
+        '/categories/{category}/documents',
+        [CategoryManagementController::class, 'documents']
+    )
+        ->whereNumber('category')
+        ->middleware('throttle:120,1')
+        ->name('categories.documents.index');
+
+    Route::get(
         '/categories/{category}/edit',
         [CategoryManagementController::class, 'edit']
     )

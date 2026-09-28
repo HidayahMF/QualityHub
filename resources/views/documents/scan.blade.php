@@ -462,7 +462,13 @@
                                 id="scanDateLabel"
                                 class="mb-1.5 block text-sm font-medium text-slate-700"
                             >
-                                Tanggal
+                                @if(old('scan_type', 'Retooling') === 'Retooling')
+                                    Tanggal Proses
+                                @elseif(in_array(old('scan_type'), ['Laporan Hasil Produksi - Axle Assy', 'Laporan Hasil Produksi - Brake Assy'], true))
+                                    Tanggal Produksi
+                                @else
+                                    Tanggal
+                                @endif
                                 <span class="text-red-500">*</span>
                             </label>
 
@@ -1005,7 +1011,20 @@
                             class="mb-1.5 block text-sm font-medium text-slate-700"
                         >
                             Jam
-                            <span id="timeOptionalIndicator" class="hidden text-xs font-normal text-slate-400">(Opsional)</span>
+                            <span
+                                id="timeRequiredIndicator"
+                                @class([
+                                    'text-red-500',
+                                    'hidden' => old('scan_type', 'Retooling') !== 'Retooling',
+                                ])
+                            >*</span>
+                            <span
+                                id="timeOptionalIndicator"
+                                @class([
+                                    'text-xs font-normal text-slate-400',
+                                    'hidden' => old('scan_type', 'Retooling') === 'Retooling',
+                                ])
+                            >(Opsional)</span>
                         </label>
 
                         <div class="relative">
@@ -1018,6 +1037,8 @@
                                 pattern="(?:[01][0-9]|2[0-3]):[0-5][0-9]"
                                 maxlength="5"
                                 aria-describedby="retoolingTimeHint"
+                                aria-required="{{ old('scan_type', 'Retooling') === 'Retooling' ? 'true' : 'false' }}"
+                                @required(old('scan_type', 'Retooling') === 'Retooling')
                                 class="block w-full rounded-xl border-slate-300 bg-white pr-10 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
                             >
 
@@ -1278,6 +1299,7 @@
             const retoolingFields = document.getElementById('retoolingFields');
             const shiftRequiredIndicator = document.getElementById('shiftRequiredIndicator');
             const shiftOptionalIndicator = document.getElementById('shiftOptionalIndicator');
+            const timeRequiredIndicator = document.getElementById('timeRequiredIndicator');
             const timeOptionalIndicator = document.getElementById('timeOptionalIndicator');
             const scanTime = document.getElementById('scan_time');
             const titleInput = document.getElementById('title');
@@ -1565,12 +1587,22 @@
                     'hidden',
                     !type || isRetooling
                 );
-                timeOptionalIndicator?.classList.toggle('hidden', !type);
-                scanTime?.setAttribute('aria-required', 'false');
+                timeRequiredIndicator?.classList.toggle('hidden', !isRetooling);
+                timeOptionalIndicator?.classList.toggle(
+                    'hidden',
+                    !type || isRetooling
+                );
+
+                if (scanTime) {
+                    scanTime.required = isRetooling;
+                    scanTime.setAttribute('aria-required', String(isRetooling));
+                }
 
                 scanDateLabel.innerHTML = isProduction
                     ? 'Tanggal Produksi <span class="text-red-500">*</span>'
-                    : 'Tanggal <span class="text-red-500">*</span>';
+                    : isRetooling
+                        ? 'Tanggal Proses <span class="text-red-500">*</span>'
+                        : 'Tanggal <span class="text-red-500">*</span>';
 
                 if (isProduction) {
                     autoSelectChecksheetCategory();

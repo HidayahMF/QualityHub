@@ -15,6 +15,7 @@ class DocumentRetooling extends Model
         'to_casting_id',
         'from_cycle_time',
         'to_cycle_time',
+        'retooling_date',
     ];
 
 
@@ -24,6 +25,7 @@ class DocumentRetooling extends Model
             'shift' => 'integer',
             'from_cycle_time' => 'decimal:2',
             'to_cycle_time' => 'decimal:2',
+            'retooling_date' => 'immutable_date',
         ];
     }
 

@@ -573,19 +573,53 @@
                                 {{-- DOCUMENT COUNT --}}
                                 <td class="px-6 py-4">
 
-                                    <span
+                                    <button
+                                        type="button"
+                                        data-category-documents-trigger
+                                        data-category-documents-url="{{ route(
+                                            'categories.documents.index',
+                                            $category,
+                                            false
+                                        ) }}"
+                                        data-category-name="{{ $category->name }}"
+                                        data-category-document-count="{{ $category->documents_count }}"
+                                        aria-haspopup="dialog"
+                                        aria-label="Lihat {{ $category->documents_count }} dokumen pada kategori {{ $category->name }}"
                                         class="inline-flex
+                                               items-center
+                                               gap-1.5
                                                rounded-lg
-                                               bg-slate-100
+                                               bg-blue-50
                                                px-3
                                                py-1.5
                                                text-xs
                                                font-semibold
-                                               text-slate-700"
+                                               text-blue-700
+                                               transition
+                                               hover:bg-blue-100
+                                               focus:outline-none
+                                               focus:ring-2
+                                               focus:ring-blue-500
+                                               focus:ring-offset-2"
                                     >
                                         {{ $category->documents_count }}
                                         dokumen
-                                    </span>
+
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="14"
+                                            height="14"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            aria-hidden="true"
+                                        >
+                                            <path d="m9 18 6-6-6-6" />
+                                        </svg>
+                                    </button>
 
                                 </td>
 
@@ -772,6 +806,292 @@
         @endif
 
     </section>
+
+    <x-modal
+        name="category-documents"
+        maxWidth="2xl"
+        containerClass="flex items-center justify-center sm:px-4"
+        panelClass="relative !mb-0 flex h-[calc(100dvh-3rem)] max-h-[720px] w-full flex-col overflow-hidden rounded-3xl border border-blue-100 bg-white shadow-2xl shadow-blue-950/20 sm:h-[74vh] sm:!max-w-[94vw] lg:h-[72vh] lg:!max-w-[960px]"
+        backdropClass="bg-slate-950/45 backdrop-blur-[2px]"
+        labelledBy="category-documents-title"
+        describedBy="category-documents-description"
+        focusable
+    >
+        <div data-category-documents-browser class="flex min-h-0 flex-1 flex-col">
+            <div class="h-1.5 w-full flex-shrink-0 bg-blue-800"></div>
+
+            <div
+                data-category-documents-header
+                class="flex-shrink-0 border-b border-blue-100 bg-gradient-to-br from-blue-50 to-white px-4 py-4 sm:px-6"
+            >
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="text-xs font-bold uppercase tracking-[0.18em] text-blue-600">
+                            BMC QualityHub
+                        </p>
+
+                        <h2 id="category-documents-title" class="mt-1 text-lg font-bold text-slate-900 sm:text-xl">
+                            Dokumen Kategori:
+                            <span data-category-documents-name class="break-words">-</span>
+                        </h2>
+
+                        <p id="category-documents-description" class="mt-1 text-sm text-slate-500">
+                            Daftar dokumen aktif dan arsip yang menggunakan kategori ini.
+                        </p>
+                    </div>
+
+                    <button
+                        type="button"
+                        x-on:click="$dispatch('close')"
+                        class="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-white text-slate-500 transition hover:bg-blue-50 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                        aria-label="Tutup daftar dokumen kategori"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                        >
+                            <path d="M18 6 6 18" />
+                            <path d="m6 6 12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <p
+                        data-category-documents-summary
+                        class="text-sm font-semibold text-blue-800"
+                        aria-live="polite"
+                    >
+                        0 dokumen
+                    </p>
+
+                    <label class="block w-full sm:w-72">
+                        <span class="sr-only">
+                            Cari dalam kategori
+                        </span>
+
+                        <span class="relative block">
+                            <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    aria-hidden="true"
+                                >
+                                    <circle cx="11" cy="11" r="8" />
+                                    <path d="m21 21-4.3-4.3" />
+                                </svg>
+                            </span>
+
+                            <input
+                                type="search"
+                                data-category-documents-search
+                                data-qh-modal-initial-focus
+                                maxlength="160"
+                                autocomplete="off"
+                                placeholder="Judul, kode, part, file..."
+                                class="w-full rounded-xl border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            >
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <div
+                data-category-documents-scroll
+                class="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-slate-50/70 px-4 py-3 sm:px-5"
+            >
+                <div
+                    data-category-documents-loading
+                    class="flex h-full min-h-[180px] items-center justify-center"
+                    role="status"
+                    hidden
+                >
+                    <div class="text-center">
+                        <span class="mx-auto block h-9 w-9 animate-spin rounded-full border-4 border-blue-100 border-t-blue-700"></span>
+                        <p class="mt-3 text-sm font-semibold text-slate-600">
+                            Memuat dokumen...
+                        </p>
+                    </div>
+                </div>
+
+                <div
+                    data-category-documents-error
+                    class="flex h-full min-h-[180px] items-center justify-center"
+                    role="alert"
+                    hidden
+                >
+                    <div class="max-w-sm text-center">
+                        <p class="font-semibold text-slate-800">
+                            Data dokumen tidak dapat dimuat.
+                        </p>
+                        <p class="mt-1 text-sm text-slate-500">
+                            Periksa koneksi lalu coba kembali.
+                        </p>
+                        <button
+                            type="button"
+                            data-category-documents-retry
+                            class="mt-4 rounded-xl bg-blue-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                        >
+                            Coba Lagi
+                        </button>
+                    </div>
+                </div>
+
+                <div
+                    data-category-documents-empty
+                    class="flex h-full min-h-[180px] items-center justify-center text-center"
+                    hidden
+                >
+                    <div>
+                        <p class="font-semibold text-slate-700">
+                            Belum ada dokumen pada kategori ini.
+                        </p>
+                        <p class="mt-1 text-sm text-slate-500">
+                            Jumlah akan diperbarui saat dokumen ditambahkan.
+                        </p>
+                    </div>
+                </div>
+
+                <div
+                    data-category-documents-no-results
+                    class="flex h-full min-h-[180px] items-center justify-center text-center"
+                    hidden
+                >
+                    <div>
+                        <p class="font-semibold text-slate-700">
+                            Tidak ada dokumen yang cocok.
+                        </p>
+                        <p class="mt-1 text-sm text-slate-500">
+                            Coba kata kunci lain pada kategori yang sama.
+                        </p>
+                    </div>
+                </div>
+
+                <ul
+                    data-category-documents-results
+                    class="space-y-2"
+                    aria-live="polite"
+                    hidden
+                ></ul>
+            </div>
+
+            <div
+                data-category-documents-pagination
+                class="flex flex-shrink-0 flex-col gap-3 border-t border-slate-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6"
+                hidden
+            >
+                <p data-category-documents-page-info class="text-sm text-slate-500"></p>
+
+                <div class="flex items-center gap-2">
+                    <button
+                        type="button"
+                        data-category-documents-previous
+                        class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        Sebelumnya
+                    </button>
+
+                    <button
+                        type="button"
+                        data-category-documents-next
+                        class="rounded-lg bg-blue-800 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        Berikutnya
+                    </button>
+                </div>
+            </div>
+
+            <template data-category-document-template>
+                <li
+                    data-category-document-result
+                    class="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4"
+                >
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="min-w-0">
+                            <p data-category-document-title class="break-words text-sm font-bold text-slate-900"></p>
+                            <p class="mt-1 truncate text-xs text-slate-500">
+                                File:
+                                <span data-category-document-file-name></span>
+                            </p>
+                        </div>
+
+                        <span
+                            data-category-document-status-active
+                            class="inline-flex w-fit rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700"
+                            hidden
+                        >
+                            Aktif
+                        </span>
+
+                        <span
+                            data-category-document-status-archived
+                            class="inline-flex w-fit rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600"
+                            hidden
+                        >
+                            Diarsipkan
+                        </span>
+                    </div>
+
+                    <dl class="mt-3 grid grid-cols-1 gap-2 text-sm sm:grid-cols-3">
+                        <div>
+                            <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                Kode Dokumen
+                            </dt>
+                            <dd data-category-document-code class="mt-0.5 break-all font-semibold text-slate-700"></dd>
+                        </div>
+
+                        <div>
+                            <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                Nomor Part
+                            </dt>
+                            <dd data-category-document-part-number class="mt-0.5 break-all font-semibold text-slate-700"></dd>
+                        </div>
+
+                        <div>
+                            <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                Tanggal Dokumen
+                            </dt>
+                            <dd data-category-document-date class="mt-0.5 font-semibold text-slate-700"></dd>
+                        </div>
+                    </dl>
+
+                    <div class="mt-3 flex justify-end border-t border-slate-100 pt-2.5">
+                        <a
+                            data-category-document-detail
+                            href="#"
+                            class="inline-flex items-center rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                            hidden
+                        >
+                            Lihat Detail
+                        </a>
+
+                        <span
+                            data-category-document-detail-unavailable
+                            class="text-xs font-medium text-slate-400"
+                            hidden
+                        >
+                            Detail tidak tersedia untuk dokumen arsip.
+                        </span>
+                    </div>
+                </li>
+            </template>
+        </div>
+    </x-modal>
 
     @foreach($categories as $category)
 

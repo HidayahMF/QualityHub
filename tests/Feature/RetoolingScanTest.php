@@ -97,6 +97,10 @@ class RetoolingScanTest extends TestCase
         $this->assertStringContainsString('id="retoolingToSearch"', $html);
         $this->assertStringContainsString('id="retoolingMasterTypeFields"', $html);
         $this->assertMatchesRegularExpression(
+            '/id="scanDateLabel"[^>]*>\s*Tanggal Proses\s*<span/',
+            $html
+        );
+        $this->assertMatchesRegularExpression(
             '/id="scan_time"\s+type="text"/',
             $html
         );
@@ -182,6 +186,10 @@ class RetoolingScanTest extends TestCase
         $this->assertSame($master['e']->id, $retooling->to_casting_id);
         $this->assertSame('25.00', $retooling->from_cycle_time);
         $this->assertSame('22.00', $retooling->to_cycle_time);
+        $this->assertSame(
+            '2026-09-14',
+            $retooling->retooling_date?->toDateString()
+        );
 
         $this->assertSame($document->id, $version->document_id);
         $this->assertSame(0, $version->revision_number);
@@ -359,6 +367,71 @@ class RetoolingScanTest extends TestCase
         ];
     }
 
+    #[DataProvider('retoolingDateProvider')]
+    public function test_retooling_stores_server_derived_date(
+        string $processDate,
+        string $shift,
+        string $time,
+        string $expectedRetoolingDate
+    ): void {
+        $master = $this->createMaster();
+
+        $this->actingAs($this->admin)
+            ->post(route('documents.scan.store'), array_merge(
+                $this->retoolingPayload($master),
+                [
+                    'scan_date' => $processDate,
+                    'shift' => $shift,
+                    'scan_time' => $time,
+                    'retooling_date' => '2099-12-31',
+                ]
+            ))
+            ->assertRedirect(route('documents.scan.create'))
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('success');
+
+        $document = Document::query()->sole();
+        $scan = DocumentScanMetadata::query()->sole();
+        $retooling = DocumentRetooling::query()->sole();
+        $version = DocumentVersion::query()->sole();
+        $activity = ActivityLog::query()->sole();
+
+        $this->assertSame($processDate, $document->document_date?->toDateString());
+        $this->assertSame($processDate, $scan->scan_date?->toDateString());
+        $this->assertSame(
+            $expectedRetoolingDate,
+            $retooling->retooling_date?->toDateString()
+        );
+        $this->assertSame(
+            $processDate,
+            $version->metadata_snapshot['scan_metadata']['scan_date']
+        );
+        $this->assertSame(
+            $expectedRetoolingDate,
+            $version->metadata_snapshot['scan_metadata']['retooling_date']
+        );
+        $this->assertSame($processDate, $activity->metadata['scan_date']);
+        $this->assertSame(
+            $expectedRetoolingDate,
+            $activity->metadata['retooling_date']
+        );
+    }
+
+    public static function retoolingDateProvider(): array
+    {
+        return [
+            'shift 1 same date' => ['2026-09-23', '1', '08:30', '2026-09-23'],
+            'shift 2 same date' => ['2026-09-23', '2', '18:00', '2026-09-23'],
+            'shift 3 at 23:00' => ['2026-09-23', '3', '23:00', '2026-09-23'],
+            'shift 3 at 23:59' => ['2026-09-23', '3', '23:59', '2026-09-23'],
+            'shift 3 at midnight' => ['2026-09-23', '3', '00:00', '2026-09-24'],
+            'main BMC case' => ['2026-09-23', '3', '01:30', '2026-09-24'],
+            'shift 3 at 06:59' => ['2026-09-23', '3', '06:59', '2026-09-24'],
+            'month rollover' => ['2026-09-30', '3', '00:30', '2026-10-01'],
+            'year rollover' => ['2026-12-31', '3', '00:30', '2027-01-01'],
+        ];
+    }
+
     public function test_retooling_rejects_manipulated_shift_time_without_artifacts(): void
     {
         $master = $this->createMaster();
@@ -417,6 +490,25 @@ class RetoolingScanTest extends TestCase
         $this->assertDatabaseCount('documents', 0);
         $this->assertDatabaseCount('document_retoolings', 0);
         $this->assertDatabaseCount('document_scan_metadata', 0);
+        $this->assertDatabaseCount('document_versions', 0);
+        $this->assertDatabaseCount('activity_logs', 0);
+        $this->assertSame([], Storage::disk('bmc_documents')->allFiles());
+    }
+
+    public function test_retooling_requires_time_without_artifacts(): void
+    {
+        $master = $this->createMaster();
+        $payload = $this->retoolingPayload($master);
+        unset($payload['scan_time']);
+
+        $this->actingAs($this->admin)
+            ->post(route('documents.scan.store'), $payload)
+            ->assertRedirect(route('documents.scan.create'))
+            ->assertSessionHasErrors('scan_time');
+
+        $this->assertDatabaseCount('documents', 0);
+        $this->assertDatabaseCount('document_scan_metadata', 0);
+        $this->assertDatabaseCount('document_retoolings', 0);
         $this->assertDatabaseCount('document_versions', 0);
         $this->assertDatabaseCount('activity_logs', 0);
         $this->assertSame([], Storage::disk('bmc_documents')->allFiles());
@@ -493,23 +585,85 @@ class RetoolingScanTest extends TestCase
 
         $this->actingAs($this->admin)
             ->post(route('documents.scan.store'), array_merge($this->retoolingPayload($master), [
-                'scan_time' => '08:30',
+                'scan_date' => '2026-09-23',
+                'shift' => '3',
+                'scan_time' => '01:30',
             ]))
             ->assertRedirect(route('documents.scan.create'))
             ->assertSessionHasNoErrors();
 
         $document = Document::query()->sole();
+        $document->update(['document_date' => '2026-10-05']);
 
         $this->get(route('documents.show', $document))
             ->assertOk()
-            ->assertSee('Informasi Retooling')
-            ->assertSee('Shift 1')
-            ->assertSee('LINE_2')
-            ->assertSee('product_A')
-            ->assertSee('product_E')
-            ->assertSee('25.00')
-            ->assertSee('22.00')
-            ->assertSee('08:30');
+            ->assertSeeTextInOrder([
+                'Informasi Retooling',
+                'Shift 3',
+                'LINE_2',
+                'Tanggal Proses',
+                '23 Sep 2026',
+                'Tanggal Retooling',
+                '24 Sep 2026',
+                'product_A',
+                '25.00',
+                'product_E',
+                '22.00',
+                '01:30',
+            ]);
+    }
+
+    public function test_retooling_document_detail_derives_legacy_date_when_sources_are_valid(): void
+    {
+        $master = $this->createMaster();
+
+        $this->actingAs($this->admin)
+            ->post(route('documents.scan.store'), array_merge($this->retoolingPayload($master), [
+                'scan_date' => '2026-09-23',
+                'shift' => '3',
+                'scan_time' => '01:30',
+            ]))
+            ->assertRedirect(route('documents.scan.create'))
+            ->assertSessionHasNoErrors();
+
+        $document = Document::query()->sole();
+        $document->retooling()->update(['retooling_date' => null]);
+
+        $this->get(route('documents.show', $document))
+            ->assertOk()
+            ->assertSeeTextInOrder([
+                'Tanggal Proses',
+                '23 Sep 2026',
+                'Tanggal Retooling',
+                '24 Sep 2026',
+            ]);
+    }
+
+    public function test_retooling_document_detail_safely_handles_incomplete_legacy_dates(): void
+    {
+        $master = $this->createMaster();
+
+        $this->actingAs($this->admin)
+            ->post(route('documents.scan.store'), $this->retoolingPayload($master))
+            ->assertRedirect(route('documents.scan.create'))
+            ->assertSessionHasNoErrors();
+
+        $document = Document::query()->sole();
+        $document->retooling()->delete();
+        $document->scanMetadata()->update([
+            'scan_date' => null,
+            'scan_time' => null,
+        ]);
+
+        $this->get(route('documents.show', $document))
+            ->assertOk()
+            ->assertSeeTextInOrder([
+                'Tanggal Proses',
+                '-',
+                'Tanggal Retooling',
+                '-',
+                'Dari Type',
+            ]);
     }
 
     public function test_master_endpoints_show_only_active_data_with_line_specific_cycle_times(): void
@@ -711,6 +865,7 @@ class RetoolingScanTest extends TestCase
         return array_merge($this->basePayload(), [
             'scan_type' => 'Retooling',
             'shift' => '1',
+            'scan_time' => '08:30',
             'production_line_id' => $master['line2']->id,
             'from_casting_id' => $master['a']->id,
             'to_casting_id' => $master['e']->id,

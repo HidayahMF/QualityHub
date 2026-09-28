@@ -15,6 +15,7 @@ use App\Services\DocumentPurgeService;
 use App\Services\DocumentUploadSecurityService;
 use App\Services\InputSanitizationService;
 use App\Services\PrivateDocumentStorageService;
+use App\Services\RetoolingDateRule;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -1978,6 +1979,23 @@ class DocumentController extends Controller
             'retooling.toCasting',
         ]);
 
+        $retoolingProcessDate = null;
+        $retoolingDate = null;
+
+        if (
+            $document->retooling !== null
+            || $document->scanMetadata?->scan_type === 'Retooling'
+        ) {
+            $retoolingProcessDate = $document->scanMetadata?->scan_date;
+            $retoolingDate = $document->retooling?->retooling_date
+                ?? RetoolingDateRule::resolve(
+                    $retoolingProcessDate,
+                    $document->retooling?->shift
+                        ?? $document->scanMetadata?->shift,
+                    $document->scanMetadata?->scan_time
+                );
+        }
+
         /*
         |--------------------------------------------------------------------------
         | Favorite Status
@@ -2169,7 +2187,9 @@ class DocumentController extends Controller
                 'isHistoricalAnalytics',
                 'documentAnalytics',
                 'analyticsCellCount',
-                'analyticsCompleteness'
+                'analyticsCompleteness',
+                'retoolingProcessDate',
+                'retoolingDate'
             )
         );
     }

@@ -19,6 +19,7 @@ use App\Models\ProductionLine;
 use App\Services\CategoryAssignmentService;
 use App\Services\MultiPageScanPdfService;
 use App\Services\PrivateDocumentStorageService;
+use App\Services\RetoolingDateRule;
 use App\Services\ScanImageSecurityService;
 use App\Services\ShiftTimeRule;
 use Illuminate\Database\Eloquent\Builder;
@@ -222,7 +223,13 @@ class ScanDocumentController extends Controller
             'from_type' => ['nullable', 'string', 'max:150'],
             'to_type' => ['nullable', 'string', 'max:150'],
 
-            'scan_time' => ['nullable', 'date_format:H:i'],
+            'scan_time' => [
+                Rule::requiredIf(
+                    fn () => $request->input('scan_type') === self::SCAN_RETOOLING
+                ),
+                'nullable',
+                'date_format:H:i',
+            ],
 
             'axle_type_id' => [
                 Rule::requiredIf(
@@ -342,6 +349,14 @@ class ScanDocumentController extends Controller
         $isRetooling = $originalScanType === self::SCAN_RETOOLING;
         $isAxle = $originalScanType === self::SCAN_AXLE;
         $isBrake = $originalScanType === self::SCAN_BRAKE;
+
+        $retoolingDate = $isRetooling
+            ? RetoolingDateRule::resolve(
+                $validated['scan_date'],
+                $validated['shift'] ?? null,
+                $validated['scan_time'] ?? null
+            )
+            : null;
 
         if (
             $isRetooling
@@ -639,6 +654,8 @@ class ScanDocumentController extends Controller
                 $brakePartNumber,
                 $productionDate,
                 $captureSource,
+                $isRetooling,
+                $retoolingDate,
                 $isAxle,
                 $isBrake,
                 $isMultiPhoto,
@@ -790,6 +807,7 @@ class ScanDocumentController extends Controller
                         'to_casting_id' => $retoolingMaster['to_casting_id'],
                         'from_cycle_time' => $retoolingMaster['from_cycle_time'],
                         'to_cycle_time' => $retoolingMaster['to_cycle_time'],
+                        'retooling_date' => $retoolingDate?->toDateString(),
                     ]);
                 }
 
@@ -856,6 +874,10 @@ class ScanDocumentController extends Controller
                             'from_type' => $validated['from_type'] ?? null,
                             'to_type' => $validated['to_type'] ?? null,
                             'scan_time' => $validated['scan_time'] ?? null,
+                            ...($isRetooling ? [
+                                'scan_date' => $validated['scan_date'],
+                                'retooling_date' => $retoolingDate?->toDateString(),
+                            ] : []),
                             'production_date' => $productionDate,
                             'axle_assy_type' => $validated['axle_assy_type'] ?? null,
                             'axle_side' => $validated['axle_side'] ?? null,
@@ -895,6 +917,10 @@ class ScanDocumentController extends Controller
                         'scan_date' => $validated['scan_date'],
                         'production_date' => $productionDate,
                         'shift' => $validated['shift'] ?? null,
+                        ...($isRetooling ? [
+                            'scan_time' => $validated['scan_time'] ?? null,
+                            'retooling_date' => $retoolingDate?->toDateString(),
+                        ] : []),
                         'line' => $validated['line'] ?? null,
                         'axle_assy_type' => $validated['axle_assy_type'] ?? null,
                         'axle_side' => $validated['axle_side'] ?? null,

@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\ActivityLog;
 use App\Models\Category;
 use App\Models\Department;
+use App\Models\Document;
+use App\Services\InputSanitizationService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -108,6 +111,132 @@ class CategoryManagementController extends Controller
                 'statistics'
             )
         );
+    }
+
+
+    /**
+     * Tampilkan dokumen yang menggunakan kategori terpilih.
+     */
+    public function documents(
+        Request $request,
+        Category $category,
+        InputSanitizationService $input
+    ): JsonResponse {
+
+        $this->ensureSuperAdmin();
+
+        $validated = $request->validate([
+            'search' => [
+                'nullable',
+                'string',
+                'max:160',
+            ],
+
+            'page' => [
+                'nullable',
+                'integer',
+                'min:1',
+            ],
+        ]);
+
+        $search = $input->search(
+            $validated['search'] ?? null
+        );
+
+        $query = $category->documents()
+            ->select([
+                'id',
+                'category_id',
+                'title',
+                'document_code',
+                'part_number',
+                'file_name',
+                'document_date',
+                'is_active',
+                'created_at',
+            ]);
+
+        if ($search !== '') {
+            $likeSearch = $input->escapeLike($search);
+
+            $query->where(function ($query) use ($likeSearch) {
+                $query->where(
+                    'title',
+                    'like',
+                    "%{$likeSearch}%"
+                )
+                    ->orWhere(
+                        'document_code',
+                        'like',
+                        "%{$likeSearch}%"
+                    )
+                    ->orWhere(
+                        'part_number',
+                        'like',
+                        "%{$likeSearch}%"
+                    )
+                    ->orWhere(
+                        'file_name',
+                        'like',
+                        "%{$likeSearch}%"
+                    );
+            });
+        }
+
+        $documents = $query
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->paginate(10);
+
+        $categoryTotal = $search === ''
+            ? $documents->total()
+            : $category->documents()->count();
+
+        return response()->json([
+            'category' => [
+                'id' => $category->id,
+                'name' => $category->name,
+            ],
+
+            'category_total' => $categoryTotal,
+            'filtered_total' => $documents->total(),
+
+            'results' => $documents
+                ->getCollection()
+                ->map(
+                    static fn (Document $document): array => [
+                        'id' => $document->id,
+                        'title' => $document->title ?? '-',
+                        'document_code' => $document->document_code ?? '-',
+                        'part_number' => $document->part_number ?? '-',
+                        'file_name' => $document->file_name ?? '-',
+                        'document_date' => $document->document_date
+                            ?->locale('id')
+                            ->translatedFormat('d M Y') ?? '-',
+                        'status' => $document->is_active
+                            ? 'Aktif'
+                            : 'Diarsipkan',
+                        'is_active' => (bool) $document->is_active,
+                        'detail_url' => $document->is_active
+                            ? route(
+                                'documents.show',
+                                $document,
+                                false
+                            )
+                            : null,
+                    ]
+                )
+                ->values(),
+
+            'pagination' => [
+                'current_page' => $documents->currentPage(),
+                'last_page' => $documents->lastPage(),
+                'per_page' => $documents->perPage(),
+                'total' => $documents->total(),
+                'from' => $documents->firstItem(),
+                'to' => $documents->lastItem(),
+            ],
+        ]);
     }
 
 
