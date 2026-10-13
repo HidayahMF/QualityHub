@@ -392,6 +392,24 @@
         .qualityhub-content table {
             font-size: 0.825rem;
         }
+
+        .qualityhub-content [role="dialog"],
+        .qualityhub-content [role="dialog"] > div,
+        .qualityhub-content [role="dialog"] [class~="bg-white"] {
+            max-width: calc(100vw - 1rem);
+            width: min(100%, calc(100vw - 1rem));
+        }
+
+        .qualityhub-content .overflow-x-auto,
+        .qualityhub-content .overflow-x-scroll {
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .auth-qualityhub-panel,
+        .qualityhub-auth-panel {
+            width: min(100%, calc(100vw - 1.25rem));
+            margin-inline: auto;
+        }
     }
 
 
@@ -2681,3 +2699,81 @@
 [x-cloak] {
     display: none !important;
 }
+
+
+/* ==========================================================================
+   BMC QUALITYHUB FINAL DASHBOARD POLISH
+   ========================================================================== */
+
+.dashboard-grid {
+    align-items: stretch;
+}
+
+#trend-chart {
+    min-height: 340px;
+}
+
+.dashboard-card {
+    overflow: hidden;
+}
+
+.dashboard-card .card-header {
+    min-height: 92px;
+}
+
+.apexcharts-canvas {
+    margin: auto !important;
+}
+
+/* Dashboard ApexCharts Fix */
+
+#category-donut-chart,
+#filetype-donut-chart {
+    width: 100%;
+    min-height: 280px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+
+.apexcharts-canvas {
+    margin: auto !important;
+}
+
+
+.apexcharts-svg {
+    overflow: visible;
+}
+
+
+.apexcharts-legend {
+    padding-top: 10px;
+}
+
+
+#trend-chart {
+    height: 360px;
+    min-height: 360px;
+}
+
+
+#trend-chart .apexcharts-canvas {
+    margin-top: 0 !important;
+}
+
+/* ApexCharts donut hover fix */
+
+.apexcharts-tooltip {
+    z-index: 9999 !important;
+}
+
+.apexcharts-tooltip.apexcharts-theme-light {
+    box-shadow: none !important;
+}
+
+
+.apexcharts-pie-series path {
+    cursor: default;
+}
+

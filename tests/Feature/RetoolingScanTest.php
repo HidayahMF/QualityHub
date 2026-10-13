@@ -142,6 +142,85 @@ class RetoolingScanTest extends TestCase
         );
     }
 
+    public function test_scan_view_does_not_force_optional_metadata_via_browser_required_flags(): void
+    {
+        $html = $this->actingAs($this->admin)
+            ->get(route('documents.scan.create'))
+            ->assertOk()
+            ->baseResponse
+            ->getContent();
+
+        $this->assertStringNotContainsString('shift.required =', $html);
+        $this->assertStringNotContainsString('lineId.required =', $html);
+        $this->assertStringNotContainsString('fromId.required =', $html);
+        $this->assertStringNotContainsString('toId.required =', $html);
+        $this->assertStringNotContainsString('scanTime.required =', $html);
+        $this->assertMatchesRegularExpression('/Shift\s*<span[^>]*>\(Opsional\)<\/span>/', $html);
+        $this->assertMatchesRegularExpression('/Line\s*<span[^>]*>\(Opsional\)<\/span>/', $html);
+        $this->assertMatchesRegularExpression('/Dari Type\s*<span[^>]*>\(Opsional\)<\/span>/', $html);
+        $this->assertMatchesRegularExpression('/Ke Type\s*<span[^>]*>\(Opsional\)<\/span>/', $html);
+        $this->assertMatchesRegularExpression('/Jam\s*<span[^>]*>\(Opsional\)<\/span>/', $html);
+    }
+
+    public function test_generic_scan_type_can_be_saved_without_specialized_production_metadata(): void
+    {
+        $this->actingAs($this->admin)
+            ->post(route('documents.scan.store'), [
+                'title' => 'Audit Internal QC',
+                'file_name' => 'audit-internal-qc',
+                'category_id' => $this->category->id,
+                'scan_type' => 'Audit Internal QC',
+                'scan_date' => '2026-09-14',
+                'capture_source' => 'upload',
+                'files' => [
+                    UploadedFile::fake()->image('audit-internal-qc.jpg', 1200, 900),
+                ],
+            ])
+            ->assertRedirect(route('documents.scan.create'))
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('success');
+
+        $metadata = DocumentScanMetadata::query()->sole();
+
+        $this->assertSame('Audit Internal QC', $metadata->scan_type);
+        $this->assertNull($metadata->shift);
+        $this->assertNull($metadata->line);
+        $this->assertNull($metadata->from_type);
+        $this->assertNull($metadata->to_type);
+        $this->assertNull($metadata->scan_time);
+    }
+
+    public function test_retooling_accepts_missing_production_metadata_when_left_blank(): void
+    {
+        $this->actingAs($this->admin)
+            ->post(route('documents.scan.store'), [
+                'title' => 'INSTRUKSI PERUBAHAN TYPE (RETOOLING)',
+                'file_name' => 'retooling-without-metadata',
+                'category_id' => $this->category->id,
+                'scan_type' => 'Retooling',
+                'scan_date' => '2026-09-14',
+                'capture_source' => 'upload',
+                'files' => [
+                    UploadedFile::fake()->image('retooling-without-metadata.jpg', 1200, 900),
+                ],
+            ])
+            ->assertRedirect(route('documents.scan.create'))
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('success');
+
+        $metadata = DocumentScanMetadata::query()->sole();
+
+        $this->assertSame('Retooling', $metadata->scan_type);
+        $this->assertNull($metadata->shift);
+        $this->assertNull($metadata->line);
+        $this->assertNull($metadata->from_type);
+        $this->assertNull($metadata->to_type);
+        $this->assertNull($metadata->scan_time);
+        $this->assertDatabaseMissing('document_retoolings', [
+            'document_id' => $metadata->document_id,
+        ]);
+    }
+
     public function test_retooling_post_saves_master_snapshot_and_ignores_browser_supplied_values(): void
     {
         $master = $this->createMaster();

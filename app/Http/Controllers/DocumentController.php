@@ -16,6 +16,7 @@ use App\Services\DocumentUploadSecurityService;
 use App\Services\InputSanitizationService;
 use App\Services\PrivateDocumentStorageService;
 use App\Services\RetoolingDateRule;
+use App\Services\DocxPreviewConverter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -23,6 +24,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -142,13 +145,26 @@ class DocumentController extends Controller
             ->orderBy('name')
             ->get();
 
-        $extensions = Document::query()
-            ->where('is_active', true)
-            ->whereNotNull('file_extension')
-            ->where('file_extension', '!=', '')
-            ->distinct()
-            ->orderBy('file_extension')
-            ->pluck('file_extension');
+        $extensions = collect([
+            'jpg',
+            'jpeg',
+            'png',
+            'pdf',
+            'xlsx',
+            'xls',
+            'doc',
+            'docx',
+            'csv',
+            'txt',
+        ])
+            ->filter(function (string $extension) {
+                return Document::query()
+                    ->where('is_active', true)
+                    ->where('file_extension', $extension)
+                    ->exists();
+            })
+            ->values()
+            ->all();
 
         $scanTypes = [
             'Retooling' =>
@@ -2264,6 +2280,59 @@ class DocumentController extends Controller
 
         /*
         |--------------------------------------------------------------------------
+        | DOCX: Pratinjau sebagai PDF sementara (tanpa mengubah DOCX asli)
+        |--------------------------------------------------------------------------
+        |
+        | Menggunakan route documents.open yang sudah ada. Download tetap
+        | memanggil method download(), sehingga file asli tidak berubah.
+        */
+        if (strtolower((string) $document->file_extension) === 'docx') {
+            $limitKey = 'docx-preview:' . (string) Auth::id();
+
+            // Konversi Word membutuhkan CPU, batasi per pengguna.
+            abort_unless(
+                RateLimiter::attempt($limitKey, 4, static fn () => true, 60),
+                429,
+                'Terlalu banyak pratinjau DOCX. Coba lagi dalam satu menit.'
+            );
+
+            try {
+                $tempPdf = app(DocxPreviewConverter::class)->convert($absolutePath);
+            } catch (Throwable $exception) {
+                Log::warning('DOCX preview conversion failed', [
+                    'document_id' => $document->id,
+                    'error_type' => get_class($exception),
+                ]);
+
+                abort(
+                    503,
+                    'Pratinjau Word belum tersedia. Silakan gunakan tombol Unduh.'
+                );
+            }
+
+            $response = response()->file($tempPdf, [
+                'Content-Type' => 'application/pdf',
+                'X-Content-Type-Options' => 'nosniff',
+                'Cache-Control' => 'private, no-store, no-cache, must-revalidate',
+                'Pragma' => 'no-cache',
+                'Expires' => '0',
+                'Referrer-Policy' => 'no-referrer',
+                'X-Frame-Options' => 'DENY',
+            ]);
+
+            $response->setContentDisposition(
+                ResponseHeaderBag::DISPOSITION_INLINE,
+                'pratinjau-' . (int) $document->id . '.pdf'
+            );
+
+            // Symfony menghapus PDF hasil konversi seusai pengiriman.
+            $response->deleteFileAfterSend(true);
+
+            return $response;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
         | Previewable Extensions
         |--------------------------------------------------------------------------
         */
@@ -2722,7 +2791,18 @@ class DocumentController extends Controller
                 'nullable',
                 'string',
                 'max:20',
-                'regex:/^[A-Za-z0-9]+$/',
+                Rule::in([
+                    'jpg',
+                    'jpeg',
+                    'png',
+                    'pdf',
+                    'xlsx',
+                    'xls',
+                    'doc',
+                    'docx',
+                    'csv',
+                    'txt',
+                ]),
             ],
 
             'document_type' => [

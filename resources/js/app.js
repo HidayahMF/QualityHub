@@ -210,17 +210,26 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeCategoryComboboxes();
     initializeCategoryDocumentsModal();
 
+
+
+
+
+
     /*
     | Dashboard period auto-submit
     */
     document.querySelectorAll('[data-auto-submit]').forEach((element) => {
+
         element.addEventListener('change', () => {
+
             const form = element.form;
 
             if (form) {
                 form.requestSubmit();
             }
+
         });
+
     });
 
 });

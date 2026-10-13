@@ -6,6 +6,7 @@ use App\Models\ActivityLog;
 use App\Models\AxlePosition;
 use App\Models\AxleType;
 use App\Models\BrakePartNumber;
+use App\Models\Casting;
 use App\Models\Category;
 use App\Models\Department;
 use App\Models\Document;
@@ -13,6 +14,7 @@ use App\Models\DocumentAxleProduction;
 use App\Models\DocumentBrakeProduction;
 use App\Models\DocumentScanMetadata;
 use App\Models\DocumentRetooling;
+use App\Models\DocumentScanType;
 use App\Models\DocumentVersion;
 use App\Models\LineProduct;
 use App\Models\ProductionLine;
@@ -23,6 +25,7 @@ use App\Services\RetoolingDateRule;
 use App\Services\ScanImageSecurityService;
 use App\Services\ShiftTimeRule;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -40,6 +43,51 @@ class ScanDocumentController extends Controller
     private const SCAN_AXLE = 'Laporan Hasil Produksi - Axle Assy';
     private const SCAN_BRAKE = 'Laporan Hasil Produksi - Brake Assy';
     private const SCAN_OTHER = 'Lainnya';
+
+    private static function systemScanTypes(): array
+    {
+        return [
+            self::SCAN_RETOOLING,
+            self::SCAN_AXLE,
+            self::SCAN_BRAKE,
+            self::SCAN_OTHER,
+        ];
+    }
+
+    private function scanTypeChoices(): array
+    {
+        $reserved = self::systemScanTypes();
+        $customTypes = DocumentScanType::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->pluck('name')
+            ->all();
+
+        return array_values(array_unique([...$reserved, ...$customTypes]));
+    }
+
+    private function normalizeScanTypeName(string $value): string
+    {
+        $normalized = trim((string) $value);
+
+        return preg_replace('/\s+/', ' ', $normalized) ?? $normalized;
+    }
+
+    private function isReservedScanType(?string $value): bool
+    {
+        if (! is_string($value)) {
+            return false;
+        }
+
+        $normalized = strtolower($this->normalizeScanTypeName($value));
+
+        return in_array(
+            $normalized,
+            array_map('strtolower', self::systemScanTypes()),
+            true
+        );
+    }
 
     public function create(): View
     {
@@ -62,6 +110,24 @@ class ScanDocumentController extends Controller
 
         $allowCategoryCreation = Auth::user()->isSuperAdmin();
         $shiftTimeRanges = ShiftTimeRule::frontendRanges();
+        $documentScanTypes = $this->scanTypeChoices();
+
+        $productionLines = ProductionLine::query()
+            ->where('is_active', true)
+            ->orderBy('code')
+            ->get(['id', 'code', 'name']);
+
+        $lineProducts = LineProduct::query()
+            ->with('casting:id,code,name,is_active')
+            ->where('is_active', true)
+            ->orderBy('production_line_id')
+            ->orderBy('casting_id')
+            ->get(['id', 'production_line_id', 'casting_id', 'cycle_time']);
+
+        $castings = Casting::query()
+            ->where('is_active', true)
+            ->orderBy('code')
+            ->get(['id', 'code', 'name']);
 
         $axleTypes = AxleType::query()
             ->where('is_active', true)
@@ -82,10 +148,162 @@ class ScanDocumentController extends Controller
                 'departments',
                 'allowCategoryCreation',
                 'shiftTimeRanges',
+                'documentScanTypes',
+                'productionLines',
+                'lineProducts',
+                'castings',
                 'axleTypes',
                 'axlePositions'
             )
         );
+    }
+
+    public function scanTypes(): JsonResponse
+    {
+        $this->ensureAdmin();
+
+        $customTypes = DocumentScanType::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return response()->json([
+            'results' => $customTypes->map(
+                fn (DocumentScanType $type): array => [
+                    'id' => $type->id,
+                    'value' => $type->name,
+                    'label' => $type->name,
+                ]
+            )->all(),
+        ]);
+    }
+
+    public function storeScanType(Request $request): JsonResponse
+    {
+        $this->ensureAdmin();
+
+        $validated = $request->validate([
+            'name' => [
+                'required',
+                'string',
+                'max:120',
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    $name = trim((string) $value);
+
+                    if ($name === '') {
+                        $fail('Nama jenis dokumen tidak boleh kosong.');
+
+                        return;
+                    }
+
+                    if (in_array(strtolower($name), array_map('strtolower', self::systemScanTypes()), true)) {
+                        $fail('Gunakan pilihan jenis dokumen yang sudah tersedia.');
+                    }
+                },
+            ],
+        ]);
+
+        $name = $this->normalizeScanTypeName((string) $validated['name']);
+
+        if ($name === '') {
+            return response()->json([
+                'message' => 'Nama jenis dokumen tidak boleh kosong.',
+            ], 422);
+        }
+
+        $scanType = DocumentScanType::query()
+            ->whereRaw('LOWER(name) = ?', [strtolower($name)])
+            ->first();
+
+        if ($scanType) {
+            if ((bool) $scanType->is_active) {
+                return response()->json([
+                    'message' => 'Jenis dokumen ini sudah tersedia.',
+                ], 422);
+            }
+
+            $scanType->update([
+                'is_active' => true,
+                'sort_order' => 500,
+            ]);
+
+            ActivityLog::create([
+                'user_id' => Auth::id(),
+                'action' => 'reactivate_scan_type',
+                'description' => Auth::user()->name . ' mengaktifkan kembali jenis dokumen scan "' . $scanType->name . '".',
+                'metadata' => [
+                    'scan_type_id' => $scanType->id,
+                    'scan_type_name' => $scanType->name,
+                ],
+            ]);
+
+            return response()->json([
+                'id' => $scanType->id,
+                'name' => $scanType->name,
+                'is_active' => true,
+                'reactivated' => true,
+            ]);
+        }
+
+        $scanType = DocumentScanType::query()->create([
+            'name' => $name,
+            'is_active' => true,
+            'sort_order' => 500,
+            'created_by' => Auth::id(),
+        ]);
+
+        ActivityLog::create([
+            'user_id' => Auth::id(),
+            'action' => 'create_scan_type',
+            'description' => Auth::user()->name . ' menambahkan jenis dokumen scan "' . $scanType->name . '".',
+            'metadata' => [
+                'scan_type_id' => $scanType->id,
+                'scan_type_name' => $scanType->name,
+            ],
+        ]);
+
+        return response()->json([
+            'id' => $scanType->id,
+            'name' => $scanType->name,
+            'is_active' => (bool) $scanType->is_active,
+        ]);
+    }
+
+    public function deactivateScanType(Request $request, DocumentScanType $documentScanType): RedirectResponse|JsonResponse
+    {
+        $this->ensureSuperAdmin();
+
+        if ($this->isReservedScanType($documentScanType->name)) {
+            return response()->json([
+                'message' => 'Jenis dokumen sistem tidak dapat dihapus.',
+            ], 422);
+        }
+
+        if (! $documentScanType->is_active) {
+            return response()->json([
+                'id' => $documentScanType->id,
+                'name' => $documentScanType->name,
+                'is_active' => false,
+                'already_inactive' => true,
+            ]);
+        }
+
+        $documentScanType->update([
+            'is_active' => false,
+        ]);
+
+        ActivityLog::create([
+            'user_id' => Auth::id(),
+            'action' => 'deactivate_scan_type',
+            'description' => Auth::user()->name . ' menonaktifkan jenis dokumen scan "' . $documentScanType->name . '".',
+            'metadata' => [
+                'scan_type_id' => $documentScanType->id,
+                'scan_type_name' => $documentScanType->name,
+            ],
+        ]);
+
+        return redirect()->route('documents.scan.create');
     }
 
     /**
@@ -158,12 +376,28 @@ class ScanDocumentController extends Controller
             'scan_type' => [
                 'required',
                 'string',
-                Rule::in([
-                    self::SCAN_RETOOLING,
-                    self::SCAN_AXLE,
-                    self::SCAN_BRAKE,
-                    self::SCAN_OTHER,
-                ]),
+                'max:120',
+                function (string $attribute, mixed $value, \Closure $fail) use ($request) {
+                    $name = trim((string) $value);
+
+                    if ($name === '') {
+                        $fail('Jenis dokumen scan wajib diisi.');
+
+                        return;
+                    }
+
+                    if (strtolower($name) === strtolower(self::SCAN_OTHER)) {
+                        return;
+                    }
+
+                    if (in_array(strtolower($name), array_map('strtolower', self::systemScanTypes()), true)) {
+                        return;
+                    }
+
+                    if ($request->input('scan_type') === self::SCAN_OTHER) {
+                        $fail('Gunakan pilihan jenis dokumen yang sudah tersedia.');
+                    }
+                },
             ],
             'scan_type_other' => [
                 Rule::requiredIf(
@@ -171,21 +405,15 @@ class ScanDocumentController extends Controller
                 ),
                 'nullable',
                 'string',
-                'max:50',
+                'max:120',
             ],
             'scan_date' => ['required', 'date_format:Y-m-d'],
             'shift' => [
-                Rule::requiredIf(
-                    fn () => $request->input('scan_type') === self::SCAN_RETOOLING
-                ),
                 'nullable',
                 Rule::in(['1', '2', '3']),
             ],
 
             'production_line_id' => [
-                Rule::requiredIf(
-                    fn () => $request->input('scan_type') === self::SCAN_RETOOLING
-                ),
                 'nullable',
                 'integer',
                 Rule::exists('production_lines', 'id')->where(
@@ -194,9 +422,6 @@ class ScanDocumentController extends Controller
             ],
 
             'from_casting_id' => [
-                Rule::requiredIf(
-                    fn () => $request->input('scan_type') === self::SCAN_RETOOLING
-                ),
                 'nullable',
                 'integer',
                 Rule::exists('castings', 'id')->where(
@@ -205,9 +430,6 @@ class ScanDocumentController extends Controller
             ],
 
             'to_casting_id' => [
-                Rule::requiredIf(
-                    fn () => $request->input('scan_type') === self::SCAN_RETOOLING
-                ),
                 'nullable',
                 'integer',
                 Rule::exists('castings', 'id')->where(
@@ -224,9 +446,6 @@ class ScanDocumentController extends Controller
             'to_type' => ['nullable', 'string', 'max:150'],
 
             'scan_time' => [
-                Rule::requiredIf(
-                    fn () => $request->input('scan_type') === self::SCAN_RETOOLING
-                ),
                 'nullable',
                 'date_format:H:i',
             ],
@@ -309,12 +528,49 @@ class ScanDocumentController extends Controller
             ]);
         }
 
+        $originalScanType = $validated['scan_type'];
+        $isRetooling = $originalScanType === self::SCAN_RETOOLING;
+        $isAxle = $originalScanType === self::SCAN_AXLE;
+        $isBrake = $originalScanType === self::SCAN_BRAKE;
+
+        $hasRetoolingMetadata = collect([
+            $validated['shift'] ?? null,
+            $validated['line'] ?? null,
+            $validated['from_type'] ?? null,
+            $validated['to_type'] ?? null,
+            $validated['production_line_id'] ?? null,
+            $validated['from_casting_id'] ?? null,
+            $validated['to_casting_id'] ?? null,
+            $validated['scan_time'] ?? null,
+        ])->contains(fn ($value) => $value !== null && $value !== '');
+
         ShiftTimeRule::validate(
             $validated['shift'] ?? null,
             $validated['scan_time'] ?? null
         );
 
-        $originalScanType = $validated['scan_type'];
+        if ($isRetooling && $hasRetoolingMetadata && ($validated['scan_time'] ?? null) === null) {
+            throw ValidationException::withMessages([
+                'scan_time' => 'Jam proses wajib diisi ketika metadata produksi Retooling diisi.',
+            ]);
+        }
+
+        if ($isRetooling && $hasRetoolingMetadata) {
+            $fromCastingId = $validated['from_casting_id'] ?? null;
+            $toCastingId = $validated['to_casting_id'] ?? null;
+
+            if ($fromCastingId !== null && $toCastingId !== null && (int) $fromCastingId === (int) $toCastingId) {
+                throw ValidationException::withMessages([
+                    'to_casting_id' => 'Dari Type dan Ke Type tidak boleh sama.',
+                ]);
+            }
+
+            if (($validated['production_line_id'] ?? null) !== null && ($fromCastingId === null || $toCastingId === null)) {
+                throw ValidationException::withMessages([
+                    'from_casting_id' => 'Dari Type wajib dipilih saat data Retooling lengkap diisi.',
+                ]);
+            }
+        }
 
         if ($originalScanType === self::SCAN_OTHER) {
             $otherScanType = $validated['scan_type_other'] ?? null;
@@ -325,14 +581,17 @@ class ScanDocumentController extends Controller
                 ]);
             }
 
+            $otherScanType = $this->normalizeScanTypeName($otherScanType);
+
+            if ($otherScanType === '') {
+                throw ValidationException::withMessages([
+                    'scan_type_other' => 'Jenis dokumen lainnya tidak boleh kosong.',
+                ]);
+            }
+
             $reservedScanTypes = array_map(
                 'strtolower',
-                [
-                    self::SCAN_RETOOLING,
-                    self::SCAN_AXLE,
-                    self::SCAN_BRAKE,
-                    self::SCAN_OTHER,
-                ]
+                self::systemScanTypes()
             );
 
             if (in_array(strtolower($otherScanType), $reservedScanTypes, true)) {
@@ -346,9 +605,18 @@ class ScanDocumentController extends Controller
 
         unset($validated['scan_type_other']);
 
-        $isRetooling = $originalScanType === self::SCAN_RETOOLING;
-        $isAxle = $originalScanType === self::SCAN_AXLE;
-        $isBrake = $originalScanType === self::SCAN_BRAKE;
+        $customScanTypeName = $this->normalizeScanTypeName((string) ($validated['scan_type'] ?? ''));
+
+        if (
+            $customScanTypeName !== ''
+            && ! $this->isReservedScanType($customScanTypeName)
+            && ! DocumentScanType::query()->where('is_active', true)->whereRaw('LOWER(name) = ?', [strtolower($customScanTypeName)])->exists()
+        ) {
+            DocumentScanType::query()->firstOrCreate(
+                ['name' => $customScanTypeName],
+                ['is_active' => true, 'sort_order' => 500]
+            );
+        }
 
         $retoolingDate = $isRetooling
             ? RetoolingDateRule::resolve(
@@ -357,16 +625,6 @@ class ScanDocumentController extends Controller
                 $validated['scan_time'] ?? null
             )
             : null;
-
-        if (
-            $isRetooling
-            && (int) $validated['from_casting_id']
-                === (int) $validated['to_casting_id']
-        ) {
-            throw ValidationException::withMessages([
-                'to_casting_id' => 'Dari Type dan Ke Type tidak boleh sama.',
-            ]);
-        }
 
         $productionDate = ($isAxle || $isBrake)
             ? $validated['scan_date']
@@ -671,63 +929,77 @@ class ScanDocumentController extends Controller
                 $retoolingMaster = null;
 
                 if (($validated['scan_type'] ?? null) === self::SCAN_RETOOLING) {
-                    $productionLine = ProductionLine::query()
-                        ->whereKey($validated['production_line_id'])
-                        ->where('is_active', true)
-                        ->first();
+                    $productionLineId = $validated['production_line_id'] ?? null;
+                    $fromCastingId = $validated['from_casting_id'] ?? null;
+                    $toCastingId = $validated['to_casting_id'] ?? null;
 
-                    if (! $productionLine) {
-                        throw ValidationException::withMessages([
-                            'production_line_id' => 'Line yang dipilih sudah tidak tersedia.',
-                        ]);
+                    if ($productionLineId !== null || $fromCastingId !== null || $toCastingId !== null) {
+                        $productionLine = ProductionLine::query()
+                            ->whereKey($productionLineId)
+                            ->where('is_active', true)
+                            ->first();
+
+                        if ($productionLineId !== null && ! $productionLine) {
+                            throw ValidationException::withMessages([
+                                'production_line_id' => 'Line yang dipilih sudah tidak tersedia.',
+                            ]);
+                        }
+
+                        if ($productionLineId !== null && ($fromCastingId === null || $toCastingId === null)) {
+                            throw ValidationException::withMessages([
+                                'from_casting_id' => 'Dari Type dan Ke Type wajib dipilih saat Line Retooling diisi.',
+                            ]);
+                        }
+
+                        if ($fromCastingId !== null && $toCastingId !== null && $productionLineId !== null) {
+                            $fromLineProduct = LineProduct::query()
+                                ->with(['casting:id,code,name,is_active'])
+                                ->where('production_line_id', $productionLine->id)
+                                ->where('casting_id', $fromCastingId)
+                                ->where('is_active', true)
+                                ->whereHas(
+                                    'casting',
+                                    fn (Builder $query) => $query->where('is_active', true)
+                                )
+                                ->first();
+
+                            $toLineProduct = LineProduct::query()
+                                ->with(['casting:id,code,name,is_active'])
+                                ->where('production_line_id', $productionLine->id)
+                                ->where('casting_id', $toCastingId)
+                                ->where('is_active', true)
+                                ->whereHas(
+                                    'casting',
+                                    fn (Builder $query) => $query->where('is_active', true)
+                                )
+                                ->first();
+
+                            if (! $fromLineProduct) {
+                                throw ValidationException::withMessages([
+                                    'from_casting_id' => 'Dari Type tidak tersedia pada Line yang dipilih.',
+                                ]);
+                            }
+
+                            if (! $toLineProduct) {
+                                throw ValidationException::withMessages([
+                                    'to_casting_id' => 'Ke Type tidak tersedia pada Line yang dipilih.',
+                                ]);
+                            }
+
+                            // Keep legacy metadata for search, detail, and revision history.
+                            $validated['line'] = $productionLine->code;
+                            $validated['from_type'] = $fromLineProduct->casting->code;
+                            $validated['to_type'] = $toLineProduct->casting->code;
+
+                            $retoolingMaster = [
+                                'production_line_id' => $productionLine->id,
+                                'from_casting_id' => $fromLineProduct->casting_id,
+                                'to_casting_id' => $toLineProduct->casting_id,
+                                'from_cycle_time' => $fromLineProduct->cycle_time,
+                                'to_cycle_time' => $toLineProduct->cycle_time,
+                            ];
+                        }
                     }
-
-                    $fromLineProduct = LineProduct::query()
-                        ->with(['casting:id,code,name,is_active'])
-                        ->where('production_line_id', $productionLine->id)
-                        ->where('casting_id', $validated['from_casting_id'])
-                        ->where('is_active', true)
-                        ->whereHas(
-                            'casting',
-                            fn (Builder $query) => $query->where('is_active', true)
-                        )
-                        ->first();
-
-                    $toLineProduct = LineProduct::query()
-                        ->with(['casting:id,code,name,is_active'])
-                        ->where('production_line_id', $productionLine->id)
-                        ->where('casting_id', $validated['to_casting_id'])
-                        ->where('is_active', true)
-                        ->whereHas(
-                            'casting',
-                            fn (Builder $query) => $query->where('is_active', true)
-                        )
-                        ->first();
-
-                    if (! $fromLineProduct) {
-                        throw ValidationException::withMessages([
-                            'from_casting_id' => 'Dari Type tidak tersedia pada Line yang dipilih.',
-                        ]);
-                    }
-
-                    if (! $toLineProduct) {
-                        throw ValidationException::withMessages([
-                            'to_casting_id' => 'Ke Type tidak tersedia pada Line yang dipilih.',
-                        ]);
-                    }
-
-                    // Keep legacy metadata for search, detail, and revision history.
-                    $validated['line'] = $productionLine->code;
-                    $validated['from_type'] = $fromLineProduct->casting->code;
-                    $validated['to_type'] = $toLineProduct->casting->code;
-
-                    $retoolingMaster = [
-                        'production_line_id' => $productionLine->id,
-                        'from_casting_id' => $fromLineProduct->casting_id,
-                        'to_casting_id' => $toLineProduct->casting_id,
-                        'from_cycle_time' => $fromLineProduct->cycle_time,
-                        'to_cycle_time' => $toLineProduct->cycle_time,
-                    ];
                 }
 
                 $keywords = implode(', ', array_filter([
@@ -989,5 +1261,10 @@ class ScanDocumentController extends Controller
     private function ensureAdmin(): void
     {
         abort_unless(Auth::check() && Auth::user()->isAdmin(), 403);
+    }
+
+    private function ensureSuperAdmin(): void
+    {
+        abort_unless(Auth::check() && Auth::user()->isSuperAdmin(), 403);
     }
 }

@@ -422,38 +422,85 @@
                     {{-- ===================================================== --}}
                     <div class="grid gap-4 sm:grid-cols-2">
 
-                        <div>
+                        <div data-scan-type-combobox>
                             <label
-                                for="scan_type"
+                                for="scan_type_search"
                                 class="mb-1.5 block text-sm font-medium text-slate-700"
                             >
                                 Jenis Dokumen Scan
                                 <span class="text-red-500">*</span>
                             </label>
 
-                            <select
-                                id="scan_type"
-                                name="scan_type"
-                                required
-                                class="block w-full rounded-xl border-slate-300 bg-white text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            >
-                                <option value="Retooling" @selected(old('scan_type', 'Retooling') === 'Retooling')>
-                                    Instruksi Perubahan Type / Retooling
-                                </option>
-                                <option value="Laporan Hasil Produksi - Axle Assy" @selected(old('scan_type') === 'Laporan Hasil Produksi - Axle Assy')>
-                                    Laporan Hasil Produksi - Axle Assy
-                                </option>
-                                <option value="Laporan Hasil Produksi - Brake Assy" @selected(old('scan_type') === 'Laporan Hasil Produksi - Brake Assy')>
-                                    Laporan Hasil Produksi - Brake Assy
-                                </option>
-                                <option value="Lainnya" @selected(old('scan_type') === 'Lainnya')>
-                                    Dokumen QC Lainnya
-                                </option>
-                            </select>
+                            <div class="relative">
+                                <input
+                                    id="scan_type_search"
+                                    type="text"
+                                    autocomplete="off"
+                                    role="combobox"
+                                    aria-autocomplete="list"
+                                    aria-expanded="false"
+                                    aria-controls="scanTypeOptions"
+                                    placeholder="Cari atau pilih Jenis Dokumen..."
+                                    class="block w-full rounded-xl border-slate-300 bg-white text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                >
 
-                            <p class="mt-1 text-xs text-slate-400">
-                                Pilih format dokumen agar metadata yang tampil sesuai berkas QC.
-                            </p>
+                                <span aria-hidden="true" class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400">⌄</span>
+
+                                <select
+                                    id="scan_type"
+                                    name="scan_type"
+                                    required
+                                    class="hidden"
+                                >
+                                    <option value="" @selected(old('scan_type') === '')></option>
+
+                                    @foreach ($documentScanTypes as $scanTypeOption)
+                                        <option
+                                            value="{{ $scanTypeOption }}"
+                                            @selected(old('scan_type') === $scanTypeOption)
+                                        >
+                                            @php
+                                                $scanTypeDisplay = match ($scanTypeOption) {
+                                                    'Retooling' => 'Instruksi Perubahan Type / Retooling',
+                                                    'Laporan Hasil Produksi - Axle Assy' => 'Laporan Hasil Produksi - Axle Assy',
+                                                    'Laporan Hasil Produksi - Brake Assy' => 'Laporan Hasil Produksi - Brake Assy',
+                                                    'Lainnya' => 'Dokumen QC Lainnya',
+                                                    default => $scanTypeOption,
+                                                };
+                                            @endphp
+                                            {{ $scanTypeDisplay }}
+                                        </option>
+                                    @endforeach
+                                </select>
+
+                                <div
+                                    id="scanTypeOptions"
+                                    class="absolute left-0 right-0 top-full z-50 mt-1 hidden max-h-64 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1 shadow-xl"
+                                    role="listbox"
+                                ></div>
+                            </div>
+
+                            <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
+                                <p id="scanTypeStatus" class="text-xs text-slate-400">
+                                    Pilih format dokumen agar metadata yang tampil sesuai berkas QC.
+                                </p>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <button
+                                        type="button"
+                                        id="addScanTypeButton"
+                                        class="inline-flex items-center rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-[11px] font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-100"
+                                    >
+                                        + Tambah Jenis Dokumen
+                                    </button>
+                                    <button
+                                        type="button"
+                                        id="deleteScanTypeButton"
+                                        class="inline-flex items-center rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-[11px] font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100"
+                                    >
+                                        Hapus Jenis Dokumen
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         <div>
@@ -462,10 +509,21 @@
                                 id="scanDateLabel"
                                 class="mb-1.5 block text-sm font-medium text-slate-700"
                             >
-                                @if(old('scan_type', 'Retooling') === 'Retooling')
+                                @php
+                                    $oldScanType = old('scan_type');
+                                    $isRetoolingOld = is_string($oldScanType)
+                                        && (
+                                            strtolower($oldScanType) === 'retooling'
+                                            || str_contains(strtolower($oldScanType), 'retooling')
+                                            || str_contains(strtolower($oldScanType), 'instruksi perubahan type')
+                                        );
+                                @endphp
+                                @if($isRetoolingOld)
                                     Tanggal Proses
-                                @elseif(in_array(old('scan_type'), ['Laporan Hasil Produksi - Axle Assy', 'Laporan Hasil Produksi - Brake Assy'], true))
+                                @elseif(in_array($oldScanType, ['Laporan Hasil Produksi - Axle Assy', 'Laporan Hasil Produksi - Brake Assy'], true))
                                     Tanggal Produksi
+                                @elseif($oldScanType === null || $oldScanType === '')
+                                    Tanggal Proses
                                 @else
                                     Tanggal
                                 @endif
@@ -722,8 +780,7 @@
                                 class="mb-1.5 block text-sm font-medium text-slate-700"
                             >
                                 Shift
-                                <span id="shiftRequiredIndicator" class="hidden text-red-500">*</span>
-                                <span id="shiftOptionalIndicator" class="hidden text-xs font-normal text-slate-400">(Opsional)</span>
+                                <span id="shiftOptionalIndicator" class="text-xs font-normal text-slate-400">(Opsional)</span>
                             </label>
 
                             <select
@@ -785,8 +842,7 @@
                                 class="mb-1.5 block text-sm font-medium text-slate-700"
                             >
                                 Line
-                                <span id="lineRequiredIndicator" class="text-red-500">*</span>
-                                <span id="lineOptionalIndicator" class="hidden text-xs font-normal text-slate-400">(Opsional)</span>
+                                <span id="lineOptionalIndicator" class="text-xs font-normal text-slate-400">(Opsional)</span>
                             </label>
 
                             <div class="relative">
@@ -807,8 +863,14 @@
 
                                 <input
                                     type="hidden"
-                                    id="production_line_id"
+                                    id="lineId"
                                     name="production_line_id"
+                                    value="{{ old('production_line_id') }}"
+                                >
+
+                                <input
+                                    type="hidden"
+                                    id="retoolingLine"
                                     value="{{ old('production_line_id') }}"
                                 >
 
@@ -896,7 +958,7 @@
                                 class="mb-1.5 block text-sm font-medium text-slate-700"
                             >
                                 Dari Type
-                                <span class="text-red-500">*</span>
+                                <span class="text-xs font-normal text-slate-400">(Opsional)</span>
                             </label>
 
                             <div class="relative">
@@ -918,7 +980,7 @@
 
                                 <input
                                     type="hidden"
-                                    id="from_casting_id"
+                                    id="fromType"
                                     name="from_casting_id"
                                     value="{{ old('from_casting_id') }}"
                                 >
@@ -932,7 +994,7 @@
                             </div>
 
                             <div
-                                id="retoolingFromCycleTime"
+                                id="fromCycleTime"
                                 class="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600"
                             >
                                 Cycle Time: -
@@ -952,7 +1014,7 @@
                                 class="mb-1.5 block text-sm font-medium text-slate-700"
                             >
                                 Ke Type
-                                <span class="text-red-500">*</span>
+                                <span class="text-xs font-normal text-slate-400">(Opsional)</span>
                             </label>
 
                             <div class="relative">
@@ -974,7 +1036,7 @@
 
                                 <input
                                     type="hidden"
-                                    id="to_casting_id"
+                                    id="toType"
                                     name="to_casting_id"
                                     value="{{ old('to_casting_id') }}"
                                 >
@@ -988,7 +1050,7 @@
                             </div>
 
                             <div
-                                id="retoolingToCycleTime"
+                                id="toCycleTime"
                                 class="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600"
                             >
                                 Cycle Time: -
@@ -1011,20 +1073,7 @@
                             class="mb-1.5 block text-sm font-medium text-slate-700"
                         >
                             Jam
-                            <span
-                                id="timeRequiredIndicator"
-                                @class([
-                                    'text-red-500',
-                                    'hidden' => old('scan_type', 'Retooling') !== 'Retooling',
-                                ])
-                            >*</span>
-                            <span
-                                id="timeOptionalIndicator"
-                                @class([
-                                    'text-xs font-normal text-slate-400',
-                                    'hidden' => old('scan_type', 'Retooling') === 'Retooling',
-                                ])
-                            >(Opsional)</span>
+                            <span id="timeOptionalIndicator" class="text-xs font-normal text-slate-400">(Opsional)</span>
                         </label>
 
                         <div class="relative">
@@ -1037,8 +1086,6 @@
                                 pattern="(?:[01][0-9]|2[0-3]):[0-5][0-9]"
                                 maxlength="5"
                                 aria-describedby="retoolingTimeHint"
-                                aria-required="{{ old('scan_type', 'Retooling') === 'Retooling' ? 'true' : 'false' }}"
-                                @required(old('scan_type', 'Retooling') === 'Retooling')
                                 class="block w-full rounded-xl border-slate-300 bg-white pr-10 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
                             >
 
@@ -1094,6 +1141,137 @@
         </form>
     </div>
 
+
+    {{-- ================================================================ --}}
+    {{-- ADD SCAN TYPE MODAL --}}
+    {{-- ================================================================ --}}
+    <div
+        id="scanTypeModal"
+        class="fixed inset-0 z-[120] hidden bg-slate-950/70 backdrop-blur-sm"
+        aria-hidden="true"
+    >
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
+                <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+                    <div>
+                        <h3 class="text-sm font-semibold text-slate-900">Tambah Jenis Dokumen Scan</h3>
+                        <p class="mt-1 text-xs text-slate-500">Jenis dokumen baru akan tersedia untuk dipilih di formulir.</p>
+                    </div>
+                    <button
+                        type="button"
+                        id="closeScanTypeModalButton"
+                        class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+                        aria-label="Tutup modal tambah jenis dokumen"
+                    >
+                        ✕
+                    </button>
+                </div>
+
+                <form id="scanTypeForm" class="space-y-4 p-5">
+                    <div>
+                        <label for="new_scan_type_name" class="mb-1.5 block text-sm font-medium text-slate-700">
+                            Nama Jenis Dokumen
+                            <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                            id="new_scan_type_name"
+                            name="name"
+                            type="text"
+                            maxlength="120"
+                            class="block w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            placeholder="Contoh: Audit Internal QC"
+                            required
+                        >
+                        <p class="mt-1 text-xs text-slate-400">Format nama akan disimpan dengan kapitalisasi yang sama.</p>
+                    </div>
+
+                    <div id="scanTypeFormError" class="hidden rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700"></div>
+
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button
+                            type="button"
+                            id="cancelScanTypeButton"
+                            class="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            type="submit"
+                            id="submitScanTypeButton"
+                            class="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+                        >
+                            Simpan Jenis Dokumen
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div
+        id="scanTypeDeleteModal"
+        class="fixed inset-0 z-[120] hidden bg-slate-950/70 backdrop-blur-sm"
+        aria-hidden="true"
+    >
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl">
+                <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+                    <div>
+                        <h3 class="text-sm font-semibold text-slate-900">Kelola Jenis Dokumen Scan</h3>
+                        <p class="mt-1 text-xs text-slate-500">Daftar custom type yang masih aktif dan dapat dinonaktifkan.</p>
+                    </div>
+                    <button
+                        type="button"
+                        id="closeScanTypeDeleteModalButton"
+                        class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+                        aria-label="Tutup modal hapus jenis dokumen"
+                    >
+                        ✕
+                    </button>
+                </div>
+
+                <div class="space-y-4 p-5">
+                    <div>
+                        <label for="scanTypeDeleteSearch" class="mb-1.5 block text-sm font-medium text-slate-700">
+                            Cari jenis dokumen...
+                        </label>
+                        <input
+                            id="scanTypeDeleteSearch"
+                            type="search"
+                            class="block w-full rounded-xl border-slate-300 bg-white text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            placeholder="Cari jenis dokumen..."
+                        >
+                    </div>
+
+                    <div id="scanTypeDeleteOptions" class="space-y-2"></div>
+                    <div id="scanTypeDeleteEmpty" class="hidden rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-sm text-slate-500">
+                        Belum ada Jenis Dokumen Scan tambahan yang dapat dihapus.
+                    </div>
+
+                    <div id="scanTypeDeleteConfirm" class="hidden rounded-xl border border-rose-200 bg-rose-50 p-4">
+                        <p class="text-sm font-semibold text-slate-900">Hapus Jenis Dokumen?</p>
+                        <p id="scanTypeDeleteConfirmText" class="mt-2 text-sm text-slate-600"></p>
+                        <div class="mt-4 flex justify-end gap-2">
+                            <button
+                                type="button"
+                                id="cancelScanTypeDeleteButton"
+                                class="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                type="button"
+                                id="confirmScanTypeDeleteButton"
+                                class="rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-700"
+                            >
+                                Hapus Jenis Dokumen
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     {{-- ================================================================ --}}
     {{-- CAMERA MODAL --}}
@@ -1267,6 +1445,13 @@
 
             const selectedFile = document.getElementById('selectedFile');
             const saveButton = document.getElementById('saveButton');
+            const addScanTypeButton = document.getElementById('addScanTypeButton');
+            const scanTypeModal = document.getElementById('scanTypeModal');
+            const closeScanTypeModalButton = document.getElementById('closeScanTypeModalButton');
+            const cancelScanTypeButton = document.getElementById('cancelScanTypeButton');
+            const scanTypeForm = document.getElementById('scanTypeForm');
+            const scanTypeFormError = document.getElementById('scanTypeFormError');
+            const newScanTypeName = document.getElementById('new_scan_type_name');
             const photoQueueWrapper = document.getElementById('photoQueueWrapper');
             const photoQueue = document.getElementById('photoQueue');
             const photoQueueCount = document.getElementById('photoQueueCount');
@@ -1500,11 +1685,17 @@
                 }
             }
 
+            function matchesRetoolingScanType(value) {
+                // Gunakan VALUE canonical dari <select>, bukan label yang ditampilkan.
+                // Custom type yang memuat kata "Retooling" tidak boleh masuk mode khusus.
+                return String(value || '').trim() === 'Retooling';
+            }
+
             function refreshProductionPreview() {
-                const type = scanType?.value || '';
+                const type = String(scanType?.value || '').trim();
                 const date = scanDate?.value || '';
 
-                if (type === 'Retooling') {
+                if (matchesRetoolingScanType(type)) {
                     const autoTitle = 'INSTRUKSI PERUBAHAN TYPE (RETOOLING)';
                     setAutoValue(titleInput, autoTitle, 'title');
                     setAutoValue(fileNameInput, slugify(autoTitle), 'file');
@@ -1548,17 +1739,105 @@
                 }
             }
 
+            function openScanTypeModal() {
+                if (!scanTypeModal) {
+                    return;
+                }
+
+                scanTypeModal.classList.remove('hidden');
+                scanTypeModal.setAttribute('aria-hidden', 'false');
+                setTimeout(() => newScanTypeName?.focus(), 50);
+            }
+
+            function closeScanTypeModal() {
+                if (!scanTypeModal) {
+                    return;
+                }
+
+                scanTypeModal.classList.add('hidden');
+                scanTypeModal.setAttribute('aria-hidden', 'true');
+                scanTypeFormError?.classList.add('hidden');
+                scanTypeFormError.textContent = '';
+                scanTypeForm?.reset();
+            }
+
+            addScanTypeButton?.addEventListener('click', openScanTypeModal);
+            closeScanTypeModalButton?.addEventListener('click', closeScanTypeModal);
+            cancelScanTypeButton?.addEventListener('click', closeScanTypeModal);
+            scanTypeModal?.addEventListener('click', event => {
+                if (event.target === scanTypeModal) {
+                    closeScanTypeModal();
+                }
+            });
+
+            scanTypeForm?.addEventListener('submit', async event => {
+                event.preventDefault();
+
+                if (!newScanTypeName) {
+                    return;
+                }
+
+                const rawName = (newScanTypeName.value || '').trim();
+
+                if (!rawName) {
+                    scanTypeFormError?.classList.remove('hidden');
+                    scanTypeFormError.textContent = 'Nama jenis dokumen tidak boleh kosong.';
+                    return;
+                }
+
+                try {
+                    const response = await fetch('{{ route('documents.scan.types.store') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify({ name: rawName })
+                    });
+
+                    const data = await response.json().catch(() => ({}));
+
+                    if (!response.ok) {
+                        const message = data?.message || data?.errors?.name?.[0] || 'Jenis dokumen gagal disimpan.';
+                        throw new Error(message);
+                    }
+
+                    const optionExists = Array.from(scanType.options || []).some(option => option.value === data.name);
+
+                    if (!optionExists) {
+                        const newOption = new Option(data.name, data.name);
+                        scanType.add(newOption, scanType.options[0]);
+                    }
+
+                    scanType.value = data.name;
+                    // Sinkronkan UI utama dan script master melalui event yang sama.
+                    scanType.dispatchEvent(new Event('change', { bubbles: true }));
+                    closeScanTypeModal();
+                } catch (error) {
+                    scanTypeFormError?.classList.remove('hidden');
+                    scanTypeFormError.textContent = error.message || 'Jenis dokumen gagal disimpan.';
+                }
+            });
+
             function syncDocumentTypeUI() {
                 if (!scanType) {
                     return;
                 }
 
-                const type = scanType.value;
+                const type = String(scanType.value || '').trim();
                 const isAxle = type === AXLE_SCAN;
                 const isBrake = type === BRAKE_SCAN;
                 const isProduction = isAxle || isBrake;
-                const isRetooling = type === 'Retooling';
+                const isRetooling = matchesRetoolingScanType(type);
                 const isOther = type === OTHER_SCAN;
+
+                if (typeof console !== 'undefined') {
+                    console.log('Retooling active');
+                    console.log('Current scan type:', scanType.value);
+                    console.log('IS RETOOLING:', isRetooling);
+                    console.log('RETOOLING ELEMENT:', document.getElementById('retoolingFields'));
+                }
 
                 customScanTypeWrapper?.classList.toggle('hidden', !isOther);
                 axleAssyFields?.classList.toggle('hidden', !isAxle);
@@ -1582,21 +1861,8 @@
                     brakePartNumberId.disabled = !isBrake;
                 }
 
-                shiftRequiredIndicator?.classList.toggle('hidden', !isRetooling);
-                shiftOptionalIndicator?.classList.toggle(
-                    'hidden',
-                    !type || isRetooling
-                );
-                timeRequiredIndicator?.classList.toggle('hidden', !isRetooling);
-                timeOptionalIndicator?.classList.toggle(
-                    'hidden',
-                    !type || isRetooling
-                );
-
-                if (scanTime) {
-                    scanTime.required = isRetooling;
-                    scanTime.setAttribute('aria-required', String(isRetooling));
-                }
+                shiftOptionalIndicator?.classList.toggle('hidden', false);
+                timeOptionalIndicator?.classList.toggle('hidden', false);
 
                 scanDateLabel.innerHTML = isProduction
                     ? 'Tanggal Produksi <span class="text-red-500">*</span>'
@@ -1608,7 +1874,7 @@
                     autoSelectChecksheetCategory();
                 }
 
-                if (type === 'Retooling') {
+                if (matchesRetoolingScanType(type)) {
                     if (!titleInput.value.trim()) {
                         titleInput.placeholder = 'Contoh: INSTRUKSI PERUBAHAN TYPE (RETOOLING)';
                     }
@@ -1627,7 +1893,320 @@
                 refreshRadioCards();
             }
 
-            scanType?.addEventListener('change', syncDocumentTypeUI);
+            const scanTypeSearchInput = document.getElementById('scan_type_search');
+            const scanTypeOptionsList = document.getElementById('scanTypeOptions');
+            const deleteScanTypeButton = document.getElementById('deleteScanTypeButton');
+            const scanTypeDeleteModal = document.getElementById('scanTypeDeleteModal');
+            const closeScanTypeDeleteModalButton = document.getElementById('closeScanTypeDeleteModalButton');
+            const cancelScanTypeDeleteButton = document.getElementById('cancelScanTypeDeleteButton');
+            const scanTypeDeleteSearch = document.getElementById('scanTypeDeleteSearch');
+            const scanTypeDeleteOptions = document.getElementById('scanTypeDeleteOptions');
+            const scanTypeDeleteEmpty = document.getElementById('scanTypeDeleteEmpty');
+            const scanTypeDeleteConfirm = document.getElementById('scanTypeDeleteConfirm');
+            const scanTypeDeleteConfirmText = document.getElementById('scanTypeDeleteConfirmText');
+            const confirmScanTypeDeleteButton = document.getElementById('confirmScanTypeDeleteButton');
+
+            let pendingDeleteType = null;
+
+            function getScanTypeDisplayValue(value) {
+                const option = Array.from(scanType?.options || []).find(item => item.value === value);
+
+                return option ? (option.textContent || option.value).trim() : (value || '');
+            }
+
+            function syncScanTypeSearchInput() {
+                if (!scanTypeSearchInput || !scanType) {
+                    return;
+                }
+
+                const selectedValue = scanType.value || '';
+                const selectedLabel = getScanTypeDisplayValue(selectedValue);
+                scanTypeSearchInput.value = selectedLabel;
+            }
+
+            function populateScanTypeOptions(filterText = '') {
+                if (!scanTypeOptionsList || !scanType) {
+                    return;
+                }
+
+                const items = Array.from(scanType.options || []).filter(option => {
+                    const label = (option.textContent || option.value || '').trim();
+                    const term = (filterText || '').trim().toLowerCase();
+
+                    if (!term) {
+                        return true;
+                    }
+
+                    return label.toLowerCase().includes(term);
+                });
+
+                scanTypeOptionsList.innerHTML = '';
+
+                if (items.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'px-3 py-3 text-sm text-slate-400';
+                    empty.textContent = 'Tidak ada jenis dokumen yang cocok.';
+                    scanTypeOptionsList.appendChild(empty);
+                    scanTypeOptionsList.classList.remove('hidden');
+                    scanTypeSearchInput?.setAttribute('aria-expanded', 'true');
+                    return;
+                }
+
+                items.forEach(item => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-blue-50 hover:text-blue-700';
+                    button.dataset.value = item.value;
+                    button.setAttribute('role', 'option');
+                    button.setAttribute('aria-selected', String(scanType.value === item.value));
+                    button.innerHTML = `
+                        <span>${(item.textContent || item.value || '').trim()}</span>
+                        <span class="text-[10px] uppercase tracking-wide ${scanType.value === item.value ? 'text-blue-600' : 'text-slate-400'}">${scanType.value === item.value ? 'Dipilih' : 'Pilih'}</span>
+                    `;
+
+                    button.addEventListener('click', () => {
+                        scanType.value = item.value;
+                        syncDocumentTypeUI();
+                        syncScanTypeSearchInput();
+                        scanType.dispatchEvent(
+                            new Event('change', { bubbles: true })
+                        );
+                        scanTypeOptionsList.classList.add('hidden');
+                        scanTypeSearchInput?.setAttribute('aria-expanded', 'false');
+                    });
+
+                    scanTypeOptionsList.appendChild(button);
+                });
+
+                scanTypeOptionsList.classList.remove('hidden');
+                scanTypeSearchInput?.setAttribute('aria-expanded', 'true');
+            }
+
+            function openScanTypeOptions() {
+                if (!scanTypeSearchInput || !scanTypeOptionsList) {
+                    return;
+                }
+
+                const term = (scanTypeSearchInput.value || '').trim();
+                populateScanTypeOptions(term);
+            }
+
+            function closeScanTypeOptions() {
+                if (!scanTypeOptionsList || !scanTypeSearchInput) {
+                    return;
+                }
+
+                scanTypeOptionsList.classList.add('hidden');
+                scanTypeSearchInput.setAttribute('aria-expanded', 'false');
+            }
+
+            function renderDeleteScanTypeList(items = []) {
+                if (!scanTypeDeleteOptions || !scanTypeDeleteEmpty) {
+                    return;
+                }
+
+                scanTypeDeleteOptions.innerHTML = '';
+                scanTypeDeleteConfirm?.classList.add('hidden');
+                pendingDeleteType = null;
+
+                const term = (scanTypeDeleteSearch?.value || '').trim().toLowerCase();
+                const filteredItems = (items || []).filter(item => {
+                    const label = (item?.label || item?.value || '').trim();
+                    return !label || !term || label.toLowerCase().includes(term);
+                });
+
+                if (filteredItems.length === 0) {
+                    scanTypeDeleteEmpty.classList.remove('hidden');
+                    return;
+                }
+
+                scanTypeDeleteEmpty.classList.add('hidden');
+
+                filteredItems.forEach(item => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.dataset.typeId = String(item.id ?? '');
+                    button.className = 'flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left text-sm text-slate-700 transition hover:border-rose-200 hover:bg-rose-50';
+                    button.innerHTML = `
+                        <span>${(item.label || item.value || '').trim()}</span>
+                        <span class="font-semibold text-rose-600">Nonaktifkan</span>
+                    `;
+
+                    button.addEventListener('click', () => {
+                        pendingDeleteType = {
+                            id: item.id ?? null,
+                            value: item.value || item.label || '',
+                            label: item.label || item.value || '',
+                        };
+                        scanTypeDeleteConfirmText.textContent = `Anda akan menonaktifkan jenis dokumen "${pendingDeleteType.label}". Dokumen lama tetap aman dan tidak akan terhapus.`;
+                        scanTypeDeleteConfirm?.classList.remove('hidden');
+                    });
+
+                    scanTypeDeleteOptions.appendChild(button);
+                });
+            }
+
+            async function loadDeleteScanTypeList() {
+                if (!scanTypeDeleteOptions || !scanTypeDeleteEmpty) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch('{{ route('documents.scan.types.index') }}', {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Gagal memuat daftar jenis dokumen.');
+                    }
+
+                    const data = await response.json().catch(() => ({ results: [] }));
+                    renderDeleteScanTypeList(data.results || []);
+                } catch (error) {
+                    scanTypeDeleteEmpty.textContent = error.message || 'Gagal memuat daftar jenis dokumen.';
+                    scanTypeDeleteEmpty.classList.remove('hidden');
+                }
+            }
+
+            async function openDeleteScanTypeModal() {
+                if (!scanTypeDeleteModal) {
+                    return;
+                }
+
+                scanTypeDeleteModal.classList.remove('hidden');
+                scanTypeDeleteModal.setAttribute('aria-hidden', 'false');
+                scanTypeDeleteSearch.value = '';
+                await loadDeleteScanTypeList();
+                setTimeout(() => scanTypeDeleteSearch?.focus(), 50);
+            }
+
+            function closeDeleteScanTypeModal() {
+                if (!scanTypeDeleteModal) {
+                    return;
+                }
+
+                scanTypeDeleteModal.classList.add('hidden');
+                scanTypeDeleteModal.setAttribute('aria-hidden', 'true');
+                scanTypeDeleteConfirm?.classList.add('hidden');
+                pendingDeleteType = null;
+            }
+
+            if (scanTypeSearchInput && scanTypeOptionsList) {
+                scanTypeSearchInput.addEventListener('focus', () => {
+                    openScanTypeOptions();
+                });
+
+                scanTypeSearchInput.addEventListener('input', event => {
+                    const value = event.target.value || '';
+                    populateScanTypeOptions(value);
+                });
+
+                scanTypeSearchInput.addEventListener('keydown', event => {
+                    if (event.key === 'Escape') {
+                        closeScanTypeOptions();
+                        return;
+                    }
+
+                    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                        event.preventDefault();
+                        const buttons = Array.from(scanTypeOptionsList.querySelectorAll('button'));
+                        const activeIndex = buttons.findIndex(button => button.classList.contains('bg-blue-50'));
+                        const nextIndex = event.key === 'ArrowDown'
+                            ? Math.min(activeIndex + 1, buttons.length - 1)
+                            : Math.max(activeIndex - 1, 0);
+
+                        if (buttons[nextIndex]) {
+                            buttons.forEach(button => button.classList.remove('bg-blue-50', 'text-blue-700'));
+                            buttons[nextIndex].classList.add('bg-blue-50', 'text-blue-700');
+                        }
+                    }
+
+                    if (event.key === 'Enter') {
+                        const selected = scanTypeOptionsList.querySelector('button.bg-blue-50');
+                        if (selected) {
+                            selected.click();
+                        }
+                    }
+                });
+            }
+
+            document.addEventListener('click', event => {
+                const inCombobox = event.target.closest('[data-scan-type-combobox]');
+                if (!inCombobox) {
+                    closeScanTypeOptions();
+                }
+            });
+
+            deleteScanTypeButton?.addEventListener('click', openDeleteScanTypeModal);
+            closeScanTypeDeleteModalButton?.addEventListener('click', closeDeleteScanTypeModal);
+            cancelScanTypeDeleteButton?.addEventListener('click', closeDeleteScanTypeModal);
+            scanTypeDeleteModal?.addEventListener('click', event => {
+                if (event.target === scanTypeDeleteModal) {
+                    closeDeleteScanTypeModal();
+                }
+            });
+            scanTypeDeleteSearch?.addEventListener('input', async event => {
+                const items = await fetch('{{ route('documents.scan.types.index') }}', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                })
+                    .then(response => response.ok ? response.json() : { results: [] })
+                    .then(data => data.results || [])
+                    .catch(() => []);
+
+                renderDeleteScanTypeList(items.filter(item => {
+                    const label = (item?.label || item?.value || '').trim();
+                    const query = (event.target.value || '').trim().toLowerCase();
+                    return !query || label.toLowerCase().includes(query);
+                }));
+            });
+            confirmScanTypeDeleteButton?.addEventListener('click', async () => {
+                if (!pendingDeleteType?.id) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch('{{ route('documents.scan.types.deactivate', ['documentScanType' => '__ID__']) }}'.replace('__ID__', String(pendingDeleteType.id)), {
+                        method: 'PATCH',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json',
+                        },
+                    });
+
+                    if (!response.ok && !response.redirected) {
+                        const data = await response.json().catch(() => ({}));
+                        throw new Error(data?.message || 'Jenis dokumen gagal dinonaktifkan.');
+                    }
+
+                    const wasSelected = scanType?.value === pendingDeleteType.value;
+                    const selectedOption = Array.from(scanType?.options || []).find(option => option.value === pendingDeleteType.value);
+                    if (selectedOption) {
+                        selectedOption.remove();
+                    }
+
+                    if (wasSelected) {
+                        scanType.value = '';
+                        // Menghapus option terpilih harus mereset mode master juga.
+                        scanType.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+
+                    closeDeleteScanTypeModal();
+                    await loadDeleteScanTypeList();
+                } catch (error) {
+                    alert(error.message || 'Jenis dokumen gagal dinonaktifkan.');
+                }
+            });
+
+            scanType?.addEventListener('change', () => {
+                syncDocumentTypeUI();
+                syncScanTypeSearchInput();
+            });
             scanDate?.addEventListener('change', refreshProductionPreview);
             brakePartNumberId?.addEventListener('change', refreshProductionPreview);
 
@@ -1640,6 +2219,7 @@
 
             // Restore tampilan yang benar setelah validation error / reload.
             syncDocumentTypeUI();
+            syncScanTypeSearchInput();
 
 
             // ============================================================
@@ -2807,7 +3387,8 @@
                 document.getElementById('retoolingLineOptions');
 
             const lineId =
-                document.getElementById('production_line_id');
+                document.getElementById('lineId')
+                || document.getElementById('production_line_id');
 
             const lineRequiredIndicator =
                 document.getElementById('lineRequiredIndicator');
@@ -2837,10 +3418,12 @@
                 document.getElementById('retoolingFromOptions');
 
             const fromId =
-                document.getElementById('from_casting_id');
+                document.getElementById('fromType')
+                || document.getElementById('from_casting_id');
 
             const fromCycleTime =
-                document.getElementById('retoolingFromCycleTime');
+                document.getElementById('fromCycleTime')
+                || document.getElementById('retoolingFromCycleTime');
 
             const toSearch =
                 document.getElementById('retoolingToSearch');
@@ -2849,10 +3432,12 @@
                 document.getElementById('retoolingToOptions');
 
             const toId =
-                document.getElementById('to_casting_id');
+                document.getElementById('toType')
+                || document.getElementById('to_casting_id');
 
             const toCycleTime =
-                document.getElementById('retoolingToCycleTime');
+                document.getElementById('toCycleTime')
+                || document.getElementById('retoolingToCycleTime');
 
             const brakePartSearch =
                 document.getElementById('brakePartSearch');
@@ -2922,9 +3507,9 @@
             }
 
             function isRetooling() {
-
-                return scanType?.value
-                    === RETOOLING;
+                // Script master ini memakai IIFE terpisah. Fungsi di script kamera
+                // tidak dapat diakses dari sini, sehingga gunakan konstanta lokal.
+                return String(scanType?.value || '').trim() === RETOOLING;
             }
 
             function isProduction() {
@@ -3903,6 +4488,10 @@
                             ? payload.results
                             : [];
 
+                    if (typeof console !== 'undefined') {
+                        console.log('Products:', products);
+                    }
+
                     fromSearch.disabled = false;
                     toSearch.disabled = false;
 
@@ -3988,6 +4577,10 @@
                 selectedLine =
                     line;
 
+                if (typeof console !== 'undefined') {
+                    console.log('Selected Line:', selectedLine);
+                }
+
                 lineId.value =
                     String(line.id);
 
@@ -4061,6 +4654,10 @@
                             ? payload.results
                             : [];
 
+                    if (typeof console !== 'undefined') {
+                        console.log('Lines:', lines);
+                    }
+
                     linesLoaded = true;
 
                     lineSearch.disabled =
@@ -4116,7 +4713,6 @@
             function clearDirtyProductionState() {
                 if (lineId) {
                     lineId.value = '';
-                    lineId.required = false;
                 }
 
                 if (lineSearch) {
@@ -4238,16 +4834,9 @@
                 }
 
                 /*
-                 * Shift tetap tersedia untuk workflow lama, tetapi diwajibkan
-                 * oleh backend hanya ketika Retooling.
+                 * Metadata produksi bersifat opsional di browser.
+                 * Backend tetap menjadi sumber validasi yang otoritatif.
                  */
-                shift.required =
-                    retooling;
-
-                shift.setAttribute(
-                    'aria-required',
-                    String(retooling)
-                );
 
                 /*
                  * Line manual dipertahankan untuk Dokumen QC Lainnya.
@@ -4271,26 +4860,13 @@
                 lineId.disabled =
                     !masterLineMode;
 
-                lineId.required =
-                    retooling;
-
                 lineSearch.disabled =
                     !masterLineMode
                     || !linesLoaded;
 
-                lineSearch.setAttribute(
-                    'aria-required',
-                    String(retooling)
-                );
-
-                lineRequiredIndicator.classList.toggle(
-                    'hidden',
-                    !retooling
-                );
-
                 lineOptionalIndicator.classList.toggle(
                     'hidden',
-                    !production
+                    false
                 );
 
                 lineClearButton.classList.toggle(
@@ -4333,22 +4909,6 @@
 
                 toId.disabled =
                     !retooling;
-
-                fromId.required =
-                    retooling;
-
-                toId.required =
-                    retooling;
-
-                fromSearch.setAttribute(
-                    'aria-required',
-                    String(retooling)
-                );
-
-                toSearch.setAttribute(
-                    'aria-required',
-                    String(retooling)
-                );
 
                 if (masterLineMode) {
 

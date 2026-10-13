@@ -20,7 +20,7 @@
         */
         $canPreviewInBrowser = in_array(
             $extension,
-            ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'tif', 'tiff', 'pdf', 'txt', 'csv'],
+            ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'tif', 'tiff', 'pdf', 'txt', 'csv', 'docx'],
             true
         );
 
@@ -673,6 +673,39 @@
 
 
 
+            {{-- ARCHIVE DOCUMENT: action langsung dari Document Detail. --}}
+            {{-- Gunakan authorization serta endpoint arsip existing. --}}
+            @if(
+                Auth::user()->isAdmin()
+                && $document->is_active
+                && Route::has('documents.archive')
+            )
+                <button
+                    type="button"
+                    x-on:click.prevent="$dispatch('open-modal', 'archive-document-{{ $document->id }}')"
+                    aria-haspopup="dialog"
+                    class="inline-flex items-center justify-center gap-2
+                           rounded-xl border border-sky-200 bg-sky-50
+                           px-5 py-3 text-sm font-semibold text-sky-800
+                           hover:bg-sky-100 hover:border-sky-300
+                           focus-visible:outline-none focus-visible:ring-2
+                           focus-visible:ring-blue-500 focus-visible:ring-offset-2
+                           transition"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         width="18" height="18" viewBox="0 0 24 24"
+                         fill="none" stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round"
+                         aria-hidden="true">
+                        <rect x="3" y="4" width="18" height="4" rx="1" />
+                        <path d="M5 8v11a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8" />
+                        <path d="M10 12h4" />
+                    </svg>
+                    Arsipkan
+                </button>
+            @endif
+
+
             {{-- REVISION HISTORY --}}
 
             @if(Route::has('documents.revisions.index'))
@@ -932,6 +965,126 @@
 
 
     {{-- ========================================================= --}}
+    {{-- ARCHIVE CONFIRMATION MODAL --}}
+    {{-- Reuse route/controller archive existing; tidak menghapus file. --}}
+    {{-- ========================================================= --}}
+    @if(
+        Auth::user()->isAdmin()
+        && $document->is_active
+        && Route::has('documents.archive')
+    )
+        <x-modal
+            name="archive-document-{{ $document->id }}"
+            maxWidth="xl"
+            focusable
+            labelledBy="archive-document-title-{{ $document->id }}"
+            containerClass="!z-[1000] flex flex-col"
+            panelClass="relative w-full shrink-0 !mx-auto !my-auto max-h-[calc(100dvh-4rem)] !overflow-y-auto overscroll-contain rounded-2xl border border-sky-100 bg-white shadow-2xl"
+            backdropClass="bg-slate-950/60"
+        >
+            <div class="p-4 sm:p-5">
+                <div class="flex items-start gap-3">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center
+                                rounded-xl bg-sky-100 text-sky-800">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             width="22" height="22" viewBox="0 0 24 24"
+                             fill="none" stroke="currentColor" stroke-width="2"
+                             stroke-linecap="round" stroke-linejoin="round"
+                             aria-hidden="true">
+                            <rect x="3" y="4" width="18" height="4" rx="1" />
+                            <path d="M5 8v11a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8" />
+                            <path d="M10 12h4" />
+                        </svg>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <h2 id="archive-document-title-{{ $document->id }}"
+                            class="text-lg font-bold text-slate-900">
+                            Arsipkan Dokumen?
+                        </h2>
+                        <p class="mt-1 text-sm leading-relaxed text-slate-600">
+                            Dokumen akan dipindahkan ke Archived Documents.
+                            File, metadata, dan riwayat revisinya tetap tersimpan.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Dokumen yang akan diarsipkan
+                    </p>
+                    <p class="mt-1 break-words text-sm font-semibold text-slate-900">
+                        {{ $document->title }}
+                    </p>
+                    <p class="mt-1 break-all text-xs text-slate-500">
+                        {{ $document->file_name }}
+                    </p>
+                </div>
+
+                <form method="POST"
+                      action="{{ route('documents.archive', $document) }}"
+                      class="mt-4 space-y-4">
+                    @csrf
+                    @method('PATCH')
+
+                    <div>
+                        <label for="archive-reason-{{ $document->id }}"
+                               class="block text-sm font-semibold text-slate-800">
+                            Alasan Pengarsipan <span class="text-red-600">*</span>
+                        </label>
+                        <textarea
+                            id="archive-reason-{{ $document->id }}"
+                            name="archive_reason"
+                            rows="3"
+                            minlength="3"
+                            maxlength="1000"
+                            required
+                            placeholder="Tuliskan alasan dokumen diarsipkan (minimal 3 karakter)."
+                            class="mt-2 block w-full rounded-xl border-slate-300
+                                   bg-white text-sm text-slate-800 shadow-sm
+                                   placeholder:text-slate-400
+                                   focus:border-blue-500 focus:ring-blue-500"
+                        >{{ old('archive_reason') }}</textarea>
+                        <p class="mt-2 text-xs leading-relaxed text-slate-500">
+                            Wajib diisi, 3 sampai 1.000 karakter. Alasan akan
+                            dicatat bersama informasi pengarsipan.
+                        </p>
+                        @error('archive_reason')
+                            <p class="mt-2 text-sm text-red-700" role="alert">
+                                {{ $message }}
+                            </p>
+                        @enderror
+                    </div>
+
+                    <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                        <button
+                            type="button"
+                            x-on:click.prevent="close"
+                            class="inline-flex items-center justify-center rounded-xl
+                                   border border-slate-200 bg-white px-5 py-3
+                                   text-sm font-semibold text-slate-700
+                                   hover:bg-slate-50 focus-visible:outline-none
+                                   focus-visible:ring-2 focus-visible:ring-blue-500
+                                   focus-visible:ring-offset-2 transition"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            type="submit"
+                            class="inline-flex items-center justify-center gap-2 rounded-xl
+                                   bg-blue-800 px-5 py-3 text-sm font-semibold text-white
+                                   hover:bg-blue-900 focus-visible:outline-none
+                                   focus-visible:ring-2 focus-visible:ring-blue-500
+                                   focus-visible:ring-offset-2 transition"
+                        >
+                            Ya, Arsipkan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </x-modal>
+    @endif
+
+
     {{-- IMAGE PREVIEW --}}
     {{-- ========================================================= --}}
 

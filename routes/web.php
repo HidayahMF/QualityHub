@@ -171,6 +171,28 @@ Route::middleware([
         ->middleware('throttle:10,1')
         ->name('documents.scan.store');
 
+    Route::get(
+        '/documents/scan/types',
+        [ScanDocumentController::class, 'scanTypes']
+    )
+        ->middleware('throttle:60,1')
+        ->name('documents.scan.types.index');
+
+    Route::post(
+        '/documents/scan/types',
+        [ScanDocumentController::class, 'storeScanType']
+    )
+        ->middleware('throttle:30,1')
+        ->name('documents.scan.types.store');
+
+    Route::patch(
+        '/documents/scan/types/{documentScanType}/deactivate',
+        [ScanDocumentController::class, 'deactivateScanType']
+    )
+        ->whereNumber('documentScanType')
+        ->middleware('throttle:30,1')
+        ->name('documents.scan.types.deactivate');
+
 
     /*
     |--------------------------------------------------------------------------

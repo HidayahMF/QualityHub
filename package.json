@@ -17,6 +17,7 @@
         "vite": "^7.0.7"
     },
     "dependencies": {
-        "@alpinejs/csp": "^3.17.0"
+        "@alpinejs/csp": "^3.17.0",
+        "apexcharts": "^8.1.0"
     }
 }
