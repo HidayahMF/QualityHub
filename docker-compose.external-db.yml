@@ -1,9 +1,6 @@
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: bmc-smartfind:external-db
+    image: ${APP_IMAGE:-ghcr.io/hidayahmf/qualityhub:main}
     restart: unless-stopped
     ports:
       - "${APP_PORT:-8080}:80"
@@ -33,10 +30,7 @@ services:
       - qualityhub
 
   ai:
-    build:
-      context: ./ai-service
-      dockerfile: Dockerfile
-    image: bmc-smartfind-ai:external-db
+    image: ${AI_IMAGE:-ghcr.io/hidayahmf/qualityhub-ai:main}
     restart: unless-stopped
     profiles: ["ai"]
     environment:
