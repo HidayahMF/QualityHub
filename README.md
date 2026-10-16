@@ -21,6 +21,51 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
 
 Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
+## BMC SmartFind Docker
+
+This project is a Laravel 12 web application for searching and managing Quality documents. It uses MariaDB for application data and has an optional local FastAPI service for semantic search.
+
+The original delivery contains three folders. They can be delivered as one package with this structure:
+
+```text
+BMC-SmartFind-Deploy/
+  docker-compose.yml
+  app/       # contents of BMC_Project/BMC-SmartFind
+  data/      # contents of BMC_Data/SmartFindDocuments
+  model/     # contents of BMC_AI/Models/multilingual-e5-small
+```
+
+The folders do not need to be merged into one directory. They are mounted into the containers as `/mnt/documents` and `/models/multilingual-e5-small`. This keeps the Laravel source, uploaded documents, and AI model separate and prevents a rebuild from deleting data. For the current workstation layout, the default paths are `../../BMC_Data/SmartFindDocuments` and `../../BMC_AI/Models/multilingual-e5-small`. For the single-package layout, set `DOCUMENTS_PATH=./data` and `AI_MODEL_PATH=./model` in `.env`.
+
+For GitHub and Portainer, use the contents of `BMC-SmartFind` as the repository root. Do not put it inside an additional `app` directory unless the Docker build context is changed as well. Keep `data` and `model` outside the Git repository, or mount them from absolute server paths.
+
+### Run locally with Docker Desktop
+
+```powershell
+Copy-Item .env.example .env
+docker compose up -d --build
+```
+
+Open `http://localhost:8080`. The first startup creates the application key and runs migrations. Database, uploaded documents, and logs are stored in Docker volumes.
+
+To restore an existing SQL backup after the stack is running, import it into the database container and then copy the matching document backup into the `app_storage` volume. For example, from PowerShell:
+
+```powershell
+Get-Content .\storage\app\smartfind-backups\<backup-id>\database\bmc_smartfind.sql | docker compose exec -T db mariadb -u bmc -pbmc_local_password bmc_smartfind
+```
+
+Do not commit real `.env` files or production database passwords. Change the example passwords before exposing the stack beyond localhost.
+
+The AI service is disabled by default because its offline embedding model is not included in this repository. The provided `.env.example` expects the sibling folder `../BMC_AI/Models/multilingual-e5-small`. Set `AI_SMART_SEARCH_ENABLED=true`, and start the AI profile:
+
+```powershell
+docker compose --profile ai up -d --build
+```
+
+### Deploy in Portainer
+
+Create a Stack from the Git repository and use `docker-compose.yml` as the Compose path. Set `APP_PORT`, database passwords, `APP_URL`, `DOCUMENTS_PATH`, and `AI_MODEL_PATH` in the Stack environment variables. Use absolute server paths such as `/opt/bmc-smartfind/data/SmartFindDocuments` and `/opt/bmc-smartfind/model/multilingual-e5-small`. For AI, enable the `ai` profile or remove the `profiles` line from the AI service.
+
 ## Learning Laravel
 
 Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
