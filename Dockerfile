@@ -1,4 +1,21 @@
-FROM composer:2.8 AS vendor
+FROM php:8.3-cli-bookworm AS vendor
+
+COPY --from=composer:2.8 /usr/bin/composer /usr/bin/composer
+
+RUN set -eux; \
+    echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        git \
+        libcurl4-openssl-dev \
+        libicu-dev \
+        libonig-dev \
+        libpng-dev \
+        libxml2-dev \
+        libzip-dev \
+        unzip; \
+    docker-php-ext-install bcmath curl gd intl mbstring pdo_mysql xml zip; \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY composer.json composer.lock* ./
