@@ -1,6 +1,7 @@
 services:
   app:
     image: ${APP_IMAGE:-ghcr.io/hidayahmf/qualityhub:main}
+    pull_policy: always
     restart: unless-stopped
     ports:
       - "${APP_PORT:-8080}:80"
@@ -31,6 +32,7 @@ services:
 
   ai:
     image: ${AI_IMAGE:-ghcr.io/hidayahmf/qualityhub-ai:main}
+    pull_policy: always
     restart: unless-stopped
     profiles: ["ai"]
     environment:
