@@ -22,23 +22,11 @@ services:
       FILESYSTEM_DISK: local
       BMC_STORAGE_PATH: /mnt/documents
       AI_SMART_SEARCH_ENABLED: ${AI_SMART_SEARCH_ENABLED:-false}
-      AI_SMART_SEARCH_URL: http://ai:8765
+      AI_SMART_SEARCH_URL: http://127.0.0.1:8765
     volumes:
       - app_storage:/var/www/html/storage/app
       - app_logs:/var/www/html/storage/logs
       - ${DOCUMENTS_PATH:?DOCUMENTS_PATH is required}:/mnt/documents
-    networks:
-      - qualityhub
-
-  ai:
-    image: ${AI_IMAGE:-ghcr.io/hidayahmf/qualityhub-ai:main}
-    pull_policy: always
-    restart: unless-stopped
-    profiles: ["ai"]
-    environment:
-      AI_MODEL_PATH: /models/multilingual-e5-small
-    volumes:
-      - ${AI_MODEL_PATH:-/opt/qualityhub/model/multilingual-e5-small}:/models/multilingual-e5-small:ro
     networks:
       - qualityhub
 
