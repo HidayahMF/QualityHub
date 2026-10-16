@@ -74,7 +74,7 @@ docker compose --profile ai up -d --build
 
 Create a Stack from the Git repository and use `docker-compose.external-db.yml` as the Compose path. Set `APP_PORT`, `APP_URL`, `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, and `DOCUMENTS_PATH` in the Stack environment variables. Use absolute server paths such as `/opt/bmc-smartfind/data/SmartFindDocuments` and `/opt/bmc-smartfind/model/multilingual-e5-small`. For AI, also set `AI_MODEL_PATH`, set `AI_SMART_SEARCH_ENABLED=true`, and enable the `ai` profile or remove the `profiles` line from the AI service.
 
-For convenience, copy `portainer.env.example` to `portainer.env`, replace `APP_URL` and `MYSQL_PASSWORD`, then upload `portainer.env` in Portainer's Environment variables section. The real `portainer.env` is ignored by Git and must never be committed.
+For convenience, copy `portainer.env.example` to `portainer.env`, replace `APP_URL` and `MYSQL_PASSWORD`, then upload `portainer.env` in Portainer's Environment variables section. The real `portainer.env` is ignored by Git and must never be committed. `AI_MODEL_PATH` is optional while AI is disabled; Compose will use `/opt/qualityhub/model/multilingual-e5-small` as its default.
 
 ## Learning Laravel
 

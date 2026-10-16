@@ -42,7 +42,7 @@ services:
     environment:
       AI_MODEL_PATH: /models/multilingual-e5-small
     volumes:
-      - ${AI_MODEL_PATH:?AI_MODEL_PATH is required}:/models/multilingual-e5-small:ro
+      - ${AI_MODEL_PATH:-/opt/qualityhub/model/multilingual-e5-small}:/models/multilingual-e5-small:ro
     networks:
       - qualityhub
 
