@@ -56,7 +56,7 @@ Get-Content .\storage\app\smartfind-backups\<backup-id>\database\bmc_smartfind.s
 
 Do not commit real `.env` files or production database passwords. Change the example passwords before exposing the stack beyond localhost.
 
-The AI service is disabled by default because its offline embedding model is not included in this repository. The provided `.env.example` expects the sibling folder `../BMC_AI/Models/multilingual-e5-small`. Set `AI_SMART_SEARCH_ENABLED=true`, and start the AI profile:
+The AI service is disabled by default because its offline embedding model is not included in this repository. The provided `.env.example` expects the sibling folder `../../BMC_AI/Models/multilingual-e5-small` for the current workstation layout. Set `AI_SMART_SEARCH_ENABLED=true`, and start the AI profile:
 
 ```powershell
 docker compose --profile ai up -d --build
