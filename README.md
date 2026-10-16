@@ -39,6 +39,14 @@ The folders do not need to be merged into one directory. They are mounted into t
 
 For GitHub and Portainer, use the contents of `BMC-SmartFind` as the repository root. Do not put it inside an additional `app` directory unless the Docker build context is changed as well. Keep `data` and `model` outside the Git repository, or mount them from absolute server paths.
 
+### External MySQL in Portainer
+
+Use `docker-compose.external-db.yml` when the database is the existing MySQL/MariaDB server instead of the bundled local database. The application reads `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, and `MYSQL_PASSWORD` from Portainer Stack environment variables, then maps them internally to Laravel's `DB_*` variables. Never commit the database password to GitHub.
+
+For the existing database dump, import it into the target database before deploying the application stack. The dump contains the `bmc_smartfind` schema and data; importing its statements while connected to `pw2` is valid if `pw2` is the intended application database. Confirm the target database and take a backup first. After import, deploy the stack using `docker-compose.external-db.yml`; the entrypoint will run any migrations that are newer than the dump.
+
+The GitHub push itself cannot connect to `192.168.10.51`. It only updates source code. Portainer connects to the database when the stack starts, and the database must allow connections from the Portainer host/container network on port 3306.
+
 ### Run locally with Docker Desktop
 
 ```powershell
@@ -64,7 +72,7 @@ docker compose --profile ai up -d --build
 
 ### Deploy in Portainer
 
-Create a Stack from the Git repository and use `docker-compose.yml` as the Compose path. Set `APP_PORT`, database passwords, `APP_URL`, `DOCUMENTS_PATH`, and `AI_MODEL_PATH` in the Stack environment variables. Use absolute server paths such as `/opt/bmc-smartfind/data/SmartFindDocuments` and `/opt/bmc-smartfind/model/multilingual-e5-small`. For AI, enable the `ai` profile or remove the `profiles` line from the AI service.
+Create a Stack from the Git repository and use `docker-compose.external-db.yml` as the Compose path. Set `APP_PORT`, `APP_URL`, `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, and `DOCUMENTS_PATH` in the Stack environment variables. Use absolute server paths such as `/opt/bmc-smartfind/data/SmartFindDocuments` and `/opt/bmc-smartfind/model/multilingual-e5-small`. For AI, also set `AI_MODEL_PATH`, set `AI_SMART_SEARCH_ENABLED=true`, and enable the `ai` profile or remove the `profiles` line from the AI service.
 
 ## Learning Laravel
 

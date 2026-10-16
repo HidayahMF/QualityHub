@@ -1,0 +1,54 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: bmc-smartfind:external-db
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:80"
+    environment:
+      APP_NAME: BMC SmartFind
+      APP_ENV: ${APP_ENV:-production}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      APP_URL: ${APP_URL:-http://localhost:8080}
+      DB_CONNECTION: mysql
+      DB_HOST: ${MYSQL_HOST:?MYSQL_HOST is required}
+      DB_PORT: ${MYSQL_PORT:-3306}
+      DB_DATABASE: ${MYSQL_DATABASE:?MYSQL_DATABASE is required}
+      DB_USERNAME: ${MYSQL_USER:?MYSQL_USER is required}
+      DB_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
+      SESSION_DRIVER: database
+      CACHE_STORE: database
+      QUEUE_CONNECTION: database
+      FILESYSTEM_DISK: local
+      BMC_STORAGE_PATH: /mnt/documents
+      AI_SMART_SEARCH_ENABLED: ${AI_SMART_SEARCH_ENABLED:-false}
+      AI_SMART_SEARCH_URL: http://ai:8765
+    volumes:
+      - app_storage:/var/www/html/storage/app
+      - app_logs:/var/www/html/storage/logs
+      - ${DOCUMENTS_PATH:?DOCUMENTS_PATH is required}:/mnt/documents
+    networks:
+      - qualityhub
+
+  ai:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    image: bmc-smartfind-ai:external-db
+    restart: unless-stopped
+    profiles: ["ai"]
+    environment:
+      AI_MODEL_PATH: /models/multilingual-e5-small
+    volumes:
+      - ${AI_MODEL_PATH:?AI_MODEL_PATH is required}:/models/multilingual-e5-small:ro
+    networks:
+      - qualityhub
+
+volumes:
+  app_storage:
+  app_logs:
+
+networks:
+  qualityhub:
