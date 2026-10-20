@@ -87,6 +87,42 @@ class AiSmartSearchController extends Controller
         );
         $startedAt = microtime(true);
 
+        if (! config('ai.smart_search.enabled', false)) {
+            try {
+                $fallbackDocuments = $candidates->keywordFallback(
+                    $user,
+                    $fallbackQuery
+                );
+                $results = $fallbackDocuments
+                    ->map(fn (Document $document): array => $this->resultPayload(
+                        $document,
+                        null,
+                        ['Pencarian kata kunci lokal']
+                    ))
+                    ->values()
+                    ->all();
+            } catch (\Throwable $exception) {
+                Log::error('Disabled AI keyword search failed.', [
+                    'reason' => $exception::class,
+                    'message' => mb_substr($exception->getMessage(), 0, 300),
+                ]);
+                $results = [];
+            }
+
+            return response()->json([
+                'available' => false,
+                'mode' => 'keyword_fallback',
+                'fallback' => true,
+                'query' => $query,
+                'entities' => [],
+                'count' => count($results),
+                'results' => $results,
+                'model' => null,
+                'message' => 'AI Smart Search lokal sedang tidak tersedia. Pencarian kata kunci lokal tetap dapat digunakan.',
+                'fallback_url' => $fallbackUrl,
+            ]);
+        }
+
         try {
             $knownValues = $candidates->knownValues();
             $referenceDate = now()->toDateString();
