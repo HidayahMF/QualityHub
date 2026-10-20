@@ -50,7 +50,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
             if (
                 $request->isMethod('POST')
-                && $request->routeIs('documents.scan.store')
+                && (
+                    $request->is('documents/scan')
+                    || $request->routeIs('documents.scan.store')
+                )
             ) {
                 report($exception);
 
