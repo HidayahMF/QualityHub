@@ -1537,8 +1537,6 @@
             let selectedItems = [];
             let activePhotoIndex = -1;
             let replaceOnNextCapture = false;
-            let queueObjectUrls = [];
-
             let originalFile = null;
             let originalImage = null;
             let editState = { rotation: 0, brightness: 100, contrast: 100, grayscale: 0, zoom: 100, crop: 0 };
@@ -2753,6 +2751,7 @@
                         throw new Error('Foto aktif tidak ditemukan.');
                     }
 
+                    releaseItemObjectUrl(selectedItems[activePhotoIndex]);
                     selectedItems[activePhotoIndex] = {
                         ...selectedItems[activePhotoIndex],
                         file: editedFile,
@@ -2773,9 +2772,20 @@
             // ============================================================
             // MULTI PHOTO MANAGER
             // ============================================================
-            function releaseQueueObjectUrls() {
-                queueObjectUrls.forEach(url => URL.revokeObjectURL(url));
-                queueObjectUrls = [];
+            function releaseItemObjectUrl(item) {
+                if (item?.previewUrl) {
+                    URL.revokeObjectURL(item.previewUrl);
+                    item.previewUrl = null;
+                }
+            }
+
+
+            function ensureItemObjectUrl(item) {
+                if (!item.previewUrl) {
+                    item.previewUrl = URL.createObjectURL(item.file);
+                }
+
+                return item.previewUrl;
             }
 
 
@@ -2826,7 +2836,6 @@
 
 
             function renderPhotoQueue() {
-                releaseQueueObjectUrls();
                 photoQueue.replaceChildren();
 
                 const count = selectedItems.length;
@@ -2842,9 +2851,7 @@
                     card.addEventListener('click', () => setActivePhoto(index));
 
                     const image = document.createElement('img');
-                    const url = URL.createObjectURL(item.file);
-                    queueObjectUrls.push(url);
-                    image.src = url;
+                    image.src = ensureItemObjectUrl(item);
                     image.alt = `Foto ${index + 1}`;
                     image.className = 'h-14 w-14 shrink-0 rounded-lg border border-slate-200 bg-slate-50 object-cover';
 
@@ -2935,6 +2942,7 @@
                 let targetIndex;
 
                 if (replacing) {
+                    releaseItemObjectUrl(selectedItems[activePhotoIndex]);
                     selectedItems[activePhotoIndex] = { file: incoming[0], source };
                     targetIndex = activePhotoIndex;
 
@@ -2952,6 +2960,7 @@
 
             function removePhoto(index) {
                 if (!selectedItems[index]) return;
+                releaseItemObjectUrl(selectedItems[index]);
                 selectedItems.splice(index, 1);
 
                 if (selectedItems.length === 0) {
@@ -3310,7 +3319,7 @@
             window.addEventListener('beforeunload', () => {
 
                 stopCamera();
-                releaseQueueObjectUrls();
+                selectedItems.forEach(releaseItemObjectUrl);
                 if (objectUrl) URL.revokeObjectURL(objectUrl);
 
             });
@@ -5378,4 +5387,3 @@
     </script>
 
 </x-app-layout>x
-
