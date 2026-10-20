@@ -10,10 +10,55 @@ use App\Services\InputSanitizationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class AiSmartSearchController extends Controller
 {
     public function __invoke(
+        Request $request,
+        InputSanitizationService $input,
+        AiSmartSearchService $ai,
+        AiDocumentCandidateBuilder $candidates
+    ): JsonResponse {
+        try {
+            return $this->search(
+                $request,
+                $input,
+                $ai,
+                $candidates
+            );
+        } catch (\Throwable $exception) {
+            if ($exception instanceof ValidationException) {
+                throw $exception;
+            }
+
+            Log::error('AI Smart Search controller failed before fallback.', [
+                'reason' => $exception::class,
+                'message' => mb_substr($exception->getMessage(), 0, 300),
+            ]);
+
+            $query = $input->search($request->input('query'));
+
+            return response()->json([
+                'available' => false,
+                'mode' => 'keyword_fallback',
+                'fallback' => true,
+                'query' => $query,
+                'entities' => [],
+                'count' => 0,
+                'results' => [],
+                'model' => null,
+                'message' => 'AI Smart Search lokal sedang tidak tersedia. Gunakan pencarian QualityHub biasa.',
+                'fallback_url' => route(
+                    'documents.index',
+                    ['search' => mb_substr($query, 0, 160)],
+                    false
+                ),
+            ]);
+        }
+    }
+
+    private function search(
         Request $request,
         InputSanitizationService $input,
         AiSmartSearchService $ai,
