@@ -140,15 +140,24 @@ class AiSmartSearchController extends Controller
                 $fallbackDocuments = collect();
             }
 
-            $matchedBy = ['Pencarian kata kunci lokal'];
-            $results = $fallbackDocuments
-                ->map(fn (Document $document): array => $this->resultPayload(
-                    $document,
-                    null,
-                    $matchedBy
-                ))
-                ->values()
-                ->all();
+            try {
+                $matchedBy = ['Pencarian kata kunci lokal'];
+                $results = $fallbackDocuments
+                    ->map(fn (Document $document): array => $this->resultPayload(
+                        $document,
+                        null,
+                        $matchedBy
+                    ))
+                    ->values()
+                    ->all();
+            } catch (\Throwable $payloadException) {
+                Log::error('Keyword fallback payload failed.', [
+                    'reason' => $payloadException::class,
+                    'message' => mb_substr($payloadException->getMessage(), 0, 300),
+                ]);
+
+                $results = [];
+            }
 
             Log::warning('Local AI Smart Search unavailable.', [
                 'reason' => $exception::class,
