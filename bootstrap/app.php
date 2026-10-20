@@ -5,6 +5,10 @@ use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -34,5 +38,30 @@ return Application::configure(basePath: dirname(__DIR__))
         );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Dependency resolution and middleware errors happen before the controller's
+        // local try/catch. Keep the scan form usable for those failures too.
+        $exceptions->render(function (Throwable $exception, Request $request): ?Response {
+            if (
+                $exception instanceof ValidationException
+                || $exception instanceof HttpResponseException
+            ) {
+                return null;
+            }
+
+            if (
+                $request->isMethod('POST')
+                && $request->routeIs('documents.scan.store')
+            ) {
+                report($exception);
+
+                return redirect()
+                    ->route('documents.scan.create')
+                    ->withInput()
+                    ->withErrors([
+                        'files' => 'Berkas scan tidak dapat diproses. Periksa konfigurasi penyimpanan dan coba lagi.',
+                    ]);
+            }
+
+            return null;
+        });
     })->create();
