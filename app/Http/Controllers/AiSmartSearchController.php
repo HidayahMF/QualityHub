@@ -126,10 +126,20 @@ class AiSmartSearchController extends Controller
                 'fallback_url' => $fallbackUrl,
             ]);
         } catch (\Throwable $exception) {
-            $fallbackDocuments = $candidates->keywordFallback(
-                $user,
-                $fallbackQuery
-            );
+            try {
+                $fallbackDocuments = $candidates->keywordFallback(
+                    $user,
+                    $fallbackQuery
+                );
+            } catch (\Throwable $fallbackException) {
+                Log::error('Keyword fallback failed after local AI error.', [
+                    'reason' => $fallbackException::class,
+                    'message' => mb_substr($fallbackException->getMessage(), 0, 300),
+                ]);
+
+                $fallbackDocuments = collect();
+            }
+
             $matchedBy = ['Pencarian kata kunci lokal'];
             $results = $fallbackDocuments
                 ->map(fn (Document $document): array => $this->resultPayload(
