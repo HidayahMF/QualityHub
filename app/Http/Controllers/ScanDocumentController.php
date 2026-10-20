@@ -330,6 +330,17 @@ class ScanDocumentController extends Controller
             );
         } catch (ValidationException $exception) {
             throw $exception->redirectTo(route('documents.scan.create'));
+        } catch (Throwable $exception) {
+            // Jangan biarkan kegagalan library, filesystem, atau database menjadi HTTP 500.
+            // Pengguna tetap dikembalikan ke form dan detail teknis dicatat di log.
+            report($exception);
+
+            return redirect()
+                ->route('documents.scan.create')
+                ->withInput()
+                ->withErrors([
+                    'files' => 'Berkas scan tidak dapat diproses. Periksa konfigurasi penyimpanan dan coba lagi.',
+                ]);
         }
     }
 
