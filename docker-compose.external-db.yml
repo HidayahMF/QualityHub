@@ -73,3 +73,7 @@ volumes:
 
 networks:
   qualityhub:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.40.0.0/16

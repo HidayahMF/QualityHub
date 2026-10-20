@@ -2,14 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Exceptions\InvalidLocalAiResponseException;
-use App\Exceptions\LocalAiUnavailableException;
 use App\Models\Document;
 use App\Models\User;
 use App\Services\AiDocumentCandidateBuilder;
 use App\Services\AiSmartSearchService;
 use App\Services\InputSanitizationService;
-use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -128,11 +125,7 @@ class AiSmartSearchController extends Controller
                 'message' => null,
                 'fallback_url' => $fallbackUrl,
             ]);
-        } catch (
-            LocalAiUnavailableException
-            | InvalidLocalAiResponseException
-            | ConnectionException $exception
-        ) {
+        } catch (\Throwable $exception) {
             $fallbackDocuments = $candidates->keywordFallback(
                 $user,
                 $fallbackQuery
@@ -149,6 +142,7 @@ class AiSmartSearchController extends Controller
 
             Log::warning('Local AI Smart Search unavailable.', [
                 'reason' => $exception::class,
+                'message' => mb_substr($exception->getMessage(), 0, 300),
                 'duration_ms' => (int) round(
                     (microtime(true) - $startedAt) * 1000
                 ),
