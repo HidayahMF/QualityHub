@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnforceSameOrigin;
 use App\Http\Middleware\SecurityHeaders;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -44,6 +45,7 @@ return Application::configure(basePath: dirname(__DIR__))
             if (
                 $exception instanceof ValidationException
                 || $exception instanceof HttpResponseException
+                || $exception instanceof AuthenticationException
             ) {
                 return null;
             }
@@ -63,6 +65,36 @@ return Application::configure(basePath: dirname(__DIR__))
                     ->withErrors([
                         'files' => 'Berkas scan tidak dapat diproses. Periksa konfigurasi penyimpanan dan coba lagi.',
                     ]);
+            }
+
+            if (
+                $request->isMethod('POST')
+                && (
+                    $request->is('documents/search/ai')
+                    || $request->routeIs('documents.search.ai')
+                )
+            ) {
+                report($exception);
+
+                $query = trim(strip_tags((string) $request->input('query', '')));
+                $query = mb_substr($query, 0, 160);
+
+                return response()->json([
+                    'available' => false,
+                    'mode' => 'keyword_fallback',
+                    'fallback' => true,
+                    'query' => $query,
+                    'entities' => [],
+                    'count' => 0,
+                    'results' => [],
+                    'model' => null,
+                    'message' => 'AI Smart Search lokal sedang tidak tersedia. Pencarian kata kunci lokal tetap dapat digunakan.',
+                    'fallback_url' => route(
+                        'documents.index',
+                        ['search' => $query],
+                        false
+                    ),
+                ]);
             }
 
             return null;
