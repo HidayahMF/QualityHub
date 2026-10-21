@@ -10,7 +10,8 @@ ENV PYTHONUNBUFFERED=1 \
     AI_MODEL_PATH=/models/multilingual-e5-small
 
 COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+# Use the CPU wheel so production does not download the multi-gigabyte CUDA build.
+RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
 COPY app ./app
 
 EXPOSE 8765
