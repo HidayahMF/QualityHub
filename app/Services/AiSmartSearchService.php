@@ -213,7 +213,7 @@ class AiSmartSearchService
             || isset($parts['fragment']);
 
         return $scheme === 'http'
-            && in_array($host, ['127.0.0.1', 'localhost', '::1'], true)
+            && in_array($host, ['127.0.0.1', 'localhost', '::1', 'ai'], true)
             && ($path === '' || $path === '/')
             && ! $hasDisallowedComponent;
     }
