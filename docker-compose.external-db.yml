@@ -50,7 +50,8 @@ services:
       SMARTFIND_MAX_CONCURRENT_SESSIONS: ${SMARTFIND_MAX_CONCURRENT_SESSIONS:-3}
       SMARTFIND_SESSION_PASSWORD_FINGERPRINT: ${SMARTFIND_SESSION_PASSWORD_FINGERPRINT:-true}
       AI_SMART_SEARCH_ENABLED: ${AI_SMART_SEARCH_ENABLED:-false}
-      AI_SMART_SEARCH_URL: ${AI_SMART_SEARCH_URL:-http://127.0.0.1:8765}
+      AI_SMART_SEARCH_URL: ${AI_SMART_SEARCH_URL:-http://ai:8765}
+      AI_MODEL_PATH: ${AI_MODEL_PATH:-/opt/qualityhub/model/multilingual-e5-small}
       AI_SMART_SEARCH_CONNECT_TIMEOUT: ${AI_SMART_SEARCH_CONNECT_TIMEOUT:-1}
       AI_SMART_SEARCH_TIMEOUT: ${AI_SMART_SEARCH_TIMEOUT:-5}
       AI_SMART_SEARCH_TOP_K: ${AI_SMART_SEARCH_TOP_K:-20}
@@ -64,6 +65,19 @@ services:
       - app_storage:/var/www/html/storage/app
       - app_logs:/var/www/html/storage/logs
       - ${DOCUMENTS_PATH:?DOCUMENTS_PATH is required}:/mnt/documents
+    networks:
+      - qualityhub
+
+  ai:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    image: bmc-smartfind-ai:local
+    restart: unless-stopped
+    environment:
+      AI_MODEL_PATH: /models/multilingual-e5-small
+    volumes:
+      - ${AI_MODEL_PATH:?AI_MODEL_PATH is required}:/models/multilingual-e5-small:ro
     networks:
       - qualityhub
 
