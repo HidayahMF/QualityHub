@@ -330,6 +330,10 @@
                         Jika memilih 2 foto atau lebih, server otomatis menggabungkannya menjadi 1 PDF multi-halaman.
                     </p>
 
+                    <p id="cameraProcessingStatus" role="status" aria-live="polite" class="mt-2 hidden text-center text-xs font-medium text-blue-700">
+                        Memproses foto kamera agar siap diunggah...
+                    </p>
+
                 </div>
             </section>
 
@@ -1436,6 +1440,7 @@
             const cameraStatus = document.getElementById('cameraStatus');
 
             const cameraInput = document.getElementById('cameraInput');
+            const cameraProcessingStatus = document.getElementById('cameraProcessingStatus');
             const uploadInput = document.getElementById('uploadInput');
             const scanFilesInput = document.getElementById('scanFilesInput');
             const scanDocumentForm = document.getElementById('scanDocumentForm');
@@ -1533,6 +1538,15 @@
             }
             const MAX_PHOTOS = 10;
             const MAX_TOTAL_BYTES = 60 * 1024 * 1024;
+
+            // Kamera native HP kadang mengirim foto asli berukuran beberapa MB
+            // yang melewati batas PHP di server walaupun validasi Laravel 20 MB.
+            // File hasil kamera dinormalisasi menjadi JPEG kecil sebelum submit.
+            // Batas server (upload_max_filesize / post_max_size) tetap wajib dicek IT.
+            const CAMERA_MAX_SOURCE_BYTES = 80 * 1024 * 1024;
+            const CAMERA_MAX_OUTPUT_BYTES = Math.floor(1.6 * 1024 * 1024);
+            const CAMERA_MAX_LONG_EDGE = 2600;
+            let cameraPhotoProcessing = false;
 
             let selectedItems = [];
             let activePhotoIndex = -1;
@@ -3247,27 +3261,156 @@
 
 
             // ============================================================
+            // MOBILE NATIVE CAMERA: SAFE JPEG NORMALIZATION
+            // ============================================================
+            // Tetap menggunakan input capture=environment (bekerja di HTTP LAN).
+            // Normalisasi hanya untuk FOTO DARI KAMERA HP, bukan foto galeri,
+            // sehingga workflow upload yang sudah bekerja tetap dipertahankan.
+            function isCameraImageCandidate(file) {
+                const extension = (file.name || '').split('.').pop().toLowerCase();
+                const imageExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'tif', 'tiff', 'heic', 'heif'];
+                const safeMime = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/bmp', 'image/tiff', 'image/heic', 'image/heif'];
+
+                // Jangan percaya MIME dari browser saja, tetapi jangan pula
+                // menerima SVG atau file non-gambar yang dapat dipilih manual.
+                return imageExtensions.includes(extension) || safeMime.includes((file.type || '').toLowerCase());
+            }
+
+            function loadCameraImage(file) {
+                return new Promise((resolve, reject) => {
+                    const previewUrl = URL.createObjectURL(file);
+                    const image = new Image();
+                    let finished = false;
+                    const timeout = window.setTimeout(() => finish(null), 30000);
+
+                    function finish(loadedImage) {
+                        if (finished) return;
+                        finished = true;
+                        window.clearTimeout(timeout);
+                        URL.revokeObjectURL(previewUrl);
+
+                        if (loadedImage) {
+                            resolve(loadedImage);
+                        } else {
+                            reject(new Error('Format foto kamera tidak dapat dibaca browser. Gunakan JPG dari galeri atau ubah format kamera menjadi JPEG.'));
+                        }
+                    }
+
+                    image.onload = () => finish(image);
+                    image.onerror = () => finish(null);
+                    image.src = previewUrl;
+                });
+            }
+
+            function canvasToJpegBlob(canvas, quality) {
+                return new Promise((resolve, reject) => {
+                    try {
+                        canvas.toBlob(blob => {
+                            if (!blob || blob.size <= 0 || blob.type !== 'image/jpeg') {
+                                reject(new Error('Browser gagal mengonversi foto kamera menjadi JPEG.'));
+                                return;
+                            }
+                            resolve(blob);
+                        }, 'image/jpeg', quality);
+                    } catch (error) {
+                        reject(new Error('Browser tidak mendukung pemrosesan foto kamera ini.'));
+                    }
+                });
+            }
+
+            async function normalizeNativeCameraPhoto(file) {
+                if (!isCameraImageCandidate(file)) {
+                    throw new Error('Hasil kamera harus berupa gambar JPG/PNG/WEBP atau foto yang dapat dikonversi browser.');
+                }
+
+                if (!file.size || file.size > CAMERA_MAX_SOURCE_BYTES) {
+                    throw new Error('Foto kamera kosong atau terlalu besar untuk diproses.');
+                }
+
+                const image = await loadCameraImage(file);
+                const width = image.naturalWidth || image.width;
+                const height = image.naturalHeight || image.height;
+
+                if (!width || !height) {
+                    throw new Error('Dimensi foto kamera tidak dapat dikenali.');
+                }
+
+                const scale = Math.min(1, CAMERA_MAX_LONG_EDGE / Math.max(width, height));
+                let outputWidth = Math.max(1, Math.round(width * scale));
+                let outputHeight = Math.max(1, Math.round(height * scale));
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                if (!context) {
+                    throw new Error('Browser HP tidak menyediakan pemrosesan gambar.');
+                }
+
+                // Mencari kombinasi resolusi dan kualitas JPEG yang tetap
+                // terbaca, tanpa mengirim foto kamera asli yang terlalu besar.
+                let result = null;
+                for (let resizeAttempt = 0; resizeAttempt < 5; resizeAttempt++) {
+                    canvas.width = outputWidth;
+                    canvas.height = outputHeight;
+                    context.fillStyle = '#ffffff';
+                    context.fillRect(0, 0, outputWidth, outputHeight);
+                    context.drawImage(image, 0, 0, outputWidth, outputHeight);
+
+                    for (const quality of [0.90, 0.84, 0.78, 0.71, 0.64]) {
+                        const blob = await canvasToJpegBlob(canvas, quality);
+                        if (blob.size <= CAMERA_MAX_OUTPUT_BYTES) {
+                            result = blob;
+                            break;
+                        }
+                    }
+
+                    if (result) break;
+                    outputWidth = Math.max(1, Math.round(outputWidth * 0.85));
+                    outputHeight = Math.max(1, Math.round(outputHeight * 0.85));
+                }
+
+                // Jangan diam-diam mengirim file di atas batas yang disepakati.
+                if (!result) {
+                    throw new Error('Foto kamera masih terlalu besar. Coba ambil foto dengan resolusi lebih rendah.');
+                }
+
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                return new File([result], `scan-qc-camera-${timestamp}.jpg`, {
+                    type: 'image/jpeg',
+                    lastModified: Date.now()
+                });
+            }
+
+            // ============================================================
             // CAMERA INPUT
             // ============================================================
-            cameraInput.addEventListener('change', () => {
-
-                const file = cameraInput.files[0];
-
-                if (!file) {
-                    return;
-                }
-
-                if (!file.type.startsWith('image/')) {
-                    alert('Hasil kamera harus berupa gambar.');
-                    cameraInput.value = '';
-                    return;
-                }
-
-                const shouldReplace = replaceOnNextCapture;
-                replaceOnNextCapture = false;
-                addPhotos([file], 'camera', shouldReplace);
+            cameraInput.addEventListener('change', async () => {
+                const file = cameraInput.files && cameraInput.files[0];
                 cameraInput.value = '';
+                if (!file || cameraPhotoProcessing) return;
 
+                cameraPhotoProcessing = true;
+                cameraProcessingStatus.classList.remove('hidden');
+                openCameraButton.disabled = true;
+                retakeButton.disabled = true;
+                saveButton.disabled = true;
+
+                try {
+                    const safeFile = await normalizeNativeCameraPhoto(file);
+                    const shouldReplace = replaceOnNextCapture;
+                    replaceOnNextCapture = false;
+                    if (!addPhotos([safeFile], 'camera', shouldReplace)) {
+                        // addPhotos() sudah menampilkan penjelasan jika batas foto tercapai.
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Native mobile camera preparation failed:', error);
+                    alert(error.message || 'Foto kamera gagal diproses. Coba pilih foto JPG dari galeri.');
+                } finally {
+                    cameraPhotoProcessing = false;
+                    cameraProcessingStatus.classList.add('hidden');
+                    openCameraButton.disabled = false;
+                    retakeButton.disabled = false;
+                    updateMultiPhotoState();
+                }
             });
 
 
@@ -3294,6 +3437,12 @@
             // FINAL FORM SUBMIT
             // ============================================================
             scanDocumentForm.addEventListener('submit', event => {
+                if (cameraPhotoProcessing) {
+                    event.preventDefault();
+                    alert('Foto kamera masih diproses. Tunggu sampai selesai sebelum menyimpan.');
+                    return;
+                }
+
                 if (selectedItems.length === 0) {
                     event.preventDefault();
                     alert('Pilih minimal satu foto berkas QC.');
@@ -5386,4 +5535,4 @@
         })();
     </script>
 
-</x-app-layout>x
+</x-app-layout>
