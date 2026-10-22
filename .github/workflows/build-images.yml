@@ -10,6 +10,27 @@ permissions:
   packages: write
 
 jobs:
+  validate-compose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate Compose files
+        env:
+          APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+          MYSQL_HOST: 127.0.0.1
+          MYSQL_PORT: "3306"
+          MYSQL_DATABASE: qualityhub_ci
+          MYSQL_USER: qualityhub_ci
+          MYSQL_PASSWORD: qualityhub_ci_password
+          DOCUMENTS_PATH: /tmp/qualityhub-documents
+          AI_MODEL_PATH: /tmp/qualityhub-model
+        run: |
+          mkdir -p "$DOCUMENTS_PATH" "$AI_MODEL_PATH"
+          docker compose -f docker-compose.yml config --quiet
+          docker compose -f docker-compose.external-db.yml config --quiet
+
   app:
     runs-on: ubuntu-latest
     steps:

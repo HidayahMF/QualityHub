@@ -78,6 +78,8 @@ The external database Compose file uses a prebuilt Laravel image from GHCR. GitH
 
 For convenience, copy `portainer.env.example` to `portainer.env`, replace `APP_URL` and `MYSQL_PASSWORD`, then upload `portainer.env` in Portainer's Environment variables section. The real `portainer.env` is ignored by Git and must never be committed. `AI_MODEL_PATH` is optional while AI is disabled; Compose will use `/opt/qualityhub/model/multilingual-e5-small` as its default.
 
+If Portainer reports that `/data/compose/<stack-id>/docker-compose.external-db.yml` is missing, the stack is using a stale checkout, the wrong repository, or the wrong Compose path. Reconfigure the stack as a Git-based stack using this repository's `main` branch and the root-relative path `docker-compose.external-db.yml`. Do not remove the stack or its volumes. See `docs/PORTAINER_STACK_RECOVERY.md` for the safe recovery procedure.
+
 ## Learning Laravel
 
 Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
