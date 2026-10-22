@@ -50,4 +50,8 @@ jobs:
           context: .
           file: Dockerfile
           push: true
-          tags: ghcr.io/hidayahmf/qualityhub:main
+          tags: |
+            ghcr.io/hidayahmf/qualityhub:main
+            ghcr.io/hidayahmf/qualityhub:${{ github.sha }}
+          provenance: false
+          sbom: false
