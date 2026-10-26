@@ -5,12 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\AxlePosition;
 use App\Models\AxleType;
 use App\Models\BrakePartNumber;
-use App\Models\LineProduct;
-use App\Models\ProductionLine;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class RetoolingMasterDataController extends Controller
 {
@@ -40,9 +39,19 @@ class RetoolingMasterDataController extends Controller
         );
 
 
-        $query = ProductionLine::query()
-            ->where('is_active', true)
-            ->orderBy('code');
+        // Line produksi berasal dari database MTC, bukan master lokal QualityHub.
+        $query = DB::table('mtc.LINE')
+            ->select([
+                'KODE_LN as id',
+                DB::raw('COALESCE(NULLIF(kd_ln, \'\'), NAMA_LN) as code'),
+                'NAMA_LN as name',
+            ])
+            ->where(function ($builder) {
+                $builder
+                    ->whereNotNull('kd_ln')
+                    ->orWhereNotNull('NAMA_LN');
+            })
+            ->orderBy('KODE_LN');
 
 
         if ($search !== null) {
@@ -56,16 +65,8 @@ class RetoolingMasterDataController extends Controller
                 function (Builder $builder) use ($escapedSearch) {
 
                     $builder
-                        ->where(
-                            'code',
-                            'like',
-                            '%' . $escapedSearch . '%'
-                        )
-                        ->orWhere(
-                            'name',
-                            'like',
-                            '%' . $escapedSearch . '%'
-                        );
+                        ->where('kd_ln', 'like', '%' . $escapedSearch . '%')
+                        ->orWhere('NAMA_LN', 'like', '%' . $escapedSearch . '%');
                 }
             );
         }
@@ -74,13 +75,9 @@ class RetoolingMasterDataController extends Controller
         $results =
             $query
                 ->limit(50)
-                ->get([
-                    'id',
-                    'code',
-                    'name',
-                ])
+                ->get()
                 ->map(
-                    fn (ProductionLine $line): array => [
+                    fn (object $line): array => [
                         'id' =>
                             $line->id,
 
@@ -110,23 +107,29 @@ class RetoolingMasterDataController extends Controller
 
 
     /**
-     * Daftar Type / Casting aktif yang tersedia pada satu Line.
-     *
-     * Cycle Time berasal dari line_products, bukan dari tabel castings,
-     * karena produk yang sama dapat memiliki Cycle Time berbeda di Line lain.
+     * Daftar produk aktif pada satu Line dari master PPIC.
      */
     public function products(
         Request $request,
-        ProductionLine $productionLine
+        int $productionLine
     ): JsonResponse {
 
         $this->ensureAdmin();
 
 
-        abort_unless(
-            $productionLine->is_active,
-            404
-        );
+        $lineExists = DB::table('mtc.LINE')
+            ->where('KODE_LN', $productionLine)
+            ->exists();
+
+        abort_unless($lineExists, 404);
+
+        $line = DB::table('mtc.LINE')
+            ->where('KODE_LN', $productionLine)
+            ->first([
+                'KODE_LN as id',
+                DB::raw("COALESCE(NULLIF(kd_ln, ''), NAMA_LN) as code"),
+                'NAMA_LN as name',
+            ]);
 
 
         $search = $this->normalizeSearch(
@@ -134,27 +137,21 @@ class RetoolingMasterDataController extends Controller
         );
 
 
-        $query = LineProduct::query()
-            ->with([
-                'casting:id,code,name,is_active',
+        $query = DB::table('ppic.LINEprd as product')
+            ->join('mtc.LINE as line', 'line.KODE_LN', '=', 'product.KODE_LN')
+            ->where('product.KODE_LN', $productionLine)
+            ->where('product.AKTIF', 1)
+            ->whereNotNull('product.KODE_CST')
+            ->where('product.KODE_CST', '<>', '')
+            ->select([
+                'product.KODE_CST as id',
+                'product.KODE_CST as code',
+                'product.NAMA_CST as name',
+                'product.CT as cycle_time',
+                'product.KODE_LN as production_line_id',
             ])
-            ->where(
-                'production_line_id',
-                $productionLine->id
-            )
-            ->where(
-                'is_active',
-                true
-            )
-            ->whereHas(
-                'casting',
-                fn (Builder $builder) =>
-                    $builder->where(
-                        'is_active',
-                        true
-                    )
-            )
-            ->orderBy('casting_id');
+            ->orderBy('product.KODE_CST')
+            ->distinct();
 
 
         if ($search !== null) {
@@ -164,67 +161,44 @@ class RetoolingMasterDataController extends Controller
                     $search
                 );
 
-            $query->whereHas(
-                'casting',
-                function (Builder $builder) use ($escapedSearch) {
-
-                    $builder
-                        ->where(
-                            'code',
-                            'like',
-                            '%' . $escapedSearch . '%'
-                        )
-                        ->orWhere(
-                            'name',
-                            'like',
-                            '%' . $escapedSearch . '%'
-                        );
-                }
-            );
+            $query->where(function (Builder $builder) use ($escapedSearch) {
+                $builder
+                    ->where('product.KODE_CST', 'like', '%' . $escapedSearch . '%')
+                    ->orWhere('product.NAMA_CST', 'like', '%' . $escapedSearch . '%');
+            });
         }
 
 
         $results =
             $query
                 ->limit(100)
-                ->get([
-                    'id',
-                    'production_line_id',
-                    'casting_id',
-                    'cycle_time',
-                ])
+                ->get()
                 ->map(
-                    function (LineProduct $lineProduct): array {
-
-                        $casting =
-                            $lineProduct->casting;
-
+                    function (object $product): array {
                         $cycleTime =
                             $this->formatCycleTime(
-                                $lineProduct->cycle_time
+                                $product->cycle_time
                             );
 
 
                         return [
                             /*
-                             * Select2 memakai casting_id sebagai value.
+                             * Frontend memakai KODE_CST sebagai value produk.
                              */
-                            'id' =>
-                                $casting->id,
+                            'id' => $product->id,
 
                             'text' =>
-                                $casting->code
+                                $product->code
+                                . ' — '
+                                . $product->name
                                 . ' — CT '
                                 . $cycleTime,
 
-                            'casting_id' =>
-                                $casting->id,
+                            'casting_id' => $product->id,
 
-                            'code' =>
-                                $casting->code,
+                            'code' => $product->code,
 
-                            'name' =>
-                                $casting->name,
+                            'name' => $product->name,
 
                             'cycle_time' =>
                                 $cycleTime,
@@ -232,11 +206,10 @@ class RetoolingMasterDataController extends Controller
                             /*
                              * Berguna untuk debugging / integrasi frontend.
                              */
-                            'line_product_id' =>
-                                $lineProduct->id,
+                            'line_product_id' => $product->id,
 
                             'production_line_id' =>
-                                $lineProduct->production_line_id,
+                                $product->production_line_id,
                         ];
                     }
                 )
@@ -245,15 +218,10 @@ class RetoolingMasterDataController extends Controller
 
         return response()->json([
             'line' => [
-                'id' =>
-                    $productionLine->id,
-
-                'code' =>
-                    $productionLine->code,
-
-                'name' =>
-                    $productionLine->name,
-            ],
+                    'id' => $line->id,
+                    'code' => $line->code,
+                    'name' => $line->name,
+                ],
 
             'results' =>
                 $results,

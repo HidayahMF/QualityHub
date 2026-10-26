@@ -4101,7 +4101,7 @@
                     dropdown.append(
                         createOption(
                             product.code,
-                            `CT ${product.cycle_time}`,
+                            `${product.name || 'Nama produk tidak tersedia'} — CT ${product.cycle_time}`,
                             () => {
                                 selectCallback(
                                     product
@@ -4531,7 +4531,9 @@
                     String(product.id);
 
                 fromSearch.value =
-                    product.code;
+                    product.name
+                        ? `${product.code} — ${product.name}`
+                        : product.code;
 
                 fromCycleTime.textContent =
                     `Cycle Time: ${product.cycle_time}`;
@@ -4560,7 +4562,9 @@
                     String(product.id);
 
                 toSearch.value =
-                    product.code;
+                    product.name
+                        ? `${product.code} — ${product.name}`
+                        : product.code;
 
                 toCycleTime.textContent =
                     `Cycle Time: ${product.cycle_time}`;
@@ -4824,6 +4828,17 @@
 
                     lineSearch.placeholder =
                         'Cari atau pilih Line...';
+
+                    // Jika pengguna membuka field saat request masih berjalan,
+                    // isi ulang dropdown setelah data dari MTC tersedia.
+                    renderLines(lineSearch.value);
+
+                    if (document.activeElement === lineSearch) {
+                        openDropdown(
+                            lineOptions,
+                            lineSearch
+                        );
+                    }
 
                     if (oldLineId !== '') {
 
@@ -5126,7 +5141,10 @@
 
             lineSearch.addEventListener(
                 'focus',
-                () => {
+                async () => {
+                    if (!linesLoaded) {
+                        await loadLines();
+                    }
 
                     renderLines('');
 
@@ -5134,6 +5152,21 @@
                         lineSearch.select();
                     }
 
+                    openDropdown(
+                        lineOptions,
+                        lineSearch
+                    );
+                }
+            );
+
+            lineSearch.addEventListener(
+                'click',
+                async () => {
+                    if (!linesLoaded) {
+                        await loadLines();
+                    }
+
+                    renderLines(lineSearch.value);
                     openDropdown(
                         lineOptions,
                         lineSearch

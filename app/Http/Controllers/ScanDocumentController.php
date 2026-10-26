@@ -427,25 +427,18 @@ class ScanDocumentController extends Controller
             'production_line_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('production_lines', 'id')->where(
-                    fn ($query) => $query->where('is_active', true)
-                ),
             ],
 
             'from_casting_id' => [
                 'nullable',
-                'integer',
-                Rule::exists('castings', 'id')->where(
-                    fn ($query) => $query->where('is_active', true)
-                ),
+                'string',
+                'max:80',
             ],
 
             'to_casting_id' => [
                 'nullable',
-                'integer',
-                Rule::exists('castings', 'id')->where(
-                    fn ($query) => $query->where('is_active', true)
-                ),
+                'string',
+                'max:80',
             ],
 
             /*
@@ -695,10 +688,13 @@ class ScanDocumentController extends Controller
 
         if ($isAxle || $isBrake) {
             if (($validated['production_line_id'] ?? null) !== null) {
-                $productionLineMaster = ProductionLine::query()
-                    ->whereKey($validated['production_line_id'])
-                    ->where('is_active', true)
-                    ->first();
+                $productionLineMaster = DB::table('mtc.LINE')
+                    ->where('KODE_LN', $validated['production_line_id'])
+                    ->first([
+                        'KODE_LN as id',
+                        DB::raw("COALESCE(NULLIF(kd_ln, ''), NAMA_LN) as code"),
+                        'NAMA_LN as name',
+                    ]);
 
                 if (! $productionLineMaster) {
                     throw ValidationException::withMessages([
@@ -945,10 +941,13 @@ class ScanDocumentController extends Controller
                     $toCastingId = $validated['to_casting_id'] ?? null;
 
                     if ($productionLineId !== null || $fromCastingId !== null || $toCastingId !== null) {
-                        $productionLine = ProductionLine::query()
-                            ->whereKey($productionLineId)
-                            ->where('is_active', true)
-                            ->first();
+                        $productionLine = DB::table('mtc.LINE')
+                            ->where('KODE_LN', $productionLineId)
+                            ->first([
+                                'KODE_LN as id',
+                                DB::raw("COALESCE(NULLIF(kd_ln, ''), NAMA_LN) as code"),
+                                'NAMA_LN as name',
+                            ]);
 
                         if ($productionLineId !== null && ! $productionLine) {
                             throw ValidationException::withMessages([
@@ -963,27 +962,20 @@ class ScanDocumentController extends Controller
                         }
 
                         if ($fromCastingId !== null && $toCastingId !== null && $productionLineId !== null) {
-                            $fromLineProduct = LineProduct::query()
-                                ->with(['casting:id,code,name,is_active'])
-                                ->where('production_line_id', $productionLine->id)
-                                ->where('casting_id', $fromCastingId)
-                                ->where('is_active', true)
-                                ->whereHas(
-                                    'casting',
-                                    fn (Builder $query) => $query->where('is_active', true)
-                                )
-                                ->first();
+                            $findPpicProduct = static function (string $code, int $lineId): ?object {
+                                return DB::table('ppic.LINEprd')
+                                    ->where('KODE_LN', $lineId)
+                                    ->where('KODE_CST', $code)
+                                    ->where('AKTIF', 1)
+                                    ->first([
+                                        'KODE_CST as code',
+                                        'NAMA_CST as name',
+                                        'CT as cycle_time',
+                                    ]);
+                            };
 
-                            $toLineProduct = LineProduct::query()
-                                ->with(['casting:id,code,name,is_active'])
-                                ->where('production_line_id', $productionLine->id)
-                                ->where('casting_id', $toCastingId)
-                                ->where('is_active', true)
-                                ->whereHas(
-                                    'casting',
-                                    fn (Builder $query) => $query->where('is_active', true)
-                                )
-                                ->first();
+                            $fromLineProduct = $findPpicProduct($fromCastingId, (int) $productionLine->id);
+                            $toLineProduct = $findPpicProduct($toCastingId, (int) $productionLine->id);
 
                             if (! $fromLineProduct) {
                                 throw ValidationException::withMessages([
@@ -999,13 +991,13 @@ class ScanDocumentController extends Controller
 
                             // Keep legacy metadata for search, detail, and revision history.
                             $validated['line'] = $productionLine->code;
-                            $validated['from_type'] = $fromLineProduct->casting->code;
-                            $validated['to_type'] = $toLineProduct->casting->code;
+                            $validated['from_type'] = $fromLineProduct->code;
+                            $validated['to_type'] = $toLineProduct->code;
 
                             $retoolingMaster = [
                                 'production_line_id' => $productionLine->id,
-                                'from_casting_id' => $fromLineProduct->casting_id,
-                                'to_casting_id' => $toLineProduct->casting_id,
+                                'from_casting_id' => $fromLineProduct->code,
+                                'to_casting_id' => $toLineProduct->code,
                                 'from_cycle_time' => $fromLineProduct->cycle_time,
                                 'to_cycle_time' => $toLineProduct->cycle_time,
                             ];
@@ -1081,7 +1073,7 @@ class ScanDocumentController extends Controller
                 ])->save();
 
                 // Snapshot Cycle Time before master values can change.
-                if ($retoolingMaster !== null) {
+                if (($retoolingMaster['persist'] ?? false) === true) {
                     DocumentRetooling::create([
                         'document_id' => $document->id,
                         'shift' => (int) $validated['shift'],
