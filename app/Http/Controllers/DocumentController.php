@@ -1995,6 +1995,36 @@ class DocumentController extends Controller
             'retooling.toCasting',
         ]);
 
+        $ppicProducts = collect();
+        $ppicProductCodes = array_values(array_filter([
+            $document->scanMetadata?->from_type,
+            $document->scanMetadata?->to_type,
+            $document->retooling?->fromCasting?->code,
+            $document->retooling?->toCasting?->code,
+        ]));
+
+        if ($ppicProductCodes !== []) {
+            $ppicLineCode = $document->scanMetadata?->line;
+            $ppicLineId = $ppicLineCode === null
+                ? null
+                : DB::table('mtc.LINE')
+                    ->where(function ($query) use ($ppicLineCode) {
+                        $query
+                            ->where('kd_ln', $ppicLineCode)
+                            ->orWhere('NAMA_LN', $ppicLineCode);
+                    })
+                    ->value('KODE_LN');
+
+            $ppicProducts = DB::table('ppic.LINEprd')
+                ->whereIn('KODE_CST', $ppicProductCodes)
+                ->where('AKTIF', 1)
+                ->when($ppicLineId !== null, fn ($query) => $query->where('KODE_LN', $ppicLineId))
+                ->orderByDesc('id_eo')
+                ->get(['KODE_CST as code', 'NAMA_CST as name', 'CT as cycle_time'])
+                ->unique(fn (object $product): string => strtolower(trim((string) $product->code)))
+                ->keyBy(fn (object $product): string => strtolower(trim((string) $product->code)));
+        }
+
         $retoolingProcessDate = null;
         $retoolingDate = null;
 
@@ -2205,7 +2235,8 @@ class DocumentController extends Controller
                 'analyticsCellCount',
                 'analyticsCompleteness',
                 'retoolingProcessDate',
-                'retoolingDate'
+                'retoolingDate',
+                'ppicProducts'
             )
         );
     }

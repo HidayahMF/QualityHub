@@ -1828,6 +1828,24 @@
                     return $value === null ? null : substr($value, 0, 5);
                 };
 
+                $ppicProduct = static function ($code) use ($ppicProducts): ?object {
+                    $key = strtolower(trim((string) $code));
+
+                    return $key === '' ? null : $ppicProducts->get($key);
+                };
+
+                $productName = static function ($code) use ($productionValue, $ppicProduct): ?string {
+                    $product = $ppicProduct($code);
+
+                    return $productionValue($product?->name) ?? $productionValue($code);
+                };
+
+                $productCycle = static function ($code) use ($ppicProduct): ?string {
+                    $cycle = $ppicProduct($code)?->cycle_time;
+
+                    return $cycle === null ? null : number_format((float) $cycle, 2, '.', '');
+                };
+
                 $productionDate = static function ($value): ?string {
                     return $value === null
                         ? null
@@ -1909,10 +1927,12 @@
                     if ($retooling !== null) {
                         $lineName = $productionValue($retooling->productionLine?->name);
                         $lineCode = $productionValue($retooling->productionLine?->code);
-                        $fromName = $productionValue($retooling->fromCasting?->code ?? $retooling->fromCasting?->name);
-                        $toName = $productionValue($retooling->toCasting?->code ?? $retooling->toCasting?->name);
-                        $fromCycle = $productionValue($retooling->from_cycle_time);
-                        $toCycle = $productionValue($retooling->to_cycle_time);
+                        $fromCode = $retooling->fromCasting?->code ?? $retooling->fromCasting?->name;
+                        $toCode = $retooling->toCasting?->code ?? $retooling->toCasting?->name;
+                        $fromName = $productName($fromCode);
+                        $toName = $productName($toCode);
+                        $fromCycle = $productionValue($retooling->from_cycle_time) ?? $productCycle($fromCode);
+                        $toCycle = $productionValue($retooling->to_cycle_time) ?? $productCycle($toCode);
                         $shift = $productionValue($retooling->shift);
                         $productionMetadataItems = [
                             ['label' => 'Shift', 'value' => $shift === null ? null : 'Shift '.$shift],
@@ -1932,10 +1952,10 @@
                             ['label' => 'Line', 'value' => $productionValue($scanMetadata?->line)],
                             ['label' => 'Tanggal Proses', 'value' => $productionDate($retoolingProcessDate)],
                             ['label' => 'Tanggal Retooling', 'value' => $productionDate($retoolingDate)],
-                            ['label' => 'Dari Type', 'value' => $productionValue($scanMetadata?->from_type)],
-                            ['label' => 'Cycle Time Dari', 'value' => null],
-                            ['label' => 'Ke Type', 'value' => $productionValue($scanMetadata?->to_type)],
-                            ['label' => 'Cycle Time Ke', 'value' => null],
+                            ['label' => 'Dari Type', 'value' => $productName($scanMetadata?->from_type)],
+                            ['label' => 'Cycle Time Dari', 'value' => $productCycle($scanMetadata?->from_type)],
+                            ['label' => 'Ke Type', 'value' => $productName($scanMetadata?->to_type)],
+                            ['label' => 'Cycle Time Ke', 'value' => $productCycle($scanMetadata?->to_type)],
                             ['label' => 'Jam', 'value' => $productionTime($scanMetadata?->scan_time)],
                         ];
                     }
