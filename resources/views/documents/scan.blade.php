@@ -4100,8 +4100,8 @@
 
                     dropdown.append(
                         createOption(
-                            product.code,
-                            `${product.name || 'Nama produk tidak tersedia'} — CT ${product.cycle_time}`,
+                            product.name || product.code,
+                            `CT ${product.cycle_time}`,
                             () => {
                                 selectCallback(
                                     product
@@ -4513,14 +4513,16 @@
                     'Cycle Time: -';
             }
 
+            function sameProduct(left, right) {
+                return String(left || '').trim().toLowerCase()
+                    === String(right || '').trim().toLowerCase();
+            }
+
             function selectFrom(
                 product
             ) {
 
-                if (
-                    String(toId.value)
-                    === String(product.id)
-                ) {
+                if (sameProduct(toId.value, product.id)) {
                     resetTo();
                 }
 
@@ -4531,9 +4533,7 @@
                     String(product.id);
 
                 fromSearch.value =
-                    product.name
-                        ? `${product.code} — ${product.name}`
-                        : product.code;
+                    product.name || product.code;
 
                 fromCycleTime.textContent =
                     `Cycle Time: ${product.cycle_time}`;
@@ -4548,10 +4548,7 @@
                 product
             ) {
 
-                if (
-                    String(fromId.value)
-                    === String(product.id)
-                ) {
+                if (sameProduct(fromId.value, product.id)) {
                     resetFrom();
                 }
 
@@ -4562,9 +4559,7 @@
                     String(product.id);
 
                 toSearch.value =
-                    product.name
-                        ? `${product.code} — ${product.name}`
-                        : product.code;
+                    product.name || product.code;
 
                 toCycleTime.textContent =
                     `Cycle Time: ${product.cycle_time}`;

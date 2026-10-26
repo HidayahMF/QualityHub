@@ -563,7 +563,14 @@ class ScanDocumentController extends Controller
             $fromCastingId = $validated['from_casting_id'] ?? null;
             $toCastingId = $validated['to_casting_id'] ?? null;
 
-            if ($fromCastingId !== null && $toCastingId !== null && (int) $fromCastingId === (int) $toCastingId) {
+            if (
+                $fromCastingId !== null
+                && $toCastingId !== null
+                && strcasecmp(
+                    trim((string) $fromCastingId),
+                    trim((string) $toCastingId)
+                ) === 0
+            ) {
                 throw ValidationException::withMessages([
                     'to_casting_id' => 'Dari Type dan Ke Type tidak boleh sama.',
                 ]);
