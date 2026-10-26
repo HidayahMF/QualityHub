@@ -1159,6 +1159,8 @@ class ScanDocumentController extends Controller
                             ...($isRetooling ? [
                                 'scan_date' => $validated['scan_date'],
                                 'retooling_date' => $retoolingDate?->toDateString(),
+                                'from_cycle_time' => $retoolingMaster['from_cycle_time'] ?? null,
+                                'to_cycle_time' => $retoolingMaster['to_cycle_time'] ?? null,
                             ] : []),
                             'production_date' => $productionDate,
                             'axle_assy_type' => $validated['axle_assy_type'] ?? null,
