@@ -30,19 +30,19 @@ return [
     /* Maksimum jumlah foto dalam satu dokumen Scan / Capture. */
     'max_files' => (int) env(
         'SMARTFIND_SCAN_MAX_FILES',
-        10
+        100
     ),
 
     /* Total seluruh foto sumber sebelum digabung menjadi PDF. */
     'max_total_source_bytes' => (int) env(
         'SMARTFIND_SCAN_MAX_TOTAL_SOURCE_BYTES',
-        60 * 1024 * 1024
+        200 * 1024 * 1024
     ),
 
     /* Batas akhir PDF gabungan yang disimpan ke private storage. */
     'max_combined_pdf_size_bytes' => (int) env(
         'SMARTFIND_SCAN_MAX_COMBINED_PDF_SIZE_BYTES',
-        50 * 1024 * 1024
+        200 * 1024 * 1024
     ),
 
     'max_width' => (int) env(

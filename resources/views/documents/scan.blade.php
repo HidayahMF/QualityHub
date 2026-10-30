@@ -102,6 +102,7 @@
         >
             @csrf
             <input id="captureSource" type="hidden" name="capture_source" value="{{ old('capture_source', 'upload') }}">
+            <input id="expectedPhotoCount" type="hidden" name="expected_photo_count" value="0">
 
             {{-- File final yang benar-benar dikirim ke backend. JS menjaga urutan files[]. --}}
             <input
@@ -323,7 +324,7 @@
 
 
                     <p class="mt-3 text-center text-xs text-slate-400">
-                        Format: JPG, JPEG, PNG, WEBP, GIF, BMP, TIF, TIFF · Maks. 20 MB/foto · Maks. 10 foto
+                        Format: JPG, JPEG, PNG, WEBP, GIF, BMP, TIF, TIFF · Maks. 20 MB/foto · Maks. 100 foto
                     </p>
 
                     <p class="mt-1 text-center text-[11px] font-medium text-blue-600">
@@ -1444,6 +1445,7 @@
             const uploadInput = document.getElementById('uploadInput');
             const scanFilesInput = document.getElementById('scanFilesInput');
             const scanDocumentForm = document.getElementById('scanDocumentForm');
+            const expectedPhotoCount = document.getElementById('expectedPhotoCount');
 
             const preview = document.getElementById('imagePreview');
             const emptyState = document.getElementById('emptyState');
@@ -1536,8 +1538,8 @@
                 cameraInput.value = '';
                 cameraInput.click();
             }
-            const MAX_PHOTOS = 10;
-            const MAX_TOTAL_BYTES = 60 * 1024 * 1024;
+            const MAX_PHOTOS = 100;
+            const MAX_TOTAL_BYTES = 200 * 1024 * 1024;
 
             // Kamera native HP kadang mengirim foto asli berukuran beberapa MB
             // yang melewati batas PHP di server walaupun validasi Laravel 20 MB.
@@ -2949,7 +2951,7 @@
                     + incoming.reduce((sum, file) => sum + file.size, 0);
 
                 if (projectedBytes > MAX_TOTAL_BYTES) {
-                    alert('Total ukuran foto melebihi 60 MB. Kurangi jumlah atau ukuran foto.');
+                    alert('Total ukuran foto melebihi 200 MB. Kurangi jumlah atau ukuran foto.');
                     return false;
                 }
 
@@ -3454,6 +3456,8 @@
                     alert('Daftar foto tidak dapat disiapkan untuk upload. Coba pilih ulang foto.');
                     return;
                 }
+
+                expectedPhotoCount.value = String(selectedItems.length);
 
                 saveButton.disabled = true;
                 saveButton.textContent = selectedItems.length > 1

@@ -27,6 +27,7 @@ RUN set -eux; \
     a2enmod rewrite; \
     rm -rf /var/lib/apt/lists/*
 
+COPY docker/php-uploads.ini /usr/local/etc/php/conf.d/qualityhub-uploads.ini
 WORKDIR /var/www/html
 
 COPY --from=vendor /app/vendor ./vendor

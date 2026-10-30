@@ -106,12 +106,18 @@ class MultiPageScanPdfService
                 $x = ($pageWidth - $renderWidth) / 2;
                 $y = ($pageHeight - $renderHeight) / 2;
 
+                $fpdfImageType = (
+                    $extension === 'png'
+                    && $sourcePath === $file->getRealPath()
+                ) ? 'PNG' : 'JPG';
+
                 $pdf->Image(
                     $sourcePath,
                     $x,
                     $y,
                     $renderWidth,
-                    $renderHeight
+                    $renderHeight,
+                    $fpdfImageType
                 );
             }
 

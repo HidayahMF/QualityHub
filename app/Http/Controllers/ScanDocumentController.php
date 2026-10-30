@@ -490,6 +490,14 @@ class ScanDocumentController extends Controller
                 Rule::in(['upload', 'camera', 'mixed']),
             ],
 
+            'expected_photo_count' => [
+                'sometimes',
+                'required',
+                'integer',
+                'min:1',
+                'max:' . $maxFiles,
+            ],
+
             'files' => [
                 'required',
                 'array',
@@ -754,6 +762,18 @@ class ScanDocumentController extends Controller
         if ($files === []) {
             throw ValidationException::withMessages([
                 'files' => 'Minimal satu foto Scan / Capture wajib dipilih.',
+            ]);
+        }
+
+        if (
+            $request->exists('expected_photo_count')
+            && (int) $validated['expected_photo_count'] !== count($files)
+        ) {
+            throw ValidationException::withMessages([
+                'files' => 'Jumlah foto yang diterima server tidak lengkap. '
+                    . 'Anda memilih ' . $validated['expected_photo_count']
+                    . ' foto, tetapi server hanya menerima ' . count($files)
+                    . ' foto. Hubungi admin IT untuk memeriksa batas upload PHP.',
             ]);
         }
 
