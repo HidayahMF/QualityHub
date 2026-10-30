@@ -20,7 +20,7 @@
         */
         $canPreviewInBrowser = in_array(
             $extension,
-            ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'tif', 'tiff', 'pdf', 'txt', 'csv', 'docx'],
+            ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'tif', 'tiff', 'pdf', 'txt', 'csv'],
             true
         );
 
