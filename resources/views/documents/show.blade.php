@@ -1846,6 +1846,14 @@
                     return $cycle === null ? null : number_format((float) $cycle, 2, '.', '');
                 };
 
+                $fromCycleSnapshot = $productionValue(
+                    $retoolingCycleTimeSnapshot['from_cycle_time'] ?? null
+                );
+
+                $toCycleSnapshot = $productionValue(
+                    $retoolingCycleTimeSnapshot['to_cycle_time'] ?? null
+                );
+
                 $productionDate = static function ($value): ?string {
                     return $value === null
                         ? null
@@ -1931,8 +1939,13 @@
                         $toCode = $retooling->toCasting?->code ?? $retooling->toCasting?->name;
                         $fromName = $productName($fromCode);
                         $toName = $productName($toCode);
-                        $fromCycle = $productionValue($retooling->from_cycle_time) ?? $productCycle($fromCode);
-                        $toCycle = $productionValue($retooling->to_cycle_time) ?? $productCycle($toCode);
+                        $fromCycle = $fromCycleSnapshot
+                            ?? $productionValue($retooling->from_cycle_time)
+                            ?? $productCycle($fromCode);
+
+                        $toCycle = $toCycleSnapshot
+                            ?? $productionValue($retooling->to_cycle_time)
+                            ?? $productCycle($toCode);
                         $shift = $productionValue($retooling->shift);
                         $productionMetadataItems = [
                             ['label' => 'Shift', 'value' => $shift === null ? null : 'Shift '.$shift],
@@ -1953,9 +1966,19 @@
                             ['label' => 'Tanggal Proses', 'value' => $productionDate($retoolingProcessDate)],
                             ['label' => 'Tanggal Retooling', 'value' => $productionDate($retoolingDate)],
                             ['label' => 'Dari Type', 'value' => $productName($scanMetadata?->from_type)],
-                            ['label' => 'Cycle Time Dari', 'value' => $productCycle($scanMetadata?->from_type)],
+                            [
+                                'label' => 'Cycle Time Dari',
+                                'value' => $fromCycleSnapshot !== null
+                                    ? number_format((float) $fromCycleSnapshot, 2, '.', '')
+                                    : $productCycle($scanMetadata?->from_type),
+                            ],
                             ['label' => 'Ke Type', 'value' => $productName($scanMetadata?->to_type)],
-                            ['label' => 'Cycle Time Ke', 'value' => $productCycle($scanMetadata?->to_type)],
+                            [
+                                'label' => 'Cycle Time Ke',
+                                'value' => $toCycleSnapshot !== null
+                                    ? number_format((float) $toCycleSnapshot, 2, '.', '')
+                                    : $productCycle($scanMetadata?->to_type),
+                            ],
                             ['label' => 'Jam', 'value' => $productionTime($scanMetadata?->scan_time)],
                         ];
                     }

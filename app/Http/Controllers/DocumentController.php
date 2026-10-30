@@ -2093,6 +2093,20 @@ class DocumentController extends Controller
             )
             ->first();
 
+        $retoolingCycleTimeSnapshot = [];
+
+        if ($document->scanMetadata?->scan_type === 'Retooling') {
+            $revisionZero = DocumentVersion::query()
+                ->where('document_id', $document->id)
+                ->where('revision_number', 0)
+                ->first(['metadata_snapshot']);
+
+            $retoolingCycleTimeSnapshot = data_get(
+                $revisionZero?->metadata_snapshot,
+                'scan_metadata',
+                []
+            );
+        }
         $analyticsVersion =
             $currentVersion;
 
@@ -2236,7 +2250,8 @@ class DocumentController extends Controller
                 'analyticsCompleteness',
                 'retoolingProcessDate',
                 'retoolingDate',
-                'ppicProducts'
+                'ppicProducts',
+                'retoolingCycleTimeSnapshot'
             )
         );
     }
