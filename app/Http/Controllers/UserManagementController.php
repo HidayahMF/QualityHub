@@ -10,6 +10,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -351,6 +354,117 @@ class UserManagementController extends Controller
             'Akun '.$user->name.' sekarang aktif.'
         );
     }
+
+    /**
+ * Hapus akun permanen.
+ *
+ * Hanya akun non-Super-Admin yang sudah tidak aktif
+ * dan tidak memiliki hubungan data penting yang boleh dihapus.
+ */
+public function destroy(
+    Request $request,
+    User $user,
+    SessionSecurityService $sessionSecurity
+): RedirectResponse {
+    $this->ensureSuperAdmin();
+    $this->ensureTargetCanBeManaged($user);
+
+    abort_if(
+        $user->id === Auth::id(),
+        403,
+        'Anda tidak dapat menghapus akun sendiri.'
+    );
+
+    $validated = $request->validate([
+        'confirmation' => ['required', 'string', 'max:20'],
+    ]);
+
+    if (trim($validated['confirmation']) !== 'HAPUS') {
+        throw ValidationException::withMessages([
+            'confirmation' => 'Ketik HAPUS untuk mengonfirmasi penghapusan permanen.',
+        ]);
+    }
+
+    $deletedName = $user->name;
+
+    try {
+        DB::transaction(function () use ($request, $user, $sessionSecurity) {
+            $target = User::query()
+                ->lockForUpdate()
+                ->findOrFail($user->id);
+
+            $this->ensureTargetCanBeManaged($target);
+
+            abort_if(
+                $target->id === Auth::id(),
+                403,
+                'Anda tidak dapat menghapus akun sendiri.'
+            );
+
+            if (! in_array($target->account_status, ['inactive', 'rejected'], true)) {
+                throw ValidationException::withMessages([
+                    'user' => 'Hanya akun tidak aktif atau ditolak yang dapat dihapus permanen.',
+                ]);
+            }
+
+            $hasRelatedData =
+                $target->documents()->exists()
+                || $target->favorites()->exists()
+                || $target->activityLogs()->exists()
+                || DB::table('document_versions')
+                    ->where('uploaded_by', $target->id)
+                    ->exists()
+                || DB::table('documents')
+                    ->where('archived_by', $target->id)
+                    ->exists();
+
+            if ($hasRelatedData) {
+                throw ValidationException::withMessages([
+                    'user' => 'Akun tidak dapat dihapus karena masih memiliki dokumen, revisi, favorit, atau riwayat aktivitas. Gunakan Nonaktifkan untuk mempertahankan data QC.',
+                ]);
+            }
+
+            $sessionSecurity->revokeDatabaseSessionsForUser($target);
+
+            DB::table('password_reset_tokens')
+                ->where('email', $target->email)
+                ->delete();
+
+            // Audit mencatat Super Admin yang melakukan penghapusan.
+            ActivityLog::create([
+                'user_id' => Auth::id(),
+                'document_id' => null,
+                'action' => 'delete_user_permanently',
+                'description' => Auth::user()->name
+                    . ' menghapus permanen akun '
+                    . $target->name . '.',
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'metadata' => [
+                    'target_user_id' => $target->id,
+                    'target_employee_id' => $target->employee_id,
+                    'target_name' => $target->name,
+                    'target_email' => $target->email,
+                    'before_status' => $target->account_status,
+                    'after_status' => 'deleted',
+                ],
+            ]);
+
+            $target->delete();
+        });
+    } catch (QueryException $exception) {
+        report($exception);
+
+        return back()->withErrors([
+            'user' => 'Akun masih memiliki hubungan data lain sehingga tidak dapat dihapus. Hubungi admin IT.',
+        ]);
+    }
+
+    return back()->with(
+        'success',
+        'Akun ' . $deletedName . ' berhasil dihapus permanen.'
+    );
+}
 
     private function ensureSuperAdmin(): void
     {

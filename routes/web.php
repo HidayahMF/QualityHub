@@ -467,6 +467,13 @@ Route::middleware([
         [UserManagementController::class, 'activate']
     )->whereNumber('user')->name('users.activate');
 
+    Route::delete(
+        '/users/{user}/destroy',
+        [UserManagementController::class, 'destroy']
+    )
+        ->whereNumber('user')
+        ->name('users.destroy');
+
 
     /*
     |--------------------------------------------------------------------------
