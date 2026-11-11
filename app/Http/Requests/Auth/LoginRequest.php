@@ -51,8 +51,6 @@ class LoginRequest extends FormRequest
             'email' => [
                 'required',
                 'string',
-                'lowercase',
-                'email',
                 'max:255',
             ],
             'password' => [
@@ -90,9 +88,20 @@ class LoginRequest extends FormRequest
             $rememberAllowed
             && $this->boolean('remember');
 
+        $identity = (string) $this->input('email');
+
+        // Kompatibilitas: login lama lewat email tetap berlaku;
+        // ID Karyawan dapat dipakai sebagai username tanpa migrasi data.
+        $email = $identity;
+        if (! filter_var($identity, FILTER_VALIDATE_EMAIL)) {
+            $email = (string) (AppModelsUser::query()
+                ->whereRaw('LOWER(employee_id) = ?', [Str::lower($identity)])
+                ->value('email') ?? '');
+        }
+
         if (! Auth::attempt(
             [
-                'email' => (string) $this->input('email'),
+                'email' => $email,
                 'password' => (string) $this->input('password'),
             ],
             $remember
