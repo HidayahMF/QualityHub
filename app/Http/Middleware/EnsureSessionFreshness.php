@@ -192,6 +192,20 @@ class EnsureSessionFreshness
                 $now
             );
 
+        if (
+            $user->must_change_password
+            && ! $request->routeIs('profile.edit', 'password.update', 'logout')
+        ) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Ubah password sementara sebelum melanjutkan.',
+                ], 403);
+            }
+
+            return redirect()->route('profile.edit')
+                ->with('warning', 'Demi keamanan, Anda wajib mengganti password sementara sebelum mengakses sistem.');
+        }
+
         return $next($request);
     }
 
