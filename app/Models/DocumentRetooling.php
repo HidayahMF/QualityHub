@@ -16,6 +16,13 @@ class DocumentRetooling extends Model
         'from_cycle_time',
         'to_cycle_time',
         'retooling_date',
+        'external_line_id',
+        'external_line_code',
+        'external_line_name',
+        'external_from_casting_code',
+        'external_from_casting_name',
+        'external_to_casting_code',
+        'external_to_casting_name',
     ];
 
 
