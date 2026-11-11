@@ -193,6 +193,81 @@ Alpine.data('qualityHubTypedConfirmation', () => ({
     },
 }));
 
+// Tambahkan KEDUA komponen ini di resources/js/app.js,
+// tepat SEBELUM baris Alpine.start();
+// Jangan ikut menempel komentar instruksi di atas jika tidak diperlukan.
+
+Alpine.data('departmentStatusAction', () => ({
+    requestConfirmation(event) {
+        const form = event.currentTarget;
+
+        if (!(form instanceof HTMLFormElement)) {
+            return;
+        }
+
+        window.dispatchEvent(new CustomEvent('qualityhub-confirm', {
+            detail: {
+                form,
+                title: form.dataset.confirmTitle,
+                message: form.dataset.confirmMessage,
+                confirmText: form.dataset.confirmButton,
+            },
+        }));
+    },
+}));
+
+Alpine.data('departmentStatusConfirm', () => ({
+    open: false,
+    form: null,
+    title: 'Konfirmasi Tindakan',
+    message: 'Pastikan tindakan ini memang ingin dilanjutkan.',
+    confirmText: 'Lanjutkan',
+    submitting: false,
+
+    showConfirmation(event) {
+        if (this.submitting) {
+            return;
+        }
+
+        const detail = event.detail ?? {};
+
+        if (!(detail.form instanceof HTMLFormElement)) {
+            return;
+        }
+
+        this.form = detail.form;
+        this.title = detail.title || 'Konfirmasi Tindakan';
+        this.message = detail.message || 'Pastikan tindakan ini memang ingin dilanjutkan.';
+        this.confirmText = detail.confirmText || 'Lanjutkan';
+        this.open = true;
+    },
+
+    close() {
+        if (this.submitting) {
+            return;
+        }
+
+        this.open = false;
+        this.form = null;
+    },
+
+    confirm() {
+        if (this.submitting || !(this.form instanceof HTMLFormElement)) {
+            return;
+        }
+
+        const target = this.form;
+        this.submitting = true;
+        this.open = false;
+        this.form = null;
+
+        // Native submit menghindari event 'submit' yang sudah memakai .prevent,
+        // tetapi tetap mengirim field CSRF dan spoofed PATCH milik form.
+        HTMLFormElement.prototype.submit.call(target);
+    },
+}));
+
+
 Alpine.start();
 
 /*

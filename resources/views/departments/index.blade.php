@@ -714,12 +714,8 @@
                                                 ? 'Nonaktifkan'
                                                 : 'Aktifkan'
                                             }}"
-                                            x-on:submit.prevent="$dispatch('qualityhub-confirm', {
-                                                form: $event.currentTarget,
-                                                title: $event.currentTarget.dataset.confirmTitle,
-                                                message: $event.currentTarget.dataset.confirmMessage,
-                                                confirmText: $event.currentTarget.dataset.confirmButton
-                                            })"
+                                            x-data="departmentStatusAction"
+                                            x-on:submit.prevent="requestConfirmation"
                                         >
 
                                             @csrf
@@ -834,24 +830,9 @@
     </style>
 
     <div
-        x-data="{
-            open: false,
-            form: null,
-            title: 'Konfirmasi Tindakan',
-            message: 'Pastikan tindakan ini memang ingin dilanjutkan.',
-            confirmText: 'Lanjutkan'
-        }"
-        x-on:qualityhub-confirm.window="
-            form = $event.detail.form;
-            title = $event.detail.title || 'Konfirmasi Tindakan';
-            message = $event.detail.message || 'Pastikan tindakan ini memang ingin dilanjutkan.';
-            confirmText = $event.detail.confirmText || 'Lanjutkan';
-            open = true;
-        "
-        x-on:keydown.escape.window="
-            open = false;
-            form = null;
-        "
+        x-data="departmentStatusConfirm"
+        x-on:qualityhub-confirm.window="showConfirmation"
+        x-on:keydown.escape.window="close"
         x-show="open"
         x-cloak
         class="fixed inset-0 z-[100] flex items-center justify-center p-4"
@@ -863,10 +844,7 @@
             x-show="open"
             x-transition.opacity
             class="absolute inset-0 bg-slate-950/45 backdrop-blur-[2px]"
-            x-on:click="
-                open = false;
-                form = null;
-            "
+            x-on:click="close"
         ></div>
 
         <section
@@ -923,10 +901,7 @@
                     <button
                         type="button"
                         class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:ring-offset-2"
-                        x-on:click="
-                            open = false;
-                            form = null;
-                        "
+                        x-on:click="close"
                     >
                         Batal
                     </button>
@@ -935,15 +910,7 @@
                         type="button"
                         class="inline-flex items-center justify-center rounded-xl bg-blue-800 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-900/15 transition hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                         x-text="confirmText"
-                        x-on:click="
-                            const target = form;
-                            open = false;
-                            form = null;
-
-                            if (target) {
-                                target.submit();
-                            }
-                        "
+                        x-on:click="confirm"
                     ></button>
                 </div>
             </div>
@@ -951,4 +918,3 @@
     </div>
 
 </x-app-layout>
-
