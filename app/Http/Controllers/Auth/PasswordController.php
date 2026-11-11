@@ -55,6 +55,7 @@ class PasswordController extends Controller
                 $validated['password']
             ),
             'remember_token' => Str::random(60),
+            'must_change_password' => false,
         ])->save();
 
         $sessionSecurity->rotateAfterPasswordChange(
