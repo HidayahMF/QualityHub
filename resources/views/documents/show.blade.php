@@ -1933,18 +1933,26 @@
                     $productionMetadataSubtitle = 'Data perubahan type saat dokumen ini dibuat.';
 
                     if ($retooling !== null) {
-                        $lineName = $productionValue($retooling->productionLine?->name);
-                        $lineCode = $productionValue($retooling->productionLine?->code);
-                        $fromCode = $retooling->fromCasting?->code ?? $retooling->fromCasting?->name;
-                        $toCode = $retooling->toCasting?->code ?? $retooling->toCasting?->name;
-                        $fromName = $productName($fromCode);
-                        $toName = $productName($toCode);
-                        $fromCycle = $fromCycleSnapshot
-                            ?? $productionValue($retooling->from_cycle_time)
+                        $lineName = $productionValue($retooling->external_line_name)
+                            ?? $productionValue($retooling->productionLine?->name);
+                        $lineCode = $productionValue($retooling->external_line_code)
+                            ?? $productionValue($retooling->productionLine?->code);
+                        $fromCode = $retooling->external_from_casting_code
+                            ?? $retooling->fromCasting?->code
+                            ?? $retooling->fromCasting?->name;
+                        $toCode = $retooling->external_to_casting_code
+                            ?? $retooling->toCasting?->code
+                            ?? $retooling->toCasting?->name;
+                        $fromName = $productionValue($retooling->external_from_casting_name)
+                            ?? $productName($fromCode);
+                        $toName = $productionValue($retooling->external_to_casting_name)
+                            ?? $productName($toCode);
+                        $fromCycle = $productionValue($retooling->from_cycle_time)
+                            ?? $fromCycleSnapshot
                             ?? $productCycle($fromCode);
 
-                        $toCycle = $toCycleSnapshot
-                            ?? $productionValue($retooling->to_cycle_time)
+                        $toCycle = $productionValue($retooling->to_cycle_time)
+                            ?? $toCycleSnapshot
                             ?? $productCycle($toCode);
                         $shift = $productionValue($retooling->shift);
                         $productionMetadataItems = [
