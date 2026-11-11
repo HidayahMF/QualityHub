@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class AdminAccountManagementTest extends TestCase
@@ -97,29 +98,37 @@ class AdminAccountManagementTest extends TestCase
         ]);
     }
 
-    public function test_admin_and_employee_cannot_create_or_reset_other_users(): void
+    public static function unauthorizedRoles(): array
     {
+        return [
+            'document admin' => ['admin'],
+            'employee' => ['user'],
+        ];
+    }
+
+    #[DataProvider('unauthorizedRoles')]
+    public function test_admin_and_employee_cannot_create_or_reset_other_users(string $role): void
+    {
+        // Each role has its own PHPUnit test session; prevents reusing
+        // session-security bindings across different authenticated users.
         $target = User::factory()->create(['role' => 'user']);
         $department = $this->department();
+        $actor = User::factory()->create(['role' => $role]);
 
-        foreach (['admin', 'user'] as $role) {
-            $actor = User::factory()->create(['role' => $role]);
-
-            $this->actingAs($actor)->get(route('users.create'))->assertForbidden();
-            $this->actingAs($actor)
-                ->post(route('users.store'), $this->accountInput($department))
-                ->assertForbidden();
-            $this->actingAs($actor)
-                ->get(route('users.password.edit', $target))
-                ->assertForbidden();
-            $this->actingAs($actor)
-                ->patch(route('users.password.update', $target), [
-                    'current_password' => 'password',
-                    'password' => self::OTHER_PASSWORD,
-                    'password_confirmation' => self::OTHER_PASSWORD,
-                ])
-                ->assertForbidden();
-        }
+        $this->actingAs($actor)->get(route('users.create'))->assertForbidden();
+        $this->actingAs($actor)
+            ->post(route('users.store'), $this->accountInput($department))
+            ->assertForbidden();
+        $this->actingAs($actor)
+            ->get(route('users.password.edit', $target))
+            ->assertForbidden();
+        $this->actingAs($actor)
+            ->patch(route('users.password.update', $target), [
+                'current_password' => 'password',
+                'password' => self::OTHER_PASSWORD,
+                'password_confirmation' => self::OTHER_PASSWORD,
+            ])
+            ->assertForbidden();
 
         $this->assertDatabaseMissing('users', [
             'email' => 'employee.new@example.test',
