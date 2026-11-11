@@ -94,7 +94,7 @@ class LoginRequest extends FormRequest
         // ID Karyawan dapat dipakai sebagai username tanpa migrasi data.
         $email = $identity;
         if (! filter_var($identity, FILTER_VALIDATE_EMAIL)) {
-            $email = (string) (AppModelsUser::query()
+            $email = (string) (\App\Models\User::query()
                 ->whereRaw('LOWER(employee_id) = ?', [Str::lower($identity)])
                 ->value('email') ?? '');
         }
