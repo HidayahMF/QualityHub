@@ -9,6 +9,7 @@ use App\Models\DocumentRetooling;
 use App\Models\DocumentVersion;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -29,14 +30,24 @@ class RetoolingExternalSnapshotTest extends TestCase
             return;
         }
 
-        $pdo = DB::connection()->getPdo();
-        $pdo->exec("ATTACH DATABASE ':memory:' AS mtc");
-        $pdo->exec("ATTACH DATABASE ':memory:' AS ppic");
+        // RefreshDatabase may restore the cached in-memory PDO from an earlier
+        // feature test. Attach fixtures to that actual PDO before transaction start.
+        $connectionName = config('database.default');
+        $pdo = RefreshDatabaseState::$inMemoryConnections[$connectionName]
+            ?? DB::connection()->getPdo();
 
-        DB::statement('CREATE TABLE "mtc"."LINE" (
+        $names = $pdo->query('PRAGMA database_list')->fetchAll(\PDO::FETCH_COLUMN, 1);
+        if (! in_array('mtc', $names, true)) {
+            $pdo->exec("ATTACH DATABASE ':memory:' AS mtc");
+        }
+        if (! in_array('ppic', $names, true)) {
+            $pdo->exec("ATTACH DATABASE ':memory:' AS ppic");
+        }
+
+        $pdo->exec('CREATE TABLE IF NOT EXISTS "mtc"."LINE" (
             "KODE_LN" INTEGER PRIMARY KEY, "kd_ln" TEXT, "NAMA_LN" TEXT
         )');
-        DB::statement('CREATE TABLE "ppic"."LINEprd" (
+        $pdo->exec('CREATE TABLE IF NOT EXISTS "ppic"."LINEprd" (
             "id_eo" INTEGER PRIMARY KEY, "KODE_LN" INTEGER,
             "KODE_CST" TEXT, "NAMA_CST" TEXT, "CT" REAL, "AKTIF" INTEGER
         )');
@@ -148,7 +159,7 @@ class RetoolingExternalSnapshotTest extends TestCase
         $this->assertSame('22.00', $snapshot->to_cycle_time);
         $this->assertSame('2026-11-11', $snapshot->retooling_date?->toDateString());
         $this->assertSame('CAST_A', $revisionZero->metadata_snapshot['scan_metadata']['from_type']);
-        $this->assertSame('25.0', (string) $revisionZero->metadata_snapshot['scan_metadata']['from_cycle_time']);
+        $this->assertSame('25.00', number_format((float) $revisionZero->metadata_snapshot['scan_metadata']['from_cycle_time'], 2, '.', ''));
 
         // Historical view should not depend on later edits to master PPIC/MTC.
         DB::table('mtc.LINE')->where('KODE_LN', 902)
