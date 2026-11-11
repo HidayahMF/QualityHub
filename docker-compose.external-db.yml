@@ -61,10 +61,13 @@ services:
       AI_SMART_SEARCH_TOP_K: ${AI_SMART_SEARCH_TOP_K:-20}
       AI_SMART_SEARCH_CANDIDATE_LIMIT: ${AI_SMART_SEARCH_CANDIDATE_LIMIT:-250}
       MAIL_MAILER: ${MAIL_MAILER:-log}
+      MAIL_SCHEME: ${MAIL_SCHEME:-smtp}
       MAIL_HOST: ${MAIL_HOST:-127.0.0.1}
       MAIL_PORT: ${MAIL_PORT:-2525}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
       MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-hello@example.com}
-      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-BMC SmartFind}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-BMC QualityHub}
     volumes:
       - app_storage:/var/www/html/storage/app
       - app_logs:/var/www/html/storage/logs
