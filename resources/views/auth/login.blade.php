@@ -131,7 +131,7 @@
                                font-semibold
                                text-slate-700"
                     >
-                        Alamat Email
+                        Email atau ID Karyawan
                     </label>
 
 
@@ -163,13 +163,13 @@
 
                         <input
                             id="email"
-                            type="email"
+                            type="text"
                             name="email"
                             value="{{ old('email') }}"
                             required
                             autofocus
                             autocomplete="username"
-                            placeholder="nama@bmc.co.id"
+                            placeholder="nama@bmc.co.id atau ID Karyawan"
                             class="w-full
                                    rounded-xl
                                    border-slate-200
