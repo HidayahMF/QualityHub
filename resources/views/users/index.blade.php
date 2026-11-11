@@ -58,6 +58,8 @@
         </div>
 
 
+        <div class="flex flex-wrap items-center gap-3">
+            <a href="{{ route('users.create') }}" class="inline-flex items-center rounded-xl bg-blue-800 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-900">+ Tambah Pengguna</a>
         <div
             class="inline-flex
                    items-center
@@ -77,6 +79,7 @@
             ></span>
 
             Akses Administrator
+        </div>
         </div>
 
     </section>
@@ -450,6 +453,8 @@
                     Super Admin
                 </option>
 
+                <option value="admin" @selected(request('role') === 'admin')>Admin Dokumen</option>
+
                 <option
                     value="user"
                     @selected(request('role') === 'user')
@@ -661,7 +666,8 @@
                                     >
                                         {{ match($user->role) {
                                             'super_admin' => 'Super Admin',
-                                            'user' => 'Pengguna',
+                                            'admin' => 'Admin Dokumen',
+                                            'user' => 'Karyawan',
                                             default => ucwords(str_replace('_', ' ', $user->role)),
                                         } }}
                                     </span>
@@ -851,6 +857,13 @@
 
                                             </form>
 
+                                        @endif
+
+                                        @if(! $user->isSuperAdmin())
+                                            <a href="{{ route('users.password.edit', $user) }}"
+                                                class="rounded-lg bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100">
+                                                Reset Password
+                                            </a>
                                         @endif
 
                                         @if(

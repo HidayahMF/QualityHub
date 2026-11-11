@@ -1,5 +1,11 @@
 <x-app-layout>
 
+    @if($user->must_change_password)
+        <div role="alert" class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm font-semibold text-amber-800">
+            Demi keamanan, password sementara wajib diganti sekarang. Gunakan formulir Ubah Password di bawah.
+        </div>
+    @endif
+
     {{-- ========================================================= --}}
     {{-- PROFILE HEADER --}}
     {{-- ========================================================= --}}

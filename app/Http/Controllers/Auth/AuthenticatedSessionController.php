@@ -53,6 +53,11 @@ class AuthenticatedSessionController extends Controller
             'last_login_at' => now(),
         ]);
 
+        if ($user->must_change_password) {
+            return redirect()->route('profile.edit')
+                ->with('warning', 'Anda menggunakan password sementara. Ubah password sebelum mengakses sistem.');
+        }
+
         return redirect()->intended(
             route(
                 'dashboard',

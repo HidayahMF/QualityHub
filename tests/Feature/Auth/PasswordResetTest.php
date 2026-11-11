@@ -3,156 +3,47 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
-use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class PasswordResetTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const NEW_PASSWORD =
-        'ResetQualityHub#2026Pass';
-
-    protected function setUp(): void
+    public function test_forgot_password_page_directs_employee_to_super_admin(): void
     {
-        parent::setUp();
-
-        /*
-        | PHPUnit default project memakai SESSION_DRIVER=array.
-        | Test reset password ini sengaja memverifikasi pencabutan row
-        | session database, jadi driver harus disamakan dengan konfigurasi
-        | aplikasi BMC QualityHub yang memakai database session.
-        */
-        config([
-            'session.driver' => 'database',
-        ]);
+        $this->get('/forgot-password')
+            ->assertOk()
+            ->assertSee('Hubungi Super Admin');
     }
 
-    public function test_reset_password_link_screen_can_be_rendered(): void
+    public function test_anonymous_email_password_reset_is_disabled(): void
     {
-        $response = $this->get('/forgot-password');
-
-        $response->assertStatus(200);
-    }
-
-    public function test_reset_password_link_can_be_requested(): void
-    {
-        Notification::fake();
-
-        $user = User::factory()->create();
-
         $this->post('/forgot-password', [
-            'email' => $user->email,
-        ]);
+            'email' => 'user@example.test',
+        ])->assertMethodNotAllowed();
 
-        Notification::assertSentTo(
-            $user,
-            ResetPassword::class
-        );
+        $this->get('/reset-password/some-token')->assertNotFound();
     }
 
-    public function test_reset_request_does_not_reveal_unknown_account(): void
+    public function test_authenticated_user_can_change_own_password(): void
     {
-        Notification::fake();
-
-        $response = $this->post('/forgot-password', [
-            'email' => 'unknown@example.com',
-        ]);
-
-        $response
-            ->assertSessionHasNoErrors()
-            ->assertSessionHas(
-                'status',
-                'Jika alamat email terdaftar, tautan pengaturan ulang kata sandi akan dikirim.'
-            );
-    }
-
-    public function test_reset_password_screen_can_be_rendered(): void
-    {
-        Notification::fake();
-
-        $user = User::factory()->create();
-
-        $this->post('/forgot-password', [
-            'email' => $user->email,
-        ]);
-
-        Notification::assertSentTo(
-            $user,
-            ResetPassword::class,
-            function ($notification) {
-                $response = $this->get(
-                    '/reset-password/'
-                    . $notification->token
-                );
-
-                $response->assertStatus(200);
-
-                return true;
-            }
-        );
-    }
-
-    public function test_password_can_be_reset_with_valid_token(): void
-    {
-        Notification::fake();
-
         $user = User::factory()->create([
-            'remember_token' => 'remember-before-reset',
+            'must_change_password' => true,
         ]);
 
-        $oldRememberToken = $user->remember_token;
+        $this->actingAs($user)
+            ->put(route('password.update'), [
+                'current_password' => 'password',
+                'password' => 'Fresh#Quality2026Pass',
+                'password_confirmation' => 'Fresh#Quality2026Pass',
+            ])
+            ->assertSessionHasNoErrors();
 
-        DB::table('sessions')->insert([
-            'id' => 'reset-old-session',
-            'user_id' => $user->id,
-            'ip_address' => '127.0.0.1',
-            'user_agent' => 'PHPUnit',
-            'payload' => '',
-            'last_activity' => time(),
-        ]);
+        $user->refresh();
 
-        $this->post('/forgot-password', [
-            'email' => $user->email,
-        ]);
-
-        Notification::assertSentTo(
-            $user,
-            ResetPassword::class,
-            function ($notification) use ($user, $oldRememberToken) {
-                $response = $this->post(
-                    '/reset-password',
-                    [
-                        'token' => $notification->token,
-                        'email' => $user->email,
-                        'password' => self::NEW_PASSWORD,
-                        'password_confirmation' => self::NEW_PASSWORD,
-                    ]
-                );
-
-                $response
-                    ->assertSessionHasNoErrors()
-                    ->assertRedirect(route('login'));
-
-                $user->refresh();
-
-                $this->assertNotSame(
-                    $oldRememberToken,
-                    $user->remember_token
-                );
-
-                $this->assertDatabaseMissing(
-                    'sessions',
-                    [
-                        'id' => 'reset-old-session',
-                    ]
-                );
-
-                return true;
-            }
-        );
+        $this->assertTrue(Hash::check('Fresh#Quality2026Pass', $user->password));
+        $this->assertFalse($user->must_change_password);
     }
 }

@@ -12,6 +12,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ScanDocumentController;
 use App\Http\Controllers\RetoolingMasterDataController;
 use App\Http\Controllers\UserManagementController;
+use App\Http\Controllers\AdminAccountController;
 use App\Http\Middleware\EnsureActiveAccount;
 use App\Http\Middleware\EnsureSessionFreshness;
 use App\Http\Middleware\SecurityHeaders;
@@ -446,6 +447,19 @@ Route::middleware([
         '/users',
         [UserManagementController::class, 'index']
     )->name('users.index');
+
+    Route::get('/users/create', [AdminAccountController::class, 'create'])
+        ->name('users.create');
+    Route::post('/users', [AdminAccountController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('users.store');
+    Route::get('/users/{user}/reset-password', [AdminAccountController::class, 'editPassword'])
+        ->whereNumber('user')
+        ->name('users.password.edit');
+    Route::patch('/users/{user}/reset-password', [AdminAccountController::class, 'updatePassword'])
+        ->whereNumber('user')
+        ->middleware('throttle:5,1')
+        ->name('users.password.update');
 
     Route::patch(
         '/users/{user}/approve',
