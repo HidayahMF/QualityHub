@@ -51,6 +51,12 @@ class AdminAccountController extends Controller
     {
         $this->authorizeSuperAdmin();
 
+        $request->merge([
+            'email' => Str::lower(trim((string) $request->input('email'))),
+            'name' => trim((string) $request->input('name')),
+            'employee_id' => trim((string) $request->input('employee_id')),
+        ]);
+
         $validated = $request->validate([
             'employee_id' => ['required', 'string', 'max:50', Rule::unique('users', 'employee_id')],
             'name' => ['required', 'string', 'min:2', 'max:255'],
