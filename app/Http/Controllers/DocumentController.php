@@ -1996,12 +1996,19 @@ class DocumentController extends Controller
         ]);
 
         $ppicProducts = collect();
-        $ppicProductCodes = array_values(array_filter([
-            $document->scanMetadata?->from_type,
-            $document->scanMetadata?->to_type,
-            $document->retooling?->fromCasting?->code,
-            $document->retooling?->toCasting?->code,
-        ]));
+
+        // New Retooling snapshots have immutable names and cycle times.
+        // Do not query a changing or temporarily unavailable PPIC database
+        // merely to render the historical detail page.
+        $hasExternalRetoolingSnapshot = $document->retooling?->external_line_id !== null;
+        $ppicProductCodes = $hasExternalRetoolingSnapshot
+            ? []
+            : array_values(array_filter([
+                $document->scanMetadata?->from_type,
+                $document->scanMetadata?->to_type,
+                $document->retooling?->fromCasting?->code,
+                $document->retooling?->toCasting?->code,
+            ]));
 
         if ($ppicProductCodes !== []) {
             $ppicLineCode = $document->scanMetadata?->line;
