@@ -1021,10 +1021,30 @@ class ScanDocumentController extends Controller
                             $validated['from_type'] = $fromLineProduct->code;
                             $validated['to_type'] = $toLineProduct->code;
 
+                            // Source identifiers come from mtc/ppic, NOT the local
+                            // production_lines/castings FK tables. Preserve their
+                            // immutable values separately, without guessing ID mappings.
+                            foreach ([
+                                'from_casting_id' => $fromLineProduct,
+                                'to_casting_id' => $toLineProduct,
+                            ] as $field => $product) {
+                                if (! is_numeric($product->cycle_time)
+                                    || (float) $product->cycle_time < 0
+                                    || (float) $product->cycle_time >= 100000000) {
+                                    throw ValidationException::withMessages([
+                                        $field => 'Cycle Time master PPIC tidak valid.',
+                                    ]);
+                                }
+                            }
+
                             $retoolingMaster = [
-                                'production_line_id' => $productionLine->id,
-                                'from_casting_id' => $fromLineProduct->code,
-                                'to_casting_id' => $toLineProduct->code,
+                                'external_line_id' => (string) $productionLine->id,
+                                'external_line_code' => (string) $productionLine->code,
+                                'external_line_name' => (string) $productionLine->name,
+                                'external_from_casting_code' => (string) $fromLineProduct->code,
+                                'external_from_casting_name' => (string) $fromLineProduct->name,
+                                'external_to_casting_code' => (string) $toLineProduct->code,
+                                'external_to_casting_name' => (string) $toLineProduct->name,
                                 'from_cycle_time' => $fromLineProduct->cycle_time,
                                 'to_cycle_time' => $toLineProduct->cycle_time,
                             ];
@@ -1100,13 +1120,21 @@ class ScanDocumentController extends Controller
                 ])->save();
 
                 // Snapshot Cycle Time before master values can change.
-                if (($retoolingMaster['persist'] ?? false) === true) {
+                if ($retoolingMaster !== null) {
                     DocumentRetooling::create([
                         'document_id' => $document->id,
                         'shift' => (int) $validated['shift'],
-                        'production_line_id' => $retoolingMaster['production_line_id'],
-                        'from_casting_id' => $retoolingMaster['from_casting_id'],
-                        'to_casting_id' => $retoolingMaster['to_casting_id'],
+                        // Legacy local FKs are intentionally null for external master data.
+                        'production_line_id' => null,
+                        'from_casting_id' => null,
+                        'to_casting_id' => null,
+                        'external_line_id' => $retoolingMaster['external_line_id'],
+                        'external_line_code' => $retoolingMaster['external_line_code'],
+                        'external_line_name' => $retoolingMaster['external_line_name'],
+                        'external_from_casting_code' => $retoolingMaster['external_from_casting_code'],
+                        'external_from_casting_name' => $retoolingMaster['external_from_casting_name'],
+                        'external_to_casting_code' => $retoolingMaster['external_to_casting_code'],
+                        'external_to_casting_name' => $retoolingMaster['external_to_casting_name'],
                         'from_cycle_time' => $retoolingMaster['from_cycle_time'],
                         'to_cycle_time' => $retoolingMaster['to_cycle_time'],
                         'retooling_date' => $retoolingDate?->toDateString(),
