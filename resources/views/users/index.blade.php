@@ -853,6 +853,25 @@
 
                                         @endif
 
+                                        @if(
+    ! $user->isSuperAdmin()
+    && in_array(
+        $user->account_status,
+        ['inactive', 'rejected'],
+        true
+    )
+)
+    <button
+        type="button"
+        x-on:click.prevent="$dispatch('open-modal', 'delete-user-{{ $user->id }}')"
+        class="rounded-lg bg-red-50 px-3 py-2
+               text-xs font-semibold text-red-700
+               hover:bg-red-100 transition"
+    >
+        Hapus Permanen
+    </button>
+@endif
+
                                     </div>
 
                                 </td>
@@ -918,5 +937,49 @@
                 confirmLabel="Nonaktifkan"
             />
         @endif
+
+        @if(
+    ! $user->isSuperAdmin()
+    && in_array(
+        $user->account_status,
+        ['inactive', 'rejected'],
+        true
+    )
+)
+    <x-confirmation-modal
+        name="delete-user-{{ $user->id }}"
+        :action="route('users.destroy', $user)"
+        method="DELETE"
+        variant="danger"
+        title="Hapus Akun Permanen?"
+        description="Akun ini akan dihapus permanen dari QualityHub. Tindakan ini tidak dapat dibatalkan."
+        confirmLabel="Lanjutkan"
+        typedConfirmation
+        typedConfirmLabel="HAPUS PERMANEN"
+    >
+        <dl class="mt-4 space-y-2 rounded-xl border border-red-100 bg-red-50/50 p-4 text-sm">
+            <div>
+                <dt class="font-semibold text-slate-700">Nama Akun</dt>
+                <dd class="break-words text-slate-900">
+                    {{ $user->name }}
+                </dd>
+            </div>
+
+            <div>
+                <dt class="font-semibold text-slate-700">Email</dt>
+                <dd class="break-all text-slate-900">
+                    {{ $user->email }}
+                </dd>
+            </div>
+
+            <div>
+                <dt class="font-semibold text-slate-700">Status</dt>
+                <dd class="text-slate-900">
+                    {{ ucfirst($user->account_status) }}
+                </dd>
+            </div>
+        </dl>
+    </x-confirmation-modal>
+@endif
     @endforeach
 </x-app-layout>
