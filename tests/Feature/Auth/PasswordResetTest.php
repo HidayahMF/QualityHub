@@ -28,6 +28,8 @@ class PasswordResetTest extends TestCase
         */
         config([
             'session.driver' => 'database',
+            // Notification::fake() intercepts mail; no real SMTP connection in tests.
+            'mail.default' => 'smtp',
         ]);
     }
 
@@ -66,8 +68,51 @@ class PasswordResetTest extends TestCase
             ->assertSessionHasNoErrors()
             ->assertSessionHas(
                 'status',
-                'Jika alamat email terdaftar, tautan pengaturan ulang kata sandi akan dikirim.'
+                'Jika alamat email terdaftar, sistem akan mencoba mengirimkan tautan pengaturan ulang kata sandi. Jika tidak diterima, hubungi administrator IT.'
             );
+    }
+
+    public function test_reset_link_is_blocked_for_log_and_array_mailers(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create();
+
+        foreach (['log', 'array'] as $mailer) {
+            config(['mail.default' => $mailer]);
+
+            $this->post('/forgot-password', [
+                'email' => $user->email,
+            ])->assertSessionHasErrors('email');
+        }
+
+        Notification::assertNothingSent();
+
+        $this->assertDatabaseMissing('password_reset_tokens', [
+            'email' => $user->email,
+        ]);
+    }
+
+    public function test_reset_link_is_blocked_if_failover_contains_log(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create();
+
+        config([
+            'mail.default' => 'failover',
+            'mail.mailers.failover.mailers' => ['smtp', 'log'],
+        ]);
+
+        $this->post('/forgot-password', [
+            'email' => $user->email,
+        ])->assertSessionHasErrors('email');
+
+        Notification::assertNothingSent();
+
+        $this->assertDatabaseMissing('password_reset_tokens', [
+            'email' => $user->email,
+        ]);
     }
 
     public function test_reset_password_screen_can_be_rendered(): void
