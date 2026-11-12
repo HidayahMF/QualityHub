@@ -13,10 +13,12 @@ photos; the UI retains manual crop, reordering and page numbers.
 
 ## Technical mechanism
 
-- 1–50 source photos retain the existing single-request upload. Above 50,
-  the browser starts an authenticated private batch session, uploads ten
-  photos per HTTP request, and finally submits **only** metadata and a
-  batch ID to the existing ScanDocumentController transaction.
+- Desktop uploads of 1–50 photos retain the existing single-request path.
+  **All Android/iPhone uploads**, and desktop uploads above 50 photos,
+  use a private authenticated batch session of up to ten photos per HTTP
+  request. The final request submits **only** metadata and a batch ID
+  into the existing ScanDocumentController transaction; this avoids
+  Safari DataTransfer limitations.
 - Backend reconstructs the verified staged photo files in their original
   sequence. Uploaded images are scanned again by ScanImageSecurityService,
   then MultiPageScanPdfService produces a single PDF.
@@ -59,6 +61,7 @@ php -l app/Http/Controllers/ScanDocumentController.php
 php -l routes/web.php
 
 php artisan test --filter=ScanUploadBatchTest
+php artisan test --filter=ScanThousandPageUiTest
 php artisan test --filter=MultiPageScanPdfServiceTest
 php artisan test --filter=ScanManualPhotoEditorTest
 php artisan test --filter=DocumentScanTypeManagementTest
