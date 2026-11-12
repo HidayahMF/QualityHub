@@ -1824,7 +1824,7 @@
             let activePhotoIndex = -1;
 
             scanLargeMode.addEventListener('change', () => {
-                if (selectedItems.length > 0) {
+                if (selectedItems.length > 0 || galleryPhotoProcessing || cameraPhotoProcessing || stagedUploadBusy) {
                     scanLargeMode.checked = !scanLargeMode.checked;
                     alert('Pilih Mode 1.000 Halaman sebelum menambahkan foto. Hapus foto yang sudah ada jika ingin mengganti mode.');
                     return;
@@ -3345,14 +3345,16 @@
 
             function syncFilesToForm() {
                 try {
-                    const transfer = new DataTransfer();
                     if (selectedItems.length > BATCH_THRESHOLD) {
-                        // Large uploads are staged in groups of ten, not
-                        // sent through one multipart POST (PHP max_file_uploads).
-                        scanFilesInput.files = transfer.files;
+                        // Safari on iPhone does not consistently support the
+                        // DataTransfer constructor. Skip it entirely for large
+                        // uploads: files are sent in ten-photo batches instead.
+                        scanFilesInput.disabled = true;
                         return true;
                     }
 
+                    scanFilesInput.disabled = false;
+                    const transfer = new DataTransfer();
                     selectedItems.forEach(item => transfer.items.add(item.file));
                     scanFilesInput.files = transfer.files;
                     return scanFilesInput.files.length === selectedItems.length;
