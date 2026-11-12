@@ -3109,7 +3109,7 @@
 
 
             async function applyEditsToFile() {
-                if (editorBusy || !originalFile || !originalImage) return;
+                if (editorBusy || stagedUploadBusy || !originalFile || !originalImage) return;
                 editorBusy = true;
                 applyEditButton.disabled = true;
                 manualCropButton.disabled = true;
@@ -3157,7 +3157,7 @@
             }
 
             function openManualCrop() {
-                if (editorBusy || !originalFile || activePhotoIndex < 0) return;
+                if (editorBusy || stagedUploadBusy || !originalFile || activePhotoIndex < 0) return;
                 try {
                     renderEditedCanvas(manualCropCanvas);
                     cropSourceIndex = activePhotoIndex;
@@ -3642,7 +3642,7 @@
             // ============================================================
             document.querySelectorAll('[data-edit-action]').forEach(button => {
                 button.addEventListener('click', () => {
-                    if (editorBusy) return;
+                    if (editorBusy || stagedUploadBusy) return;
                     const action = button.dataset.editAction;
                     if (action === 'rotate-left') editState.rotation -= 90;
                     if (action === 'rotate-right') editState.rotation += 90;
@@ -3657,7 +3657,7 @@
             zoomRange.addEventListener('input', e => { editState.zoom = Number(e.target.value); renderEditorPreview(); });
             applyEditButton.addEventListener('click', applyEditsToFile);
             retakeButton.addEventListener('click', () => {
-                if (editorBusy) return;
+                if (editorBusy || stagedUploadBusy) return;
                 resetEditor();
                 replaceOnNextCapture = activePhotoIndex >= 0;
 
@@ -3830,6 +3830,7 @@
             // OPEN CAMERA BUTTON
             // ============================================================
             openCameraButton.addEventListener('click', () => {
+                if (stagedUploadBusy) return;
 
                 replaceOnNextCapture = false;
 
