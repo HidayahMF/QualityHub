@@ -2924,7 +2924,8 @@
                 }
             }
 
-            function closeManualCrop() {
+            function closeManualCrop(force = false) {
+                if (editorBusy && !force) return;
                 cropDrag = null;
                 cropSourceIndex = -1;
                 manualCropModal.classList.add('hidden');
@@ -2932,6 +2933,7 @@
             }
 
             manualCropStage.addEventListener('pointerdown', event => {
+                if (editorBusy) return;
                 if (event.pointerType === 'mouse' && event.button !== 0) return;
                 event.preventDefault();
 
@@ -2948,7 +2950,7 @@
             });
 
             manualCropStage.addEventListener('pointermove', event => {
-                if (!cropDrag || cropDrag.pointerId !== event.pointerId) return;
+                if (editorBusy || !cropDrag || cropDrag.pointerId !== event.pointerId) return;
                 event.preventDefault();
 
                 const point = cropPointerPosition(event);
@@ -3033,7 +3035,7 @@
                     if (!ctx) throw new Error('Canvas tidak tersedia di browser.');
                     ctx.drawImage(manualCropCanvas, sx, sy, width, height, 0, 0, width, height);
                     await replaceActivePhotoFromCanvas(result);
-                    closeManualCrop();
+                    closeManualCrop(true);
                 } catch (error) {
                     console.error('Manual crop error:', error);
                     alert(error.message || 'Gagal memotong foto.');
@@ -3197,7 +3199,7 @@
 
 
             function setActivePhoto(index) {
-                if (!selectedItems[index]) return;
+                if (editorBusy || !selectedItems[index]) return;
                 activePhotoIndex = index;
                 showPreview(selectedItems[index].file);
                 renderPhotoQueue();
@@ -3205,6 +3207,10 @@
 
 
             function addPhotos(files, source, replaceActive = false) {
+                if (editorBusy) {
+                    alert('Selesaikan proses edit foto yang sedang berjalan terlebih dahulu.');
+                    return false;
+                }
                 const incoming = Array.from(files || []).filter(file => file && file.type.startsWith('image/'));
 
                 if (incoming.length === 0) {
@@ -3249,7 +3255,7 @@
 
 
             function removePhoto(index) {
-                if (!selectedItems[index]) return;
+                if (editorBusy || !selectedItems[index]) return;
                 releaseItemObjectUrl(selectedItems[index]);
                 selectedItems.splice(index, 1);
 
@@ -3276,6 +3282,7 @@
 
 
             function movePhoto(index, direction) {
+                if (editorBusy) return;
                 const target = index + direction;
                 if (!selectedItems[index] || target < 0 || target >= selectedItems.length) return;
 
@@ -3294,6 +3301,7 @@
             // ============================================================
             document.querySelectorAll('[data-edit-action]').forEach(button => {
                 button.addEventListener('click', () => {
+                    if (editorBusy) return;
                     const action = button.dataset.editAction;
                     if (action === 'rotate-left') editState.rotation -= 90;
                     if (action === 'rotate-right') editState.rotation += 90;
@@ -3308,6 +3316,7 @@
             zoomRange.addEventListener('input', e => { editState.zoom = Number(e.target.value); renderEditorPreview(); });
             applyEditButton.addEventListener('click', applyEditsToFile);
             retakeButton.addEventListener('click', () => {
+                if (editorBusy) return;
                 resetEditor();
                 replaceOnNextCapture = activePhotoIndex >= 0;
 
