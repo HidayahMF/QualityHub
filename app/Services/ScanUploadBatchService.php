@@ -42,6 +42,11 @@ class ScanUploadBatchService
     private function readManifest(string $batchId, int $ownerId): array
     {
         $path = $this->directory($batchId).'/manifest.json';
+        if (! $this->disk()->exists($path)) {
+            throw ValidationException::withMessages([
+                'batch_id' => 'Sesi upload tidak ditemukan atau sudah kedaluwarsa.',
+            ]);
+        }
         $raw = $this->disk()->get($path);
         $manifest = is_string($raw) ? json_decode($raw, true) : null;
 
@@ -66,6 +71,7 @@ class ScanUploadBatchService
             ]);
         }
 
+        $this->disk()->makeDirectory(self::PREFIX);
         $this->pruneExpired();
 
         // Restrict private temporary storage use to two simultaneous batches.
