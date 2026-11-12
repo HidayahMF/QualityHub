@@ -308,7 +308,7 @@
                             </span>
                         </div>
 
-                        <div id="photoQueue" class="mt-3 grid gap-2 sm:grid-cols-2"></div>
+                        <div id="photoQueue" class="mt-3 grid grid-cols-1 gap-3"></div>
                     </div>
 
 
@@ -1484,6 +1484,37 @@
 <style nonce="{{ $cspNonce }}">
     .edit-action { display:inline-flex; align-items:center; justify-content:center; gap:.4rem; border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:.75rem; padding:.65rem .75rem; font-size:.75rem; font-weight:700; transition:.2s; }
     .edit-action:hover { border-color:#93c5fd; background:#eff6ff; color:#1d4ed8; }
+    /* Ordered photo cards: keep readable text even when the scan column is narrow. */
+    #photoQueue { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; }
+    .qh-photo-card { box-sizing: border-box; width: 100%; min-width: 0; padding: 12px;
+        border: 1px solid #d5e4f7; border-radius: 15px; background: #fff;
+        cursor: pointer; transition: border-color .18s, box-shadow .18s; }
+    .qh-photo-card:hover { border-color: #93c5fd; }
+    .qh-photo-card-active { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,.12); }
+    .qh-photo-main { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
+    .qh-photo-thumbnail { display: block; width: 66px; height: 77px; flex: 0 0 66px;
+        border: 1px solid #dbe5f1; border-radius: 10px; background: #f8fafc; object-fit: cover; }
+    .qh-photo-text { flex: 1 1 0; min-width: 0; overflow: hidden; }
+    .qh-photo-title-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 9px; min-width: 0; }
+    .qh-photo-title { color: #112756; font-weight: 800; font-size: 13px; line-height: 1.5; white-space: nowrap; }
+    .qh-photo-position { display: inline-block; max-width: 100%; padding: 3px 8px;
+        border-radius: 999px; background: #dbeafe; color: #1d4ed8;
+        font-size: 9px; line-height: 1.35; font-weight: 800; white-space: normal; }
+    .qh-photo-page { margin-top: 3px; color: #2563eb; font-size: 12px; line-height: 1.5;
+        font-weight: 750; overflow-wrap: normal; word-break: normal; }
+    .qh-photo-filename { margin-top: 5px; color: #475569; font-size: 11px; line-height: 1.5;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .qh-photo-meta { margin-top: 2px; color: #64748b; font-size: 11px; line-height: 1.5; }
+    .qh-photo-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+        gap: 8px 12px; margin-top: 11px; padding-top: 10px; border-top: 1px solid #e8f0fa; }
+    .qh-photo-action-label { color: #64748b; font-size: 10px; line-height: 1.5; font-weight: 600; }
+    .qh-photo-action-buttons { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-left: auto; }
+    @media (max-width: 420px) {
+        .qh-photo-card { padding: 10px; }
+        .qh-photo-thumbnail { width: 58px; height: 68px; flex-basis: 58px; }
+        .qh-photo-main { gap: 10px; }
+        .qh-photo-action-label { font-size: 9px; }
+    }
     /* Modal crop uses its own top-level portal, independent of page/sidebar overflow. */
     body.qh-crop-open { overflow: hidden !important; }
     .qh-crop-overlay { position: fixed !important; inset: 0 !important; z-index: 2147483000 !important;
@@ -3234,6 +3265,7 @@
                 button.type = 'button';
                 button.textContent = label;
                 button.title = title;
+                button.setAttribute('aria-label', title);
                 button.disabled = disabled;
                 button.className = 'inline-flex h-8 min-w-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-2 text-xs font-bold text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-35';
                 button.addEventListener('click', event => {
@@ -3248,7 +3280,7 @@
                 photoQueue.replaceChildren();
 
                 const count = selectedItems.length;
-                photoQueueCount.textContent = `${count} foto`;
+                photoQueueCount.textContent = count + ' foto';
                 photoQueueWrapper.classList.toggle('hidden', count === 0);
                 photoQueueHint.textContent = count > 1
                     ? 'Foto 1 menjadi halaman PDF pertama. Gunakan tombol panah untuk mengubah urutan halaman.'
@@ -3258,55 +3290,81 @@
                     : 'Pilih foto untuk diedit';
 
                 selectedItems.forEach((item, index) => {
+                    // One full-width card per photo. Keeping the move/remove actions
+                    // on their own row prevents text collapsing into 1-word lines
+                    // when the Scan/Capture column is narrow on a laptop.
                     const card = document.createElement('div');
-                    card.className = `flex cursor-pointer items-center gap-3 rounded-xl border p-2.5 transition ${index === activePhotoIndex ? 'border-blue-400 bg-white shadow-sm' : 'border-blue-100 bg-white/70 hover:border-blue-300'}`;
+                    card.className = 'qh-photo-card' + (index === activePhotoIndex ? ' qh-photo-card-active' : '');
                     card.addEventListener('click', () => setActivePhoto(index));
+
+                    const main = document.createElement('div');
+                    main.className = 'qh-photo-main';
 
                     const image = document.createElement('img');
                     image.src = ensureItemObjectUrl(item);
-                    image.alt = `Foto ${index + 1}`;
-                    image.className = 'h-14 w-14 shrink-0 rounded-lg border border-slate-200 bg-slate-50 object-cover';
+                    image.alt = 'Pratinjau Foto ' + (index + 1);
+                    image.className = 'qh-photo-thumbnail';
 
                     const body = document.createElement('div');
-                    body.className = 'min-w-0 flex-1';
+                    body.className = 'qh-photo-text';
+
+                    const titleRow = document.createElement('div');
+                    titleRow.className = 'qh-photo-title-row';
 
                     const title = document.createElement('p');
-                    title.className = 'text-xs font-extrabold text-slate-900';
+                    title.className = 'qh-photo-title';
                     title.textContent = 'Foto ' + (index + 1);
 
+                    const positionLabel = count === 1 ? 'PERTAMA & TERAKHIR'
+                        : index === 0 ? 'PERTAMA'
+                        : index === count - 1 ? 'TERAKHIR' : '';
+                    titleRow.append(title);
+
+                    if (positionLabel) {
+                        const badge = document.createElement('span');
+                        badge.className = 'qh-photo-position';
+                        badge.textContent = positionLabel;
+                        titleRow.append(badge);
+                    }
+
                     const order = document.createElement('p');
-                    order.className = 'mt-0.5 text-[11px] font-bold text-blue-700';
-                    const marker = count === 1 ? ' · Satu foto'
-                        : index === 0 ? ' · PERTAMA'
-                        : index === count - 1 ? ' · TERAKHIR' : '';
-                    order.textContent = 'Halaman PDF ' + (index + 1) + ' dari ' + count + marker;
+                    order.className = 'qh-photo-page';
+                    order.textContent = 'Halaman PDF ' + (index + 1) + ' dari ' + count;
 
                     const filename = document.createElement('p');
-                    filename.className = 'mt-1 truncate text-[11px] text-slate-600';
+                    filename.className = 'qh-photo-filename';
                     filename.textContent = item.file.name;
                     filename.title = item.file.name;
 
                     const meta = document.createElement('p');
-                    meta.className = 'text-[11px] text-slate-500';
+                    meta.className = 'qh-photo-meta';
                     meta.textContent = (item.file.size / 1024 / 1024).toFixed(2) + ' MB · ' + (item.source === 'camera' ? 'Kamera' : 'Galeri');
 
-                    body.append(title, order, filename, meta);
+                    body.append(titleRow, order, filename, meta);
+                    main.append(image, body);
 
                     const actions = document.createElement('div');
-                    actions.className = 'flex shrink-0 items-center gap-1';
-                    actions.append(
+                    actions.className = 'qh-photo-actions';
+                    const instruction = document.createElement('span');
+                    instruction.className = 'qh-photo-action-label';
+                    instruction.textContent = 'Atur urutan halaman';
+
+                    const buttons = document.createElement('div');
+                    buttons.className = 'qh-photo-action-buttons';
+                    buttons.append(
                         createQueueAction('←', 'Pindahkan Foto ' + (index + 1) + ' ke halaman PDF sebelumnya', index === 0, () => movePhoto(index, -1)),
                         createQueueAction('→', 'Pindahkan Foto ' + (index + 1) + ' ke halaman PDF berikutnya', index === count - 1, () => movePhoto(index, 1)),
-                        createQueueAction('×', 'Hapus foto', false, () => removePhoto(index)),
+                        createQueueAction('×', 'Hapus Foto ' + (index + 1), false, () => removePhoto(index)),
                     );
+                    actions.append(instruction, buttons);
 
-                    card.append(image, body, actions);
+                    card.append(main, actions);
                     photoQueue.append(card);
                 });
             }
 
 
-            function updateMultiPhotoState() {
+                        function updateMultiPhotoState() {
                 refreshCaptureSource();
                 const synced = syncFilesToForm();
                 renderPhotoQueue();
