@@ -392,9 +392,16 @@
                     </div>
 
 
-                    <p class="mt-3 text-center text-xs text-slate-400">
-                        Maksimal 1.000 foto dalam 1 berkas PDF · Total foto maksimal 200 MB · Kamera HP/galeri akan dioptimalkan bila memungkinkan.
+                    <p class="mt-3 text-center text-xs text-slate-500">
+                        Maksimal 1.000 foto dalam 1 berkas PDF · Total foto maksimal 200 MB.
                     </p>
+                    <label class="mt-3 flex cursor-pointer items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-3">
+                        <input id="scanLargeMode" type="checkbox" class="mt-0.5 rounded border-blue-300 text-blue-600 focus:ring-blue-500">
+                        <span class="text-xs leading-relaxed text-blue-900">
+                            <strong>Mode 1.000 Halaman (Android &amp; iPhone)</strong>
+                            <span class="mt-1 block text-blue-700">Aktifkan <strong>sebelum</strong> mengambil atau memilih foto. Foto akan dioptimalkan agar upload bertahap lebih ringan; periksa keterbacaan teks setelah diproses.</span>
+                        </span>
+                    </label>
 
                     <p class="mt-1 text-center text-[11px] font-medium text-blue-600">
                         Jika memilih 2 foto atau lebih, server otomatis menggabungkannya menjadi 1 PDF multi-halaman.
@@ -1699,6 +1706,7 @@
             const scanUploadProgress = document.getElementById('scanUploadProgress');
             const scanUploadProgressLabel = document.getElementById('scanUploadProgressLabel');
             const scanUploadProgressBar = document.getElementById('scanUploadProgressBar');
+            const scanLargeMode = document.getElementById('scanLargeMode');
             const activePhotoPosition = document.getElementById('activePhotoPosition');
             const editToolbar = document.getElementById('editToolbar');
             const retakeButton = document.getElementById('retakeButton');
@@ -1806,15 +1814,26 @@
             // File hasil kamera dinormalisasi menjadi JPEG kecil sebelum submit.
             // Batas server (upload_max_filesize / post_max_size) tetap wajib dicek IT.
             const CAMERA_MAX_SOURCE_BYTES = 80 * 1024 * 1024;
-            // Keeping each picture around 170 KB makes up to 1,000
-            // photos feasible within the existing 200 MB safety ceiling.
-            // Final quality must be checked on actual QC document photos.
-            const CAMERA_MAX_OUTPUT_BYTES = Math.floor(0.17 * 1024 * 1024);
-            const CAMERA_MAX_LONG_EDGE = 2000;
+            // Quality mode preserves the existing normal camera image size.
+            // Bulk mode is opt-in because 170-KB images may reduce readability.
+            let CAMERA_MAX_OUTPUT_BYTES = Math.floor(1.6 * 1024 * 1024);
+            let CAMERA_MAX_LONG_EDGE = 2600;
             let cameraPhotoProcessing = false;
 
             let selectedItems = [];
             let activePhotoIndex = -1;
+
+            scanLargeMode.addEventListener('change', () => {
+                if (selectedItems.length > 0) {
+                    scanLargeMode.checked = !scanLargeMode.checked;
+                    alert('Pilih Mode 1.000 Halaman sebelum menambahkan foto. Hapus foto yang sudah ada jika ingin mengganti mode.');
+                    return;
+                }
+                CAMERA_MAX_OUTPUT_BYTES = scanLargeMode.checked
+                    ? Math.floor(0.17 * 1024 * 1024)
+                    : Math.floor(1.6 * 1024 * 1024);
+                CAMERA_MAX_LONG_EDGE = scanLargeMode.checked ? 2000 : 2600;
+            });
             let replaceOnNextCapture = false;
             let originalFile = null;
             let originalImage = null;
@@ -4062,7 +4081,7 @@
                         }
 
                         const extension = (file.name || '').split('.').pop().toLowerCase();
-                        const needsConversion = file.size > CAMERA_MAX_OUTPUT_BYTES
+                        const needsConversion = (scanLargeMode.checked && file.size > CAMERA_MAX_OUTPUT_BYTES)
                             || ['heic', 'heif'].includes(extension)
                             || ['image/heic', 'image/heif'].includes((file.type || '').toLowerCase());
 
