@@ -30,7 +30,7 @@ return [
     /* Maksimum jumlah foto dalam satu dokumen Scan / Capture. */
     'max_files' => (int) env(
         'SMARTFIND_SCAN_MAX_FILES',
-        100
+        1000
     ),
 
     /* Total seluruh foto sumber sebelum digabung menjadi PDF. */
