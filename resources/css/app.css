@@ -2777,3 +2777,173 @@
     cursor: default;
 }
 
+
+/* ==========================================================================
+   QUALITYHUB · SEARCHABLE FILTER SELECTS (Select2-style, CSP-safe)
+   Native <select> remains as form payload; JS adds a searchable UI.
+   ========================================================================== */
+.qh-searchable-filter {
+    position: relative;
+    display: block;
+    width: 100%;
+    min-width: 0;
+}
+.qh-searchable-filter > select[data-qh-searchable-select] {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    opacity: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+    clip-path: inset(50%) !important;
+}
+.qh-searchable-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+    min-height: 49px;
+    padding: 11px 15px;
+    border: 1px solid #bfd0e3;
+    border-radius: 12px;
+    background: #f8fafc;
+    color: #334155;
+    text-align: left;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: background-color .15s, border-color .15s, box-shadow .15s;
+}
+.qh-searchable-trigger:hover {
+    border-color: #93baf6;
+    background: #fff;
+}
+.qh-searchable-trigger:focus-visible,
+.qh-searchable-open .qh-searchable-trigger {
+    outline: none;
+    border-color: #3b82f6;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
+}
+.qh-searchable-trigger:disabled { opacity: .55; cursor: not-allowed; }
+.qh-searchable-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+.qh-searchable-chevron {
+    flex: 0 0 auto;
+    color: #64748b;
+    font-size: 20px;
+    line-height: .65;
+    transform: translateY(-2px);
+    transition: transform .15s;
+}
+.qh-searchable-open .qh-searchable-chevron { transform: rotate(180deg) translateY(1px); }
+.qh-searchable-popup {
+    position: fixed;
+    z-index: 2147482000;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: calc(100vw - 24px);
+    overflow: hidden;
+    border: 1px solid #b4cbec;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 14px 40px rgba(16, 41, 87, .2);
+    font-family: inherit;
+    color: #1e293b;
+}
+.qh-searchable-popup[hidden] { display: none !important; }
+.qh-searchable-search-wrap {
+    flex: 0 0 auto;
+    padding: 10px;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f7faff;
+}
+.qh-searchable-search {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    height: 40px;
+    padding: 8px 12px;
+    border: 1px solid #bdd1ee;
+    border-radius: 9px;
+    background: #fff;
+    color: #0f172a;
+    font-size: 13px;
+    line-height: 1.5;
+    outline: none;
+}
+.qh-searchable-search:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+}
+.qh-searchable-search::placeholder { color: #64748b; }
+.qh-searchable-options {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    padding: 5px;
+    overscroll-behavior: contain;
+}
+.qh-searchable-option {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: #334155;
+    font-size: 13px;
+    line-height: 1.4;
+    text-align: left;
+    overflow-wrap: anywhere;
+    cursor: pointer;
+}
+.qh-searchable-option:hover,
+.qh-searchable-option-active {
+    background: #e8f1ff;
+    color: #1d4ed8;
+}
+.qh-searchable-option[aria-selected="true"] {
+    font-weight: 700;
+}
+.qh-searchable-option[aria-selected="true"]::after {
+    content: '✓';
+    float: right;
+    margin-left: 10px;
+    color: #2563eb;
+}
+.qh-searchable-all { color: #1d4ed8; font-weight: 700; }
+.qh-searchable-empty {
+    padding: 14px 12px;
+    color: #64748b;
+    font-size: 13px;
+    text-align: center;
+}
+.qh-searchable-status {
+    flex: 0 0 auto;
+    padding: 8px 12px;
+    border-top: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #64748b;
+    font-size: 11px;
+    line-height: 1.35;
+}
+@media (max-width: 640px) {
+    .qh-searchable-trigger { min-height: 47px; padding: 10px 12px; }
+    .qh-searchable-popup { border-radius: 12px; }
+    .qh-searchable-option { padding: 12px; }
+}

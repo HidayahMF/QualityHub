@@ -191,6 +191,7 @@
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <p class="text-sm font-semibold text-slate-900">Edit Hasil Scan</p>
+                                <p id="activePhotoPosition" class="mt-1 text-xs font-bold text-blue-700">Pilih foto untuk diedit</p>
                                 <p class="mt-1 text-xs text-slate-500">Rapikan foto sebelum disimpan ke QualityHub.</p>
                             </div>
                             <button type="button" id="retakeButton" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700">
@@ -219,15 +220,77 @@
                                 <div class="mb-1 flex justify-between text-xs font-semibold text-slate-600"><span>Zoom</span><span id="zoomValue">100%</span></div>
                                 <input id="zoomRange" type="range" min="100" max="160" value="100" class="w-full accent-blue-600">
                             </label>
-                            <label class="block">
-                                <div class="mb-1 flex justify-between text-xs font-semibold text-slate-600"><span>Crop / Potong</span><span id="cropValue">0%</span></div>
-                                <input id="cropRange" type="range" min="0" max="25" value="0" class="w-full accent-blue-600">
-                            </label>
+                            <div class="block">
+                                <div class="mb-1 text-xs font-semibold text-slate-600">Crop / Potong Manual</div>
+                                <button type="button" id="manualCropButton" class="w-full rounded-xl border border-blue-300 bg-white px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-50">
+                                    Pilih Area Crop Manual
+                                </button>
+                                <p class="mt-1 text-[11px] leading-4 text-slate-500">Geser kotak crop dan tarik tepi/sudut sesuai bagian foto yang ingin disimpan.</p>
+                            </div>
                         </div>
 
                         <button type="button" id="applyEditButton" class="mt-4 w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">
                             Terapkan Perubahan ke Berkas
                         </button>
+                    </div>
+
+                    {{-- Crop dialog is moved to <body> by JavaScript so sidebar/header stacking contexts cannot clip it. --}}
+                    <div id="manualCropModal" role="dialog" aria-modal="true" aria-labelledby="manualCropTitle" aria-describedby="manualCropHelp" class="qh-crop-overlay hidden" tabindex="-1">
+                        <div id="manualCropPanel" class="qh-crop-panel">
+                            <header class="qh-crop-header">
+                                <div class="qh-crop-heading">
+                                    <span class="qh-crop-kicker">
+                                        <span class="qh-crop-kicker-dot"></span>
+                                        BMC QUALITYHUB · EDITOR FOTO
+                                    </span>
+                                    <h3 id="manualCropTitle" class="qh-crop-title">Crop Foto Manual</h3>
+                                    <p class="qh-crop-subtitle">Pilih bagian foto yang ingin disimpan. Area di luar kotak biru akan dipotong.</p>
+                                </div>
+                                <div class="qh-crop-header-actions">
+                                    <span id="manualCropPhotoName" class="qh-crop-photo-badge">Foto aktif</span>
+                                    <button type="button" id="cancelCropButton" class="qh-crop-close" aria-label="Tutup crop manual tanpa menyimpan perubahan" title="Batal crop">✕</button>
+                                </div>
+                            </header>
+
+                            <div class="qh-crop-body">
+                                <div id="manualCropHelp" class="qh-crop-help">
+                                    <span class="qh-crop-step">1</span>
+                                    <span><strong>Geser kotak</strong> untuk pindah posisi.</span>
+                                    <span class="qh-crop-step">2</span>
+                                    <span><strong>Tarik sisi atau sudut</strong> untuk crop atas, bawah, kiri, dan kanan.</span>
+                                </div>
+                                <div class="qh-crop-preview">
+                                    <div id="manualCropStage">
+                                        <canvas id="manualCropCanvas" aria-label="Foto untuk pemilihan crop manual"></canvas>
+                                        <div id="manualCropSelection" aria-label="Area crop manual yang dipilih">
+                                            <span data-crop-handle="nw"></span>
+                                            <span data-crop-handle="n"></span>
+                                            <span data-crop-handle="ne"></span>
+                                            <span data-crop-handle="e"></span>
+                                            <span data-crop-handle="se"></span>
+                                            <span data-crop-handle="s"></span>
+                                            <span data-crop-handle="sw"></span>
+                                            <span data-crop-handle="w"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="qh-crop-caption">
+                                    <span>8 titik kontrol • Bisa digeser dengan mouse atau sentuhan</span>
+                                    <span>Crop hanya berlaku untuk foto yang sedang dipilih</span>
+                                </div>
+                            </div>
+
+                            <footer class="qh-crop-footer">
+                                <div class="qh-crop-footer-status">
+                                    <span class="qh-crop-status-label">UKURAN HASIL</span>
+                                    <p id="manualCropInfo" aria-live="polite" class="qh-crop-info">Area crop belum dipilih</p>
+                                </div>
+                                <div class="qh-crop-footer-actions">
+                                    <button type="button" id="resetCropButton" class="qh-crop-reset">Pilih Seluruh Foto</button>
+                                    <button type="button" id="confirmCropButton" class="qh-crop-apply">Terapkan Crop</button>
+                                </div>
+                            </footer>
+                        </div>
                     </div>
 
                     {{-- ================================================= --}}
@@ -245,7 +308,7 @@
                             </span>
                         </div>
 
-                        <div id="photoQueue" class="mt-3 grid gap-2 sm:grid-cols-2"></div>
+                        <div id="photoQueue" class="mt-3 grid grid-cols-1 gap-3"></div>
                     </div>
 
 
@@ -1278,133 +1341,65 @@
         </div>
     </div>
 
-    {{-- ================================================================ --}}
-    {{-- CAMERA MODAL --}}
-    {{-- ================================================================ --}}
-    <div
-        id="cameraModal"
-        class="fixed inset-0 z-[100] hidden bg-slate-950/90 backdrop-blur-sm"
-    >
-
-        <div class="flex min-h-full items-center justify-center p-4">
-
-            <div class="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl">
-
-                {{-- CAMERA HEADER --}}
-                <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-
-                    <div>
-                        <h3 class="text-sm font-semibold text-slate-900">
-                            Ambil Foto Berkas
-                        </h3>
-
-                        <p class="mt-1 text-xs text-slate-500">
-                            Posisikan berkas QC di dalam area kamera.
-                        </p>
-                    </div>
-
-                    <button
-                        type="button"
-                        id="closeCameraButton"
-                        class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
-                        aria-label="Tutup kamera"
-                    >
-                        ✕
-                    </button>
-
-                </div>
-
-
-                {{-- CAMERA AREA --}}
-                <div class="relative bg-black">
-
-                    <video
-                        id="cameraVideo"
-                        autoplay
-                        playsinline
-                        muted
-                        class="block aspect-video w-full object-cover"
-                    ></video>
-
-                    {{-- CAMERA LOADING --}}
-                    <div
-                        id="cameraLoading"
-                        class="absolute inset-0 flex items-center justify-center bg-slate-950"
-                    >
-                        <div class="text-center text-white">
-
-                            <div class="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
-
-                            <p class="text-sm font-medium">
-                                Mengaktifkan kamera...
-                            </p>
-
-                        </div>
-                    </div>
-
-                </div>
-
-
-                {{-- CAMERA FOOTER --}}
-                <div class="border-t border-slate-200 bg-white px-5 py-4">
-
-                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-
-                        <div class="min-w-0 flex-1">
-                            <label
-                                for="cameraSelect"
-                                class="mb-1 block text-xs font-semibold text-slate-600"
-                            >
-                                Kamera
-                            </label>
-
-                            <select
-                                id="cameraSelect"
-                                disabled
-                                class="block w-full rounded-xl border-slate-300 bg-white text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            >
-                                <option value="">Mendeteksi kamera...</option>
-                            </select>
-                        </div>
-
-                        <div class="flex items-center justify-center gap-3">
-
-                            <button
-                                type="button"
-                                id="switchCameraButton"
-                                disabled
-                                class="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                            >
-                                Ganti Kamera
-                            </button>
-
-                            <button
-                                type="button"
-                                id="captureButton"
-                                disabled
-                                class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
-                                aria-label="Ambil foto"
-                            >
-                                <span class="h-5 w-5 rounded-full border-2 border-white"></span>
-                            </button>
-
-                        </div>
-
-                    </div>
-
-                    <p
-                        id="cameraStatus"
-                        class="mt-2 text-center text-xs text-slate-400"
-                    >
-                        Kamera akan digunakan langsung. Pilih kamera jika perangkat memiliki lebih dari satu kamera.
+    {{-- Camera dialog is portalled to <body>, above the sticky header/sidebar. --}}
+    <div id="cameraModal" role="dialog" aria-modal="true" aria-labelledby="cameraDialogTitle" aria-describedby="cameraDialogHelp"
+        class="qh-camera-overlay hidden" tabindex="-1">
+        <section id="cameraDialogPanel" class="qh-camera-panel">
+            <header class="qh-camera-header">
+                <div class="qh-camera-heading">
+                    <div class="qh-camera-kicker"><span class="qh-camera-live-dot"></span> BMC QUALITYHUB · SCAN / CAPTURE</div>
+                    <h3 id="cameraDialogTitle" class="qh-camera-title">Ambil Foto Berkas</h3>
+                    <p id="cameraDialogHelp" class="qh-camera-description">
+                        Arahkan kamera ke dokumen QC, pastikan seluruh halaman terlihat, lalu tekan Ambil Foto.
                     </p>
-
                 </div>
+                <button type="button" id="closeCameraButton" class="qh-camera-close"
+                    aria-label="Tutup kamera tanpa mengambil foto" title="Tutup kamera">✕</button>
+            </header>
 
+            <div class="qh-camera-body">
+                <div class="qh-camera-preview">
+                    <video id="cameraVideo" autoplay playsinline muted
+                        aria-label="Pratinjau kamera langsung"></video>
+                    <div class="qh-camera-frame" aria-hidden="true">
+                        <span class="qh-camera-frame-tl"></span>
+                        <span class="qh-camera-frame-tr"></span>
+                        <span class="qh-camera-frame-bl"></span>
+                        <span class="qh-camera-frame-br"></span>
+                    </div>
+                    <div id="cameraLoading" class="qh-camera-loading">
+                        <div class="qh-camera-loader" aria-hidden="true"></div>
+                        <p>Mengaktifkan kamera...</p>
+                    </div>
+                </div>
+                <div class="qh-camera-tip">
+                    <span class="qh-camera-tip-icon" aria-hidden="true">✓</span>
+                    <span>Pastikan foto tidak buram dan semua tepi dokumen masuk ke dalam gambar.</span>
+                </div>
             </div>
 
-        </div>
-
+            <footer class="qh-camera-footer">
+                <div class="qh-camera-controls">
+                    <div class="qh-camera-device">
+                        <label for="cameraSelect">Pilih Kamera</label>
+                        <select id="cameraSelect" disabled>
+                            <option value="">Mendeteksi kamera...</option>
+                        </select>
+                    </div>
+                    <div class="qh-camera-buttons">
+                        <button type="button" id="switchCameraButton" disabled class="qh-camera-switch">Ganti Kamera</button>
+                        <button type="button" id="captureButton" disabled class="qh-camera-shutter"
+                            aria-label="Ambil foto dokumen" title="Ambil foto dokumen">
+                            <span class="qh-camera-shutter-ring" aria-hidden="true"></span>
+                            <span>Ambil Foto</span>
+                        </button>
+                    </div>
+                </div>
+                <p id="cameraStatus" role="status" aria-live="polite" class="qh-camera-status">
+                    Kamera akan digunakan langsung. Pilih kamera jika perangkat memiliki lebih dari satu kamera.
+                </p>
+            </footer>
+        </section>
     </div>
 
 
@@ -1421,6 +1416,223 @@
 <style nonce="{{ $cspNonce }}">
     .edit-action { display:inline-flex; align-items:center; justify-content:center; gap:.4rem; border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:.75rem; padding:.65rem .75rem; font-size:.75rem; font-weight:700; transition:.2s; }
     .edit-action:hover { border-color:#93c5fd; background:#eff6ff; color:#1d4ed8; }
+    /* QualityHub camera overlay — outside the sidebar/header stacking context. */
+    body.qh-camera-open { overflow: hidden !important; }
+    .qh-camera-overlay { position: fixed !important; inset: 0 !important; z-index: 2147483000 !important;
+        align-items: center; justify-content: center; padding: clamp(9px, 2vw, 22px);
+        background: rgba(10, 27, 62, .74); backdrop-filter: blur(5px); overscroll-behavior: contain; }
+    .qh-camera-overlay.hidden { display: none !important; }
+    .qh-camera-overlay:not(.hidden) { display: flex !important; }
+    .qh-camera-panel { position: relative; display: flex; flex-direction: column;
+        width: min(100%, 1020px); min-height: 0; max-height: calc(100dvh - 20px);
+        overflow: hidden; border: 1px solid #c7dcfb; border-radius: 22px; background: #fff;
+        box-shadow: 0 28px 90px rgba(3, 20, 52, .4); }
+    .qh-camera-panel::before { content: ''; position: absolute; inset: 0 0 auto; height: 5px;
+        z-index: 1; background: linear-gradient(90deg, #102c68, #2563eb, #60a5fa); }
+    .qh-camera-header { display: flex; flex: 0 0 auto; align-items: flex-start; justify-content: space-between;
+        gap: 14px; padding: 23px 26px 17px; background: #fff; border-bottom: 1px solid #dce8f6; }
+    .qh-camera-heading { min-width: 0; }
+    .qh-camera-kicker { display: flex; align-items: center; gap: 7px; color: #1d4ed8;
+        font-size: 10px; font-weight: 800; letter-spacing: .12em; }
+    .qh-camera-live-dot { display: inline-block; width: 8px; height: 8px; flex-shrink: 0;
+        border-radius: 50%; background: #2563eb; }
+    .qh-camera-title { margin: 7px 0 3px; color: #112756; font-size: clamp(18px, 2vw, 23px);
+        font-weight: 800; line-height: 1.25; }
+    .qh-camera-description { margin: 0; color: #60718d; font-size: 12px; line-height: 1.55; }
+    .qh-camera-close { display: grid; flex: 0 0 auto; place-items: center; width: 36px; height: 36px;
+        border: 1px solid #d7e2ef; border-radius: 10px; color: #475569; background: #fff;
+        font-size: 16px; cursor: pointer; }
+    .qh-camera-close:hover { background: #eff6ff; border-color: #93c5fd; color: #1d4ed8; }
+    .qh-camera-body { display: flex; flex: 1 1 auto; flex-direction: column; gap: 11px; min-height: 0;
+        overflow-y: auto; padding: 15px 24px 12px; background: #f5f9ff; }
+    .qh-camera-preview { position: relative; display: flex; flex: 1 1 auto; min-height: 135px;
+        align-items: center; justify-content: center; overflow: hidden; border: 1px solid #cbdcf5;
+        border-radius: 15px; padding: 9px; background: #eaf2fc; }
+    #cameraVideo { display: block; width: 100%; height: min(47dvh, 490px); min-height: 135px;
+        object-fit: contain; border-radius: 10px; background: #12264b; }
+    .qh-camera-frame { position: absolute; inset: 23px; pointer-events: none; }
+    .qh-camera-frame span { position: absolute; width: 28px; height: 28px; border-color: #93c5fd; border-style: solid;
+        filter: drop-shadow(0 1px 2px rgba(2, 6, 23, .75)); }
+    .qh-camera-frame-tl { top: 0; left: 0; border-width: 3px 0 0 3px; border-radius: 6px 0 0 0; }
+    .qh-camera-frame-tr { top: 0; right: 0; border-width: 3px 3px 0 0; border-radius: 0 6px 0 0; }
+    .qh-camera-frame-bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-radius: 0 0 0 6px; }
+    .qh-camera-frame-br { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 6px 0; }
+    .qh-camera-loading { position: absolute; inset: 9px; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 10px; border-radius: 10px;
+        color: #fff; background: rgba(16, 40, 85, .96); font-size: 13px; font-weight: 650; }
+    .qh-camera-loading.hidden { display: none !important; }
+    .qh-camera-loader { width: 33px; height: 33px; border: 3px solid rgba(191, 219, 254, .35);
+        border-top-color: #93c5fd; border-radius: 50%; animation: qh-camera-spin .8s linear infinite; }
+    @keyframes qh-camera-spin { to { transform: rotate(360deg); } }
+    .qh-camera-tip { display: flex; align-items: center; gap: 9px; color: #385477;
+        font-size: 11px; line-height: 1.5; }
+    .qh-camera-tip-icon { display: inline-grid; flex: 0 0 auto; place-items: center; width: 21px; height: 21px;
+        border-radius: 7px; color: #1d4ed8; background: #dbeafe; font-size: 12px; font-weight: 800; }
+    .qh-camera-footer { display: flex; flex: 0 0 auto; flex-direction: column; gap: 8px;
+        padding: 14px 24px 16px; border-top: 1px solid #dce8f6; background: #fff; }
+    .qh-camera-controls { display: flex; align-items: end; justify-content: space-between; gap: 14px; }
+    .qh-camera-device { flex: 1 1 auto; min-width: 0; }
+    .qh-camera-device label { display: block; margin-bottom: 5px; color: #475569; font-size: 11px; font-weight: 750; }
+    #cameraSelect { display: block; width: 100%; max-width: 100%; min-height: 43px; padding: 8px 12px;
+        border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fbff; color: #243b60;
+        font-size: 12px; }
+    #cameraSelect:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, .12); outline: none; }
+    #cameraSelect:disabled { opacity: .65; }
+    .qh-camera-buttons { display: flex; align-items: center; gap: 9px; flex: 0 0 auto; }
+    .qh-camera-switch, .qh-camera-shutter { min-height: 43px; padding: 9px 15px; border-radius: 10px;
+        font-size: 12px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+    .qh-camera-switch { border: 1px solid #cbd5e1; background: #fff; color: #334155; }
+    .qh-camera-switch:hover { border-color: #93c5fd; background: #eff6ff; }
+    .qh-camera-shutter { display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+        border: 1px solid #1d4ed8; background: #2563eb; color: #fff;
+        box-shadow: 0 5px 15px rgba(37, 99, 235, .17); }
+    .qh-camera-shutter:hover { background: #1d4ed8; }
+    .qh-camera-shutter-ring { display: block; width: 17px; height: 17px; border: 2px solid #fff; border-radius: 50%; }
+    .qh-camera-buttons button:disabled { opacity: .45; cursor: not-allowed; }
+    .qh-camera-status { color: #64748b; font-size: 11px; line-height: 1.4; text-align: left; }
+    .qh-camera-status-error { color: #b91c1c; font-weight: 700; }
+    .qh-camera-overlay :is(button, select):focus-visible { outline: 3px solid #60a5fa; outline-offset: 2px; }
+    @media (max-width: 640px) {
+        .qh-camera-panel { max-height: calc(100dvh - 14px); border-radius: 16px; }
+        .qh-camera-header { padding: 19px 15px 12px; }
+        .qh-camera-kicker { font-size: 9px; }
+        .qh-camera-title { font-size: 19px; }
+        .qh-camera-description { font-size: 11px; }
+        .qh-camera-body { padding: 11px; gap: 8px; }
+        .qh-camera-preview { padding: 7px; min-height: 120px; }
+        #cameraVideo { height: min(39dvh, 350px); min-height: 120px; }
+        .qh-camera-frame { inset: 17px; }
+        .qh-camera-footer { padding: 11px 13px; }
+        .qh-camera-controls { flex-direction: column; align-items: stretch; gap: 10px; }
+        .qh-camera-buttons { justify-content: flex-end; }
+        .qh-camera-switch, .qh-camera-shutter { flex: 1; }
+    }
+    @media (max-height: 650px) {
+        .qh-camera-header { padding-top: 14px; padding-bottom: 10px; }
+        .qh-camera-body { padding-top: 8px; padding-bottom: 8px; }
+        #cameraVideo { height: min(34dvh, 280px); min-height: 105px; }
+        .qh-camera-footer { padding-top: 9px; padding-bottom: 9px; }
+    }
+
+    /* Ordered photo cards: keep readable text even when the scan column is narrow. */
+    #photoQueue { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; }
+    .qh-photo-card { box-sizing: border-box; width: 100%; min-width: 0; padding: 12px;
+        border: 1px solid #d5e4f7; border-radius: 15px; background: #fff;
+        cursor: pointer; transition: border-color .18s, box-shadow .18s; }
+    .qh-photo-card:hover { border-color: #93c5fd; }
+    .qh-photo-card-active { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,.12); }
+    .qh-photo-main { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
+    .qh-photo-thumbnail { display: block; width: 66px; height: 77px; flex: 0 0 66px;
+        border: 1px solid #dbe5f1; border-radius: 10px; background: #f8fafc; object-fit: cover; }
+    .qh-photo-text { flex: 1 1 0; min-width: 0; overflow: hidden; }
+    .qh-photo-title-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 9px; min-width: 0; }
+    .qh-photo-title { color: #112756; font-weight: 800; font-size: 13px; line-height: 1.5; white-space: nowrap; }
+    .qh-photo-position { display: inline-block; max-width: 100%; padding: 3px 8px;
+        border-radius: 999px; background: #dbeafe; color: #1d4ed8;
+        font-size: 9px; line-height: 1.35; font-weight: 800; white-space: normal; }
+    .qh-photo-page { margin-top: 3px; color: #2563eb; font-size: 12px; line-height: 1.5;
+        font-weight: 750; overflow-wrap: normal; word-break: normal; }
+    .qh-photo-filename { margin-top: 5px; color: #475569; font-size: 11px; line-height: 1.5;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .qh-photo-meta { margin-top: 2px; color: #64748b; font-size: 11px; line-height: 1.5; }
+    .qh-photo-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+        gap: 8px 12px; margin-top: 11px; padding-top: 10px; border-top: 1px solid #e8f0fa; }
+    .qh-photo-action-label { color: #64748b; font-size: 10px; line-height: 1.5; font-weight: 600; }
+    .qh-photo-action-buttons { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-left: auto; }
+    @media (max-width: 420px) {
+        .qh-photo-card { padding: 10px; }
+        .qh-photo-thumbnail { width: 58px; height: 68px; flex-basis: 58px; }
+        .qh-photo-main { gap: 10px; }
+        .qh-photo-action-label { font-size: 9px; }
+    }
+    /* Modal crop uses its own top-level portal, independent of page/sidebar overflow. */
+    body.qh-crop-open { overflow: hidden !important; }
+    .qh-crop-overlay { position: fixed !important; inset: 0 !important; z-index: 2147483000 !important;
+        padding: clamp(10px, 2.3vw, 24px); align-items: center; justify-content: center;
+        background: rgba(10, 27, 62, .74); backdrop-filter: blur(5px); overscroll-behavior: contain; }
+    .qh-crop-overlay.hidden { display: none !important; }
+    .qh-crop-overlay:not(.hidden) { display: flex !important; }
+    .qh-crop-panel { position: relative; display: flex; flex-direction: column; width: min(100%, 1080px);
+        max-height: calc(100dvh - 24px); min-height: 0; overflow: hidden; border-radius: 24px;
+        border: 1px solid #c7dcfb; background: #fff; box-shadow: 0 28px 95px rgba(3, 20, 52, .43); }
+    .qh-crop-panel::before { content: ''; position: absolute; inset: 0 0 auto; height: 5px;
+        background: linear-gradient(90deg, #0f285d, #2563eb, #60a5fa); z-index: 1; }
+    .qh-crop-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+        padding: 25px 27px 19px; border-bottom: 1px solid #d9e6f6; flex-shrink: 0; background: #fff; }
+    .qh-crop-heading { min-width: 0; }
+    .qh-crop-kicker { display: inline-flex; align-items: center; gap: 8px; color: #1d4ed8;
+        font-size: 10px; font-weight: 800; letter-spacing: .13em; }
+    .qh-crop-kicker-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #2563eb; }
+    .qh-crop-title { margin: 7px 0 4px; color: #112756; font-size: clamp(18px, 2vw, 23px); font-weight: 800; line-height: 1.2; }
+    .qh-crop-subtitle { color: #60718d; font-size: 12px; line-height: 1.55; }
+    .qh-crop-header-actions { display: flex; flex-shrink: 0; align-items: center; gap: 10px; }
+    .qh-crop-photo-badge { border: 1px solid #cde1ff; border-radius: 999px; padding: 7px 12px;
+        background: #eef5ff; color: #1d4ed8; font-size: 11px; font-weight: 800; white-space: nowrap; }
+    .qh-crop-close { display: grid; place-items: center; width: 36px; height: 36px;
+        border: 1px solid #dbe5f2; border-radius: 11px; color: #475569; background: #fff; font-size: 16px; cursor: pointer; }
+    .qh-crop-close:hover { color: #b91c1c; border-color: #fecaca; background: #fff1f2; }
+    .qh-crop-body { display: flex; flex: 1; flex-direction: column; min-height: 0; gap: 11px;
+        overflow-y: auto; padding: 15px 24px 13px; background: #f6f9ff; }
+    .qh-crop-help { display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+        padding: 10px 13px; border: 1px solid #d9e8fe; border-radius: 12px;
+        background: #fff; color: #526581; font-size: 11px; line-height: 1.5; }
+    .qh-crop-help strong { color: #163970; }
+    .qh-crop-step { display: inline-grid; flex-shrink: 0; place-items: center;
+        width: 20px; height: 20px; border-radius: 7px; background: #dbeafe; color: #1d4ed8; font-weight: 800; }
+    .qh-crop-preview { display: flex; flex: 1; min-height: 145px; align-items: center; justify-content: center;
+        overflow: hidden; border: 1px solid #cbdcf5; border-radius: 15px; padding: 14px;
+        background: radial-gradient(circle at 50% 45%, #ffffff 0%, #e8f0fc 70%, #dfeafa 100%); }
+    #manualCropStage { position: relative; display: inline-block; max-width: 100%; line-height: 0;
+        overflow: hidden; touch-action: none; border: 1px solid #b5c9e9;
+        background: #fff; box-shadow: 0 8px 35px rgba(17, 45, 90, .22); }
+    #manualCropCanvas { display: block; width: auto; height: auto; max-width: 100%; max-height: min(49dvh, 500px);
+        cursor: crosshair; }
+    #manualCropSelection { position: absolute; box-sizing: border-box; border: 2px solid #2563eb;
+        box-shadow: 0 0 0 9999px rgba(5, 21, 52, .45); cursor: move; touch-action: none; }
+    #manualCropSelection [data-crop-handle] { position: absolute; display: block; width: 15px; height: 15px;
+        border: 2px solid #2563eb; border-radius: 4px; background: #fff; touch-action: none; }
+    #manualCropSelection [data-crop-handle="nw"] { top: -7px; left: -7px; cursor: nwse-resize; }
+    #manualCropSelection [data-crop-handle="n"] { top: -7px; left: calc(50% - 7px); cursor: ns-resize; }
+    #manualCropSelection [data-crop-handle="ne"] { top: -7px; right: -7px; cursor: nesw-resize; }
+    #manualCropSelection [data-crop-handle="e"] { top: calc(50% - 7px); right: -7px; cursor: ew-resize; }
+    #manualCropSelection [data-crop-handle="se"] { bottom: -7px; right: -7px; cursor: nwse-resize; }
+    #manualCropSelection [data-crop-handle="s"] { bottom: -7px; left: calc(50% - 7px); cursor: ns-resize; }
+    #manualCropSelection [data-crop-handle="sw"] { bottom: -7px; left: -7px; cursor: nesw-resize; }
+    #manualCropSelection [data-crop-handle="w"] { top: calc(50% - 7px); left: -7px; cursor: ew-resize; }
+    .qh-crop-caption { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 5px 12px;
+        color: #64748b; font-size: 10px; }
+    .qh-crop-footer { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between;
+        flex-wrap: wrap; gap: 12px; padding: 15px 24px; border-top: 1px solid #d9e6f6; background: #fff; }
+    .qh-crop-footer-status { min-width: 0; }
+    .qh-crop-status-label { color: #94a3b8; font-size: 9px; font-weight: 800; letter-spacing: .1em; }
+    .qh-crop-info { margin-top: 4px; color: #163970; font-size: 12px; font-weight: 750; }
+    .qh-crop-footer-actions { display: flex; flex-wrap: wrap; gap: 9px; }
+    .qh-crop-reset, .qh-crop-apply { border-radius: 11px; padding: 11px 17px; font-size: 12px;
+        font-weight: 800; transition: background .15s, border-color .15s; cursor: pointer; }
+    .qh-crop-reset { border: 1px solid #cbd5e1; color: #334155; background: #fff; }
+    .qh-crop-reset:hover { border-color: #93c5fd; background: #eff6ff; }
+    .qh-crop-apply { border: 1px solid #1d4ed8; color: #fff; background: #2563eb;
+        box-shadow: 0 5px 14px rgba(37, 99, 235, .18); }
+    .qh-crop-apply:hover { background: #1d4ed8; }
+    .qh-crop-apply:disabled { opacity: .5; cursor: not-allowed; }
+    .qh-crop-overlay :is(button, [data-crop-handle]):focus-visible { outline: 3px solid #60a5fa; outline-offset: 2px; }
+    @media (max-width: 640px) {
+        .qh-crop-panel { border-radius: 17px; max-height: calc(100dvh - 16px); }
+        .qh-crop-header { padding: 21px 15px 13px; gap: 8px; }
+        .qh-crop-header-actions { gap: 6px; }
+        .qh-crop-photo-badge { padding: 5px 8px; font-size: 10px; }
+        .qh-crop-title { font-size: 18px; }
+        .qh-crop-subtitle { font-size: 11px; }
+        .qh-crop-body { padding: 11px; gap: 9px; }
+        .qh-crop-help { font-size: 10px; padding: 8px; }
+        .qh-crop-preview { padding: 9px; min-height: 130px; }
+        #manualCropCanvas { max-height: min(42dvh, 400px); }
+        .qh-crop-caption { font-size: 9px; }
+        .qh-crop-footer { padding: 12px; }
+        .qh-crop-footer-status { width: 100%; }
+        .qh-crop-footer-actions { width: 100%; }
+        .qh-crop-footer-actions button { flex: 1; padding: 11px 8px; }
+    }
 </style>
 
     {{-- ================================================================ --}}
@@ -1439,6 +1651,11 @@
             const cameraLoading = document.getElementById('cameraLoading');
             const cameraSelect = document.getElementById('cameraSelect');
             const cameraStatus = document.getElementById('cameraStatus');
+
+            // Camera modal is a direct child of <body>, not trapped inside
+            // sidebar/Scan panel overflow or stacking contexts.
+            document.body.appendChild(cameraModal);
+            let cameraReturnFocus = null;
 
             const cameraInput = document.getElementById('cameraInput');
             const cameraProcessingStatus = document.getElementById('cameraProcessingStatus');
@@ -1463,17 +1680,32 @@
             const photoQueue = document.getElementById('photoQueue');
             const photoQueueCount = document.getElementById('photoQueueCount');
             const photoQueueHint = document.getElementById('photoQueueHint');
+            const activePhotoPosition = document.getElementById('activePhotoPosition');
             const editToolbar = document.getElementById('editToolbar');
             const retakeButton = document.getElementById('retakeButton');
             const applyEditButton = document.getElementById('applyEditButton');
             const brightnessRange = document.getElementById('brightnessRange');
             const contrastRange = document.getElementById('contrastRange');
             const zoomRange = document.getElementById('zoomRange');
-            const cropRange = document.getElementById('cropRange');
+            const manualCropButton = document.getElementById('manualCropButton');
+            const manualCropModal = document.getElementById('manualCropModal');
+            const manualCropPhotoName = document.getElementById('manualCropPhotoName');
+            const manualCropStage = document.getElementById('manualCropStage');
+
+            // Portal the dialog OUT of the Scan/Capture form and all overflow-hidden
+            // layout/sidebar containers. A fixed descendant can otherwise be
+            // clipped or stacked below the sticky navigation/header.
+            document.body.appendChild(manualCropModal);
+            const manualCropCanvas = document.getElementById('manualCropCanvas');
+            const manualCropSelection = document.getElementById('manualCropSelection');
+            const manualCropInfo = document.getElementById('manualCropInfo');
+            const confirmCropButton = document.getElementById('confirmCropButton');
+            const cancelCropButton = document.getElementById('cancelCropButton');
+            const resetCropButton = document.getElementById('resetCropButton');
             const brightnessValue = document.getElementById('brightnessValue');
             const contrastValue = document.getElementById('contrastValue');
             const zoomValue = document.getElementById('zoomValue');
-            const cropValue = document.getElementById('cropValue');
+
 
             // ============================================================
             // DOCUMENT TYPE / CHECKSHEET METADATA
@@ -1555,7 +1787,12 @@
             let replaceOnNextCapture = false;
             let originalFile = null;
             let originalImage = null;
-            let editState = { rotation: 0, brightness: 100, contrast: 100, grayscale: 0, zoom: 100, crop: 0 };
+            let editState = { rotation: 0, brightness: 100, contrast: 100, grayscale: 0, zoom: 100 };
+            let cropSelection = { x: 0, y: 0, w: 1, h: 1 };
+            let cropDrag = null;
+            let cropSourceIndex = -1;
+            let editorBusy = false;
+            let cropReturnFocus = null;
             let objectUrl = null;
 
 
@@ -2292,8 +2529,7 @@
 
                 cameraStatus.textContent = message;
 
-                cameraStatus.classList.toggle('text-red-500', isError);
-                cameraStatus.classList.toggle('text-slate-400', !isError);
+                cameraStatus.classList.toggle('qh-camera-status-error', isError);
 
             }
 
@@ -2456,7 +2692,14 @@
                 stopCamera();
 
                 cameraLoading.classList.remove('hidden');
-                cameraModal.classList.remove('hidden');
+
+                if (cameraModal.classList.contains('hidden')) {
+                    cameraReturnFocus = document.activeElement instanceof HTMLElement
+                        ? document.activeElement : openCameraButton;
+                    cameraModal.classList.remove('hidden');
+                    document.body.classList.add('qh-camera-open');
+                    closeCameraButton.focus();
+                }
 
                 captureButton.disabled = true;
                 cameraSelect.disabled = true;
@@ -2546,9 +2789,18 @@
                     }
 
 
+                    if (cameraModal.classList.contains('hidden')) {
+                        stopCamera();
+                        return;
+                    }
+
                     cameraVideo.srcObject = cameraStream;
 
                     await cameraVideo.play();
+                    if (cameraModal.classList.contains('hidden')) {
+                        stopCamera();
+                        return;
+                    }
 
 
                     /*
@@ -2556,6 +2808,10 @@
                      * mengembalikan label kamera yang sebenarnya.
                      */
                     await getCameraDevices();
+                    if (cameraModal.classList.contains('hidden')) {
+                        stopCamera();
+                        return;
+                    }
 
 
                     /*
@@ -2657,6 +2913,11 @@
                 stopCamera();
 
                 cameraModal.classList.add('hidden');
+                document.body.classList.remove('qh-camera-open');
+                const returnFocus = cameraReturnFocus?.isConnected
+                    ? cameraReturnFocus : openCameraButton;
+                cameraReturnFocus = null;
+                returnFocus.focus();
 
                 cameraLoading.classList.add('hidden');
 
@@ -2674,30 +2935,26 @@
             // SHOW IMAGE PREVIEW
             // ============================================================
             function resetEditor() {
-                editState = { rotation: 0, brightness: 100, contrast: 100, grayscale: 0, zoom: 100, crop: 0 };
+                editState = { rotation: 0, brightness: 100, contrast: 100, grayscale: 0, zoom: 100 };
                 brightnessRange.value = 100;
                 contrastRange.value = 100;
                 zoomRange.value = 100;
-                cropRange.value = 0;
                 brightnessValue.textContent = '100%';
                 contrastValue.textContent = '100%';
                 zoomValue.textContent = '100%';
-                cropValue.textContent = '0%';
                 preview.style.filter = 'none';
                 preview.style.transform = 'none';
-                preview.style.clipPath = 'inset(0%)';
+                preview.style.clipPath = 'none';
             }
 
 
             function renderEditorPreview() {
                 if (!originalImage) return;
-                preview.style.filter = `brightness(${editState.brightness}%) contrast(${editState.contrast}%) grayscale(${editState.grayscale}%)`;
-                preview.style.transform = `rotate(${editState.rotation}deg) scale(${editState.zoom / 100})`;
-                preview.style.clipPath = `inset(${editState.crop}% ${editState.crop}% ${editState.crop}% ${editState.crop}% round 10px)`;
-                brightnessValue.textContent = `${editState.brightness}%`;
-                contrastValue.textContent = `${editState.contrast}%`;
-                zoomValue.textContent = `${editState.zoom}%`;
-                cropValue.textContent = `${editState.crop}%`;
+                preview.style.filter = 'brightness(' + editState.brightness + '%) contrast(' + editState.contrast + '%) grayscale(' + editState.grayscale + '%)';
+                preview.style.transform = 'rotate(' + editState.rotation + 'deg) scale(' + (editState.zoom / 100) + ')';
+                brightnessValue.textContent = editState.brightness + '%';
+                contrastValue.textContent = editState.contrast + '%';
+                zoomValue.textContent = editState.zoom + '%';
             }
 
 
@@ -2716,7 +2973,6 @@
                 preview.classList.remove('hidden');
                 emptyState.classList.add('hidden');
                 editToolbar.classList.remove('hidden');
-                // Ringkasan jumlah file dikelola oleh updateMultiPhotoState().
 
                 originalImage = new Image();
                 originalImage.onload = () => renderEditorPreview();
@@ -2725,64 +2981,291 @@
             }
 
 
+            // Render ONE canonical image for both "Terapkan Perubahan" and crop.
+            // The manual selection is measured against precisely these pixels.
+            function renderEditedCanvas(canvas = document.createElement('canvas')) {
+                if (!originalImage || !originalImage.complete || !originalImage.naturalWidth) {
+                    throw new Error('Foto belum selesai dimuat. Coba lagi.');
+                }
+
+                const img = originalImage;
+                const width = img.naturalWidth;
+                const height = img.naturalHeight;
+                const radians = (editState.rotation * Math.PI) / 180;
+                const sin = Math.abs(Math.sin(radians));
+                const cos = Math.abs(Math.cos(radians));
+                const rotatedWidth = Math.max(1, Math.round(width * cos + height * sin));
+                const rotatedHeight = Math.max(1, Math.round(width * sin + height * cos));
+
+                if (rotatedWidth * rotatedHeight > 35000000) {
+                    throw new Error('Resolusi foto terlalu besar untuk diedit di perangkat ini. Gunakan foto beresolusi lebih rendah.');
+                }
+
+                canvas.width = rotatedWidth;
+                canvas.height = rotatedHeight;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) throw new Error('Canvas tidak tersedia di browser.');
+
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, rotatedWidth, rotatedHeight);
+                ctx.save();
+                ctx.translate(rotatedWidth / 2, rotatedHeight / 2);
+                ctx.rotate(radians);
+                ctx.filter = 'brightness(' + editState.brightness + '%) contrast(' + editState.contrast + '%) grayscale(' + editState.grayscale + '%)';
+                const zoom = editState.zoom / 100;
+                ctx.drawImage(img, -(width * zoom) / 2, -(height * zoom) / 2, width * zoom, height * zoom);
+                ctx.restore();
+                return canvas;
+            }
+
+
+            async function replaceActivePhotoFromCanvas(canvas) {
+                if (activePhotoIndex < 0 || !selectedItems[activePhotoIndex] || !originalFile) {
+                    throw new Error('Foto aktif tidak ditemukan.');
+                }
+
+                const outputType = ['image/png', 'image/webp', 'image/jpeg'].includes(originalFile.type)
+                    ? originalFile.type : 'image/jpeg';
+                const quality = outputType === 'image/png' ? undefined : 0.94;
+                const blob = await new Promise((resolve, reject) =>
+                    canvas.toBlob(b => b ? resolve(b) : reject(new Error('Gagal membuat file hasil edit.')), outputType, quality)
+                );
+
+                if (blob.size <= 0 || blob.size > 20 * 1024 * 1024) {
+                    throw new Error('Hasil edit melebihi batas 20 MB per foto. Coba area crop lebih kecil.');
+                }
+
+                const projectedTotal = totalSelectedBytes() - selectedItems[activePhotoIndex].file.size + blob.size;
+                if (projectedTotal > MAX_TOTAL_BYTES) {
+                    throw new Error('Total foto hasil edit melebihi 200 MB.');
+                }
+
+                const base = originalFile.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'scan-qc';
+                const ext = outputType === 'image/png' ? 'png' : outputType === 'image/webp' ? 'webp' : 'jpg';
+                const editedFile = new File([blob], base + '-edited.' + ext, {
+                    type: outputType,
+                    lastModified: Date.now(),
+                });
+
+                releaseItemObjectUrl(selectedItems[activePhotoIndex]);
+                selectedItems[activePhotoIndex] = {
+                    ...selectedItems[activePhotoIndex],
+                    file: editedFile,
+                };
+
+                updateMultiPhotoState();
+                showPreview(editedFile);
+            }
+
+
             async function applyEditsToFile() {
-                if (!originalFile || !originalImage) return;
+                if (editorBusy || !originalFile || !originalImage) return;
+                editorBusy = true;
                 applyEditButton.disabled = true;
+                manualCropButton.disabled = true;
                 applyEditButton.textContent = 'Memproses gambar...';
 
                 try {
-                    const img = originalImage;
-                    const radians = (editState.rotation * Math.PI) / 180;
-                    const sin = Math.abs(Math.sin(radians));
-                    const cos = Math.abs(Math.cos(radians));
-                    const rotatedWidth = Math.ceil(img.width * cos + img.height * sin);
-                    const rotatedHeight = Math.ceil(img.width * sin + img.height * cos);
-                    const cropX = Math.floor(rotatedWidth * editState.crop / 100);
-                    const cropY = Math.floor(rotatedHeight * editState.crop / 100);
-                    const outW = Math.max(1, rotatedWidth - cropX * 2);
-                    const outH = Math.max(1, rotatedHeight - cropY * 2);
-
-                    const canvas = document.createElement('canvas');
-                    canvas.width = outW;
-                    canvas.height = outH;
-                    const ctx = canvas.getContext('2d');
-                    if (!ctx) throw new Error('Canvas tidak tersedia.');
-
-                    ctx.save();
-                    ctx.translate(rotatedWidth / 2 - cropX, rotatedHeight / 2 - cropY);
-                    ctx.rotate(radians);
-                    ctx.filter = `brightness(${editState.brightness}%) contrast(${editState.contrast}%) grayscale(${editState.grayscale}%)`;
-                    const zoom = editState.zoom / 100;
-                    ctx.drawImage(img, -(img.width * zoom) / 2, -(img.height * zoom) / 2, img.width * zoom, img.height * zoom);
-                    ctx.restore();
-
-                    const outputType = ['image/png', 'image/webp', 'image/jpeg'].includes(originalFile.type) ? originalFile.type : 'image/jpeg';
-                    const quality = outputType === 'image/png' ? undefined : 0.94;
-                    const blob = await new Promise((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(new Error('Gagal membuat file hasil edit.')), outputType, quality));
-                    const base = originalFile.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'scan-qc';
-                    const ext = outputType === 'image/png' ? 'png' : outputType === 'image/webp' ? 'webp' : 'jpg';
-                    const editedFile = new File([blob], `${base}-edited.${ext}`, { type: outputType, lastModified: Date.now() });
-
-                    if (activePhotoIndex < 0 || !selectedItems[activePhotoIndex]) {
-                        throw new Error('Foto aktif tidak ditemukan.');
-                    }
-
-                    releaseItemObjectUrl(selectedItems[activePhotoIndex]);
-                    selectedItems[activePhotoIndex] = {
-                        ...selectedItems[activePhotoIndex],
-                        file: editedFile,
-                    };
-
-                    updateMultiPhotoState();
-                    showPreview(editedFile);
+                    const canvas = renderEditedCanvas();
+                    await replaceActivePhotoFromCanvas(canvas);
                 } catch (error) {
                     console.error('Image edit error:', error);
                     alert(error.message || 'Gagal memproses gambar.');
                 } finally {
+                    editorBusy = false;
                     applyEditButton.disabled = false;
+                    manualCropButton.disabled = false;
                     applyEditButton.textContent = 'Terapkan Perubahan ke Berkas';
                 }
             }
+
+
+            // ============================================================
+            // MANUAL CROP: pointer drag, move, and 8 resize handles.
+            // Coordinates are normalized to the rotated/filtered canvas.
+            // ============================================================
+            const clampCrop = (value, min, max) => Math.max(min, Math.min(max, value));
+            const MIN_CROP_FRACTION = 0.025;
+
+            function drawCropSelection() {
+                manualCropSelection.style.left = (cropSelection.x * 100) + '%';
+                manualCropSelection.style.top = (cropSelection.y * 100) + '%';
+                manualCropSelection.style.width = (cropSelection.w * 100) + '%';
+                manualCropSelection.style.height = (cropSelection.h * 100) + '%';
+
+                const pixelWidth = Math.max(1, Math.round(cropSelection.w * manualCropCanvas.width));
+                const pixelHeight = Math.max(1, Math.round(cropSelection.h * manualCropCanvas.height));
+                manualCropInfo.textContent = 'Area crop: ' + pixelWidth + ' × ' + pixelHeight + ' piksel. Hanya area dalam kotak biru yang disimpan.';
+            }
+
+            function cropPointerPosition(event) {
+                const box = manualCropCanvas.getBoundingClientRect();
+                return {
+                    x: clampCrop((event.clientX - box.left) / Math.max(1, box.width), 0, 1),
+                    y: clampCrop((event.clientY - box.top) / Math.max(1, box.height), 0, 1),
+                };
+            }
+
+            function openManualCrop() {
+                if (editorBusy || !originalFile || activePhotoIndex < 0) return;
+                try {
+                    renderEditedCanvas(manualCropCanvas);
+                    cropSourceIndex = activePhotoIndex;
+                    cropSelection = { x: 0, y: 0, w: 1, h: 1 };
+                    cropDrag = null;
+                    cropReturnFocus = document.activeElement;
+                    manualCropPhotoName.textContent = 'Foto ' + (activePhotoIndex + 1) + ' dari ' + selectedItems.length;
+                    document.body.classList.add('qh-crop-open');
+                    manualCropModal.classList.remove('hidden');
+                    drawCropSelection();
+                    cancelCropButton.focus();
+                } catch (error) {
+                    alert(error.message || 'Tidak bisa membuka crop manual.');
+                }
+            }
+
+            function closeManualCrop(force = false) {
+                if (editorBusy && !force) return;
+                cropDrag = null;
+                cropSourceIndex = -1;
+                manualCropModal.classList.add('hidden');
+                document.body.classList.remove('qh-crop-open');
+                const target = cropReturnFocus && cropReturnFocus.isConnected
+                    ? cropReturnFocus : manualCropButton;
+                cropReturnFocus = null;
+                target.focus();
+            }
+
+            manualCropStage.addEventListener('pointerdown', event => {
+                if (editorBusy) return;
+                if (event.pointerType === 'mouse' && event.button !== 0) return;
+                event.preventDefault();
+
+                const handle = event.target.closest('[data-crop-handle]')?.dataset.cropHandle || '';
+                const move = !handle && Boolean(event.target.closest('#manualCropSelection'));
+                cropDrag = {
+                    pointerId: event.pointerId,
+                    mode: handle ? 'resize' : (move ? 'move' : 'new'),
+                    handle,
+                    start: cropPointerPosition(event),
+                    initial: { ...cropSelection },
+                };
+                manualCropStage.setPointerCapture(event.pointerId);
+            });
+
+            manualCropStage.addEventListener('pointermove', event => {
+                if (editorBusy || !cropDrag || cropDrag.pointerId !== event.pointerId) return;
+                event.preventDefault();
+
+                const point = cropPointerPosition(event);
+                const start = cropDrag.start;
+                const initial = cropDrag.initial;
+                const minSize = MIN_CROP_FRACTION;
+
+                if (cropDrag.mode === 'move') {
+                    cropSelection = {
+                        ...initial,
+                        x: clampCrop(initial.x + point.x - start.x, 0, 1 - initial.w),
+                        y: clampCrop(initial.y + point.y - start.y, 0, 1 - initial.h),
+                    };
+                } else if (cropDrag.mode === 'resize') {
+                    let left = initial.x;
+                    let right = initial.x + initial.w;
+                    let top = initial.y;
+                    let bottom = initial.y + initial.h;
+                    const handle = cropDrag.handle;
+
+                    if (handle.includes('w')) left = clampCrop(point.x, 0, right - minSize);
+                    if (handle.includes('e')) right = clampCrop(point.x, left + minSize, 1);
+                    if (handle.includes('n')) top = clampCrop(point.y, 0, bottom - minSize);
+                    if (handle.includes('s')) bottom = clampCrop(point.y, top + minSize, 1);
+                    cropSelection = { x: left, y: top, w: right - left, h: bottom - top };
+                } else {
+                    const left = Math.min(start.x, point.x);
+                    const top = Math.min(start.y, point.y);
+                    const right = Math.max(start.x, point.x);
+                    const bottom = Math.max(start.y, point.y);
+                    cropSelection = {
+                        x: clampCrop(left, 0, 1 - minSize),
+                        y: clampCrop(top, 0, 1 - minSize),
+                        w: clampCrop(right - left, minSize, 1 - left),
+                        h: clampCrop(bottom - top, minSize, 1 - top),
+                    };
+                }
+                drawCropSelection();
+            });
+
+            function endCropDrag(event) {
+                if (!cropDrag || cropDrag.pointerId !== event.pointerId) return;
+                cropDrag = null;
+                if (manualCropStage.hasPointerCapture(event.pointerId)) {
+                    manualCropStage.releasePointerCapture(event.pointerId);
+                }
+            }
+
+            manualCropStage.addEventListener('pointerup', endCropDrag);
+            manualCropStage.addEventListener('pointercancel', endCropDrag);
+            resetCropButton.addEventListener('click', () => {
+                cropSelection = { x: 0, y: 0, w: 1, h: 1 };
+                drawCropSelection();
+            });
+            manualCropButton.addEventListener('click', openManualCrop);
+            cancelCropButton.addEventListener('click', () => closeManualCrop());
+            manualCropModal.addEventListener('click', event => {
+                if (event.target === manualCropModal) closeManualCrop();
+            });
+            document.addEventListener('keydown', event => {
+                if (manualCropModal.classList.contains('hidden')) return;
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    closeManualCrop();
+                }
+                // Keep keyboard focus inside the open modal.
+                if (event.key === 'Tab') {
+                    const choices = [cancelCropButton, resetCropButton, confirmCropButton]
+                        .filter(button => !button.disabled);
+                    if (choices.length === 0) return;
+                    const current = choices.indexOf(document.activeElement);
+                    if (event.shiftKey && current <= 0) {
+                        event.preventDefault();
+                        choices[choices.length - 1].focus();
+                    } else if (!event.shiftKey && (current < 0 || current === choices.length - 1)) {
+                        event.preventDefault();
+                        choices[0].focus();
+                    }
+                }
+            });
+
+            confirmCropButton.addEventListener('click', async () => {
+                if (editorBusy || cropSourceIndex !== activePhotoIndex || activePhotoIndex < 0) return;
+                editorBusy = true;
+                confirmCropButton.disabled = true;
+                try {
+                    const sourceWidth = manualCropCanvas.width;
+                    const sourceHeight = manualCropCanvas.height;
+                    const sx = Math.max(0, Math.floor(cropSelection.x * sourceWidth));
+                    const sy = Math.max(0, Math.floor(cropSelection.y * sourceHeight));
+                    const right = Math.min(sourceWidth, Math.ceil((cropSelection.x + cropSelection.w) * sourceWidth));
+                    const bottom = Math.min(sourceHeight, Math.ceil((cropSelection.y + cropSelection.h) * sourceHeight));
+                    const width = Math.max(1, right - sx);
+                    const height = Math.max(1, bottom - sy);
+
+                    const result = document.createElement('canvas');
+                    result.width = width;
+                    result.height = height;
+                    const ctx = result.getContext('2d');
+                    if (!ctx) throw new Error('Canvas tidak tersedia di browser.');
+                    ctx.drawImage(manualCropCanvas, sx, sy, width, height, 0, 0, width, height);
+                    await replaceActivePhotoFromCanvas(result);
+                    closeManualCrop(true);
+                } catch (error) {
+                    console.error('Manual crop error:', error);
+                    alert(error.message || 'Gagal memotong foto.');
+                } finally {
+                    editorBusy = false;
+                    confirmCropButton.disabled = false;
+                }
+            });
 
 
             // ============================================================
@@ -2841,6 +3324,7 @@
                 button.type = 'button';
                 button.textContent = label;
                 button.title = title;
+                button.setAttribute('aria-label', title);
                 button.disabled = disabled;
                 button.className = 'inline-flex h-8 min-w-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-2 text-xs font-bold text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-35';
                 button.addEventListener('click', event => {
@@ -2855,50 +3339,91 @@
                 photoQueue.replaceChildren();
 
                 const count = selectedItems.length;
-                photoQueueCount.textContent = `${count} foto`;
+                photoQueueCount.textContent = count + ' foto';
                 photoQueueWrapper.classList.toggle('hidden', count === 0);
                 photoQueueHint.textContent = count > 1
-                    ? 'Urutan foto di bawah menjadi urutan halaman PDF.'
+                    ? 'Foto 1 menjadi halaman PDF pertama. Gunakan tombol panah untuk mengubah urutan halaman.'
                     : 'Tambahkan foto lain jika berkas QC memiliki lebih dari satu halaman.';
+                activePhotoPosition.textContent = activePhotoIndex >= 0 && selectedItems[activePhotoIndex]
+                    ? 'Sedang edit Foto ' + (activePhotoIndex + 1) + ' dari ' + count
+                    : 'Pilih foto untuk diedit';
 
                 selectedItems.forEach((item, index) => {
+                    // One full-width card per photo. Keeping the move/remove actions
+                    // on their own row prevents text collapsing into 1-word lines
+                    // when the Scan/Capture column is narrow on a laptop.
                     const card = document.createElement('div');
-                    card.className = `flex cursor-pointer items-center gap-3 rounded-xl border p-2.5 transition ${index === activePhotoIndex ? 'border-blue-400 bg-white shadow-sm' : 'border-blue-100 bg-white/70 hover:border-blue-300'}`;
+                    card.className = 'qh-photo-card' + (index === activePhotoIndex ? ' qh-photo-card-active' : '');
                     card.addEventListener('click', () => setActivePhoto(index));
+
+                    const main = document.createElement('div');
+                    main.className = 'qh-photo-main';
 
                     const image = document.createElement('img');
                     image.src = ensureItemObjectUrl(item);
-                    image.alt = `Foto ${index + 1}`;
-                    image.className = 'h-14 w-14 shrink-0 rounded-lg border border-slate-200 bg-slate-50 object-cover';
+                    image.alt = 'Pratinjau Foto ' + (index + 1);
+                    image.className = 'qh-photo-thumbnail';
 
                     const body = document.createElement('div');
-                    body.className = 'min-w-0 flex-1';
+                    body.className = 'qh-photo-text';
+
+                    const titleRow = document.createElement('div');
+                    titleRow.className = 'qh-photo-title-row';
 
                     const title = document.createElement('p');
-                    title.className = 'truncate text-xs font-bold text-slate-800';
-                    title.textContent = `Halaman ${index + 1} · ${item.file.name}`;
+                    title.className = 'qh-photo-title';
+                    title.textContent = 'Foto ' + (index + 1);
+
+                    const positionLabel = count === 1 ? 'PERTAMA & TERAKHIR'
+                        : index === 0 ? 'PERTAMA'
+                        : index === count - 1 ? 'TERAKHIR' : '';
+                    titleRow.append(title);
+
+                    if (positionLabel) {
+                        const badge = document.createElement('span');
+                        badge.className = 'qh-photo-position';
+                        badge.textContent = positionLabel;
+                        titleRow.append(badge);
+                    }
+
+                    const order = document.createElement('p');
+                    order.className = 'qh-photo-page';
+                    order.textContent = 'Halaman PDF ' + (index + 1) + ' dari ' + count;
+
+                    const filename = document.createElement('p');
+                    filename.className = 'qh-photo-filename';
+                    filename.textContent = item.file.name;
+                    filename.title = item.file.name;
 
                     const meta = document.createElement('p');
-                    meta.className = 'mt-1 text-[11px] text-slate-500';
-                    meta.textContent = `${(item.file.size / 1024 / 1024).toFixed(2)} MB · ${item.source === 'camera' ? 'Kamera' : 'Galeri'}`;
+                    meta.className = 'qh-photo-meta';
+                    meta.textContent = (item.file.size / 1024 / 1024).toFixed(2) + ' MB · ' + (item.source === 'camera' ? 'Kamera' : 'Galeri');
 
-                    body.append(title, meta);
+                    body.append(titleRow, order, filename, meta);
+                    main.append(image, body);
 
                     const actions = document.createElement('div');
-                    actions.className = 'flex shrink-0 items-center gap-1';
-                    actions.append(
-                        createQueueAction('←', 'Geser ke halaman sebelumnya', index === 0, () => movePhoto(index, -1)),
-                        createQueueAction('→', 'Geser ke halaman berikutnya', index === count - 1, () => movePhoto(index, 1)),
-                        createQueueAction('×', 'Hapus foto', false, () => removePhoto(index)),
-                    );
+                    actions.className = 'qh-photo-actions';
+                    const instruction = document.createElement('span');
+                    instruction.className = 'qh-photo-action-label';
+                    instruction.textContent = 'Atur urutan halaman';
 
-                    card.append(image, body, actions);
+                    const buttons = document.createElement('div');
+                    buttons.className = 'qh-photo-action-buttons';
+                    buttons.append(
+                        createQueueAction('←', 'Pindahkan Foto ' + (index + 1) + ' ke halaman PDF sebelumnya', index === 0, () => movePhoto(index, -1)),
+                        createQueueAction('→', 'Pindahkan Foto ' + (index + 1) + ' ke halaman PDF berikutnya', index === count - 1, () => movePhoto(index, 1)),
+                        createQueueAction('×', 'Hapus Foto ' + (index + 1), false, () => removePhoto(index)),
+                    );
+                    actions.append(instruction, buttons);
+
+                    card.append(main, actions);
                     photoQueue.append(card);
                 });
             }
 
 
-            function updateMultiPhotoState() {
+                        function updateMultiPhotoState() {
                 refreshCaptureSource();
                 const synced = syncFilesToForm();
                 renderPhotoQueue();
@@ -2923,7 +3448,7 @@
 
 
             function setActivePhoto(index) {
-                if (!selectedItems[index]) return;
+                if (editorBusy || !selectedItems[index]) return;
                 activePhotoIndex = index;
                 showPreview(selectedItems[index].file);
                 renderPhotoQueue();
@@ -2931,6 +3456,10 @@
 
 
             function addPhotos(files, source, replaceActive = false) {
+                if (editorBusy) {
+                    alert('Selesaikan proses edit foto yang sedang berjalan terlebih dahulu.');
+                    return false;
+                }
                 const incoming = Array.from(files || []).filter(file => file && file.type.startsWith('image/'));
 
                 if (incoming.length === 0) {
@@ -2975,7 +3504,7 @@
 
 
             function removePhoto(index) {
-                if (!selectedItems[index]) return;
+                if (editorBusy || !selectedItems[index]) return;
                 releaseItemObjectUrl(selectedItems[index]);
                 selectedItems.splice(index, 1);
 
@@ -3002,6 +3531,7 @@
 
 
             function movePhoto(index, direction) {
+                if (editorBusy) return;
                 const target = index + direction;
                 if (!selectedItems[index] || target < 0 || target >= selectedItems.length) return;
 
@@ -3020,6 +3550,7 @@
             // ============================================================
             document.querySelectorAll('[data-edit-action]').forEach(button => {
                 button.addEventListener('click', () => {
+                    if (editorBusy) return;
                     const action = button.dataset.editAction;
                     if (action === 'rotate-left') editState.rotation -= 90;
                     if (action === 'rotate-right') editState.rotation += 90;
@@ -3032,9 +3563,9 @@
             brightnessRange.addEventListener('input', e => { editState.brightness = Number(e.target.value); renderEditorPreview(); });
             contrastRange.addEventListener('input', e => { editState.contrast = Number(e.target.value); renderEditorPreview(); });
             zoomRange.addEventListener('input', e => { editState.zoom = Number(e.target.value); renderEditorPreview(); });
-            cropRange.addEventListener('input', e => { editState.crop = Number(e.target.value); renderEditorPreview(); });
             applyEditButton.addEventListener('click', applyEditsToFile);
             retakeButton.addEventListener('click', () => {
+                if (editorBusy) return;
                 resetEditor();
                 replaceOnNextCapture = activePhotoIndex >= 0;
 
@@ -3246,19 +3777,32 @@
 
 
             // ============================================================
-            // ESC TO CLOSE
+            // ESC / FOCUS CONTAINMENT
             // ============================================================
             document.addEventListener('keydown', (event) => {
+                if (cameraModal.classList.contains('hidden')) return;
 
-                if (
-                    event.key === 'Escape' &&
-                    !cameraModal.classList.contains('hidden')
-                ) {
-
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    replaceOnNextCapture = false;
                     closeCamera();
-
+                    return;
                 }
 
+                if (event.key === 'Tab') {
+                    const focusables = [
+                        closeCameraButton, cameraSelect, switchCameraButton, captureButton,
+                    ].filter(el => !el.disabled && el.getClientRects().length > 0);
+                    if (!focusables.length) return;
+                    const idx = focusables.indexOf(document.activeElement);
+                    if (event.shiftKey && idx <= 0) {
+                        event.preventDefault();
+                        focusables[focusables.length - 1].focus();
+                    } else if (!event.shiftKey && (idx === focusables.length - 1 || idx < 0)) {
+                        event.preventDefault();
+                        focusables[0].focus();
+                    }
+                }
             });
 
 

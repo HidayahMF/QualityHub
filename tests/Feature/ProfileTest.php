@@ -28,9 +28,12 @@ class ProfileTest extends TestCase
         $response
             ->assertOk()
             ->assertSee('My Profile')
-            ->assertSee(
-                'Kelola informasi akun dan keamanan akses BMC QualityHub.'
-            )
+            ->assertSee('Profil Saya')
+            ->assertSee('Informasi Akun')
+            ->assertSee('Keamanan Kata Sandi')
+            ->assertSee('Foto Profil')
+            ->assertSee('data-qh-compact-profile', false)
+            ->assertSee('data-qh-security-panel', false)
             ->assertSee('BMC Administrator')
             ->assertSee('admin@bmc.local')
             ->assertSee('Super Admin')

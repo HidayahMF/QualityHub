@@ -1269,7 +1269,12 @@
 
                                flex-shrink-0"
                     >
-                        {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                        @if(Auth::user()->profile_photo_path)
+                            <img src="{{ route('profile.photo.show') }}" alt="Foto profil {{ Auth::user()->name }}"
+                                 class="h-full w-full rounded-xl object-cover" loading="lazy">
+                        @else
+                            {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                        @endif
                     </div>
 
 
@@ -1763,7 +1768,12 @@
 
                                        font-bold"
                             >
-                                {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                                @if(Auth::user()->profile_photo_path)
+                            <img src="{{ route('profile.photo.show') }}" alt="Foto profil {{ Auth::user()->name }}"
+                                 class="h-full w-full rounded-xl object-cover" loading="lazy">
+                        @else
+                            {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                        @endif
                             </div>
 
 
@@ -1876,7 +1886,12 @@
 
                                                flex-shrink-0"
                                     >
-                                        {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                                        @if(Auth::user()->profile_photo_path)
+                            <img src="{{ route('profile.photo.show') }}" alt="Foto profil {{ Auth::user()->name }}"
+                                 class="h-full w-full rounded-xl object-cover" loading="lazy">
+                        @else
+                            {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                        @endif
                                     </div>
 
 

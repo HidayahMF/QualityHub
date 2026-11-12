@@ -13,195 +13,30 @@
 
 
     {{-- ========================================================= --}}
-    {{-- PAGE HEADER --}}
-    {{-- ========================================================= --}}
-
-    <section
-        class="flex
-               flex-col
-               lg:flex-row
-               lg:items-center
-               lg:justify-between
-               gap-5
-               mb-8"
-    >
-
-        <div>
-
-            <div
-                class="inline-flex
-                       items-center
-                       gap-2
-                       mb-2
-                       text-sm
-                       font-semibold
-                       text-blue-700"
-            >
-                <span
-                    class="w-2
-                           h-2
-                           rounded-full
-                           bg-blue-600"
-                ></span>
-
-                Document Management
+    {{-- Compact page header; preserve original role checks and routes. --}}
+    <header class="mb-4 flex flex-wrap items-center justify-between gap-3" data-qh-documents-header>
+        <div class="min-w-0">
+            <p class="mb-1 text-[11px] font-bold uppercase tracking-[0.13em] text-blue-700">Document Management</p>
+            <div class="flex flex-wrap items-center gap-3">
+                <h1 class="!text-[27px] font-extrabold leading-tight tracking-tight text-slate-900">All Documents</h1>
+                <span class="rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-800">{{ number_format($documents->total()) }} dokumen</span>
             </div>
-
-
-            <h1
-                class="text-3xl
-                       sm:text-4xl
-                       font-bold
-                       tracking-tight
-                       text-slate-900"
-            >
-                All Documents
-            </h1>
-
-
-            <p
-                class="mt-2
-                       text-sm
-                       sm:text-base
-                       text-slate-500"
-            >
-                Cari, atur, dan akses dokumen internal BMC
-                dari satu ruang kerja terpusat.
-            </p>
-
         </div>
-
-
-
-        {{-- HEADER ACTIONS --}}
-
-        <div
-            class="flex
-                   flex-col
-                   sm:flex-row
-                   gap-3"
-        >
-
-            {{-- MY FAVORITES --}}
-
+        <nav aria-label="Aksi dokumen" class="flex flex-wrap items-center gap-2">
             @if(Route::has('favorites.index'))
-
-                <a
-                    href="{{ route('favorites.index') }}"
-
-                    class="inline-flex
-                           items-center
-                           justify-center
-                           gap-2
-
-                           rounded-xl
-
-                           border
-                           border-amber-200
-
-                           bg-amber-50
-
-                           px-5
-                           py-3
-
-                           text-sm
-                           font-semibold
-                           text-amber-700
-
-                           hover:bg-amber-100
-                           hover:border-amber-300
-
-                           transition"
-                >
-
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                    >
-                        <path
-                            d="m12 17.27
-                               5.18 3.04
-                               -1.4-5.89
-                               4.58-3.96
-                               -6.03-.52
-                               L12 4.38
-                               9.67 9.94
-                               l-6.03.52
-                               4.58 3.96
-                               -1.4 5.89Z"
-                        />
-                    </svg>
-
+                <a href="{{ route('favorites.index') }}" class="inline-flex min-h-[40px] items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-white px-4 text-sm font-semibold text-blue-800 transition hover:bg-blue-50">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 3 2.8 5.8 6.4.9-4.6 4.5 1.1 6.3-5.7-3-5.7 3 1.1-6.3-4.6-4.5 6.4-.9Z"/></svg>
                     Favorit Saya
-
                 </a>
-
             @endif
-
-
-
-            {{-- ADD DOCUMENT --}}
-
             @if(Auth::user()->isAdmin())
-
-                <a
-                    href="{{ route('documents.create') }}"
-
-                    class="inline-flex
-                           items-center
-                           justify-center
-                           gap-2
-
-                           rounded-xl
-
-                           bg-blue-800
-
-                           px-5
-                           py-3
-
-                           text-sm
-                           font-semibold
-                           text-white
-
-                           shadow-lg
-                           shadow-blue-900/10
-
-                           hover:bg-blue-900
-                           hover:-translate-y-0.5
-
-                           transition
-                           duration-200"
-                >
-
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                    >
-                        <path d="M12 5v14"/>
-                        <path d="M5 12h14"/>
-                    </svg>
-
+                <a href="{{ route('documents.create') }}" class="inline-flex min-h-[40px] items-center justify-center gap-1.5 rounded-xl bg-blue-800 px-4 text-sm font-bold text-white shadow-sm transition hover:bg-blue-900">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
                     Tambah Dokumen
-
                 </a>
-
             @endif
-
-        </div>
-
-    </section>
-
-
+        </nav>
+    </header>
 
     {{-- ========================================================= --}}
     {{-- SUCCESS NOTIFICATION --}}
@@ -404,456 +239,6 @@
 
 
     {{-- ========================================================= --}}
-    {{-- QUICK STATS --}}
-    {{-- ========================================================= --}}
-
-    <section
-        class="grid
-               grid-cols-1
-               sm:grid-cols-2
-               xl:grid-cols-3
-               gap-4
-               mb-6"
-    >
-
-
-        {{-- DOCUMENT COUNT --}}
-
-        <div
-            class="bg-white
-
-                   rounded-2xl
-
-                   border
-                   border-slate-200/70
-
-                   p-5
-
-                   shadow-sm"
-        >
-
-            <div class="flex items-center justify-between">
-
-                <div>
-
-                    <p
-                        class="text-sm
-                               font-medium
-                               text-slate-500"
-                    >
-                        {{ $hasActiveFilters
-                            ? 'Dokumen Sesuai'
-                            : 'Dokumen Terindeks'
-                        }}
-                    </p>
-
-
-                    <p
-                        class="mt-2
-                               text-3xl
-                               font-bold
-                               text-slate-900"
-                    >
-                        {{ number_format($documents->total()) }}
-                    </p>
-
-
-                    <p
-                        class="mt-2
-                               text-xs
-                               text-slate-400"
-                    >
-                        {{ $hasActiveFilters
-                            ? 'Hasil yang sesuai dengan filter saat ini'
-                            : 'Dokumen aktif yang tersedia di QualityHub'
-                        }}
-                    </p>
-
-                </div>
-
-
-                <div
-                    class="w-12
-                           h-12
-
-                           rounded-2xl
-
-                           bg-blue-50
-                           text-blue-700
-
-                           flex
-                           items-center
-                           justify-center"
-                >
-
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="22"
-                        height="22"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                    >
-                        <path
-                            d="M14.5 2H6
-                               a2 2 0 0 0-2 2
-                               v16
-                               a2 2 0 0 0 2 2
-                               h12
-                               a2 2 0 0 0 2-2
-                               V7.5Z"
-                        />
-
-                        <polyline points="14 2 14 8 20 8"/>
-                    </svg>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-
-        {{-- STORAGE --}}
-
-        <div
-            class="bg-white
-
-                   rounded-2xl
-
-                   border
-                   border-slate-200/70
-
-                   p-5
-
-                   shadow-sm"
-        >
-
-            <div class="flex items-center justify-between">
-
-                <div>
-
-                    <p
-                        class="text-sm
-                               font-medium
-                               text-slate-500"
-                    >
-                        Penyimpanan Dokumen
-                    </p>
-
-
-                    <p
-                        class="mt-2
-                               text-lg
-                               font-bold
-                               text-slate-900"
-                    >
-                        Penyimpanan Internal
-                    </p>
-
-
-                    <p
-                        class="mt-2
-                               text-xs
-                               text-slate-400"
-                    >
-                        File hanya dapat diakses melalui rute yang memerlukan autentikasi
-                    </p>
-
-                </div>
-
-
-                <div
-                    class="w-12
-                           h-12
-
-                           rounded-2xl
-
-                           bg-emerald-50
-                           text-emerald-700
-
-                           flex
-                           items-center
-                           justify-center"
-                >
-
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="22"
-                        height="22"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                    >
-                        <rect
-                            width="18"
-                            height="11"
-                            x="3"
-                            y="11"
-                            rx="2"
-                        />
-
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                    </svg>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-
-        {{-- SOURCE --}}
-
-        <div
-            class="bg-white
-
-                   rounded-2xl
-
-                   border
-                   border-slate-200/70
-
-                   p-5
-
-                   shadow-sm
-
-                   sm:col-span-2
-                   xl:col-span-1"
-        >
-
-            <div class="flex items-center justify-between">
-
-                <div>
-
-                    <p
-                        class="text-sm
-                               font-medium
-                               text-slate-500"
-                    >
-                        Sumber Data Saat Ini
-                    </p>
-
-
-                    <p
-                        class="mt-2
-                               text-lg
-                               font-bold
-                               text-slate-900"
-                    >
-                        Pengembangan Lokal
-                    </p>
-
-
-                    <p
-                        class="mt-2
-                               text-xs
-                               text-slate-400"
-                    >
-                        Integrasi server BMC akan dikonfigurasi kemudian
-                    </p>
-
-                </div>
-
-
-                <div
-                    class="w-12
-                           h-12
-
-                           rounded-2xl
-
-                           bg-indigo-50
-                           text-indigo-700
-
-                           flex
-                           items-center
-                           justify-center"
-                >
-
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="22"
-                        height="22"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                    >
-
-                        <ellipse
-                            cx="12"
-                            cy="5"
-                            rx="9"
-                            ry="3"
-                        />
-
-                        <path
-                            d="M3 5v14
-                               c0 1.7 4 3 9 3
-                               s9-1.3 9-3V5"
-                        />
-
-                        <path
-                            d="M3 12
-                               c0 1.7 4 3 9 3
-                               s9-1.3 9-3"
-                        />
-
-                    </svg>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </section>
-
-
-
-    {{-- ========================================================= --}}
-    {{-- AI SMART SEARCH --}}
-    {{-- ========================================================= --}}
-
-    <section
-        x-data="aiSmartSearch"
-        class="mb-6"
-        aria-labelledby="ai-smart-search-title"
-    >
-        <div class="rounded-2xl border border-indigo-200/70 bg-white p-5 shadow-sm">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div class="flex items-start gap-3">
-                    <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <path d="M12 3a4 4 0 0 0-4 4v1a4 4 0 0 0-2 7.5A4 4 0 0 0 10 21h2"/>
-                            <path d="M12 3a4 4 0 0 1 4 4v1a4 4 0 0 1 2 7.5A4 4 0 0 1 14 21h-2"/>
-                            <path d="M9 8h6M8 13h8M12 8v13"/>
-                        </svg>
-                    </div>
-
-                    <div>
-                        <h2 id="ai-smart-search-title" class="font-bold text-slate-900">
-                            AI Smart Search
-                        </h2>
-                        <p class="mt-0.5 text-xs text-slate-500">
-                            Cari dokumen menggunakan bahasa sehari-hari dari metadata QualityHub.
-                        </p>
-                    </div>
-                </div>
-
-                <span class="inline-flex w-fit items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
-                    <span class="h-2 w-2 rounded-full bg-indigo-500"></span>
-                    AI Lokal
-                </span>
-            </div>
-
-            <form class="mt-5" @submit.prevent="performAiSearch()">
-                <label for="ai-smart-search-query" class="block text-sm font-semibold text-slate-700">
-                    Permintaan pencarian
-                </label>
-
-                <div class="mt-2 flex flex-col gap-3 sm:flex-row">
-                    <input
-                        id="ai-smart-search-query"
-                        x-model="query"
-                        type="search"
-                        maxlength="500"
-                        autocomplete="off"
-                        required
-                        placeholder="Contoh: cari dokumen retooling line 2 bulan September"
-                        aria-describedby="ai-smart-search-help ai-smart-search-status"
-                        :aria-invalid="error ? 'true' : 'false'"
-                        class="min-w-0 flex-1 rounded-xl border-slate-200 bg-slate-50 px-4 py-3 text-sm placeholder:text-slate-400 focus:border-indigo-500 focus:ring-indigo-500"
-                    >
-
-                    <button
-                        type="submit"
-                        :disabled="loading"
-                        :aria-busy="loading"
-                        aria-controls="ai-smart-search-results"
-                        class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-                    >
-                        <svg x-show="loading" class="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true" x-cloak>
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"></path>
-                        </svg>
-                        <span x-text="loading ? 'Mencari...' : 'Cari dengan AI'"></span>
-                    </button>
-                </div>
-
-                <p id="ai-smart-search-help" class="mt-2 text-xs text-slate-500">
-                    Contoh: “cari axle assy posisi LH terbaru” atau “dokumen brake assy part number 402 502”.
-                </p>
-            </form>
-
-            <p id="ai-smart-search-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true" x-text="statusMessage"></p>
-
-            <div x-show="loading" class="mt-4 rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm text-indigo-700" role="status" x-cloak>
-                AI lokal sedang memahami permintaan dan mengurutkan metadata dokumen.
-            </div>
-
-            <div x-show="error || fallback" class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3" role="alert" x-cloak>
-                <p
-                    class="text-sm font-semibold text-amber-800"
-                    x-text="fallback ? 'AI Smart Search lokal sedang tidak tersedia.' : error"
-                ></p>
-                <p x-show="fallback" class="mt-1 text-xs text-amber-700" x-text="message"></p>
-                <p x-show="error" class="mt-1 text-xs text-amber-700">
-                    Pencarian QualityHub biasa di bawah tetap dapat digunakan.
-                </p>
-                <a
-                    x-show="fallbackUrl"
-                    :href="fallbackUrl"
-                    class="mt-3 inline-flex items-center rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
-                >
-                    Cari dengan pencarian biasa
-                </a>
-            </div>
-
-            <div id="ai-smart-search-results" x-show="searched && !loading && !error" :aria-busy="loading" class="mt-5" x-cloak>
-                <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <h3 class="text-sm font-bold text-slate-800" x-text="fallback ? 'Hasil pencarian biasa' : 'Hasil AI Smart Search'"></h3>
-                        <p x-show="message && !fallback" class="mt-0.5 text-xs text-slate-500" x-text="message"></p>
-                    </div>
-                    <span class="text-xs font-semibold text-indigo-700" x-text="results.length + ' dokumen'"></span>
-                </div>
-
-                <div x-show="results.length === 0" class="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-5 py-6 text-center">
-                    <p class="text-sm font-semibold text-slate-700">Dokumen yang sesuai tidak ditemukan</p>
-                    <p class="mt-1 text-xs text-slate-500">Coba deskripsi yang lebih singkat atau gunakan pencarian biasa.</p>
-                </div>
-
-                <div x-show="results.length > 0" class="mt-3 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">
-                    <template x-for="document in results" :key="document.id">
-                        <a
-                            :href="document.url"
-                            class="group flex items-start gap-3 bg-white px-4 py-4 transition hover:bg-indigo-50/50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
-                        >
-                            <div class="min-w-0 flex-1">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <p class="min-w-0 truncate text-sm font-semibold text-slate-800" x-text="document.title"></p>
-                                    <span x-show="document.extension" class="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500" x-text="document.extension"></span>
-                                </div>
-                                <p x-show="document.explanation" class="mt-1 text-xs font-medium text-indigo-700" x-text="document.explanation"></p>
-                                <p x-show="document.metadata" class="mt-1 text-xs text-slate-500" x-text="document.metadata"></p>
-                            </div>
-
-                            <svg class="mt-1 flex-shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-indigo-600" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                <path d="m9 18 6-6-6-6"/>
-                            </svg>
-                        </a>
-                    </template>
-                </div>
-            </div>
-        </div>
-    </section>
-
-
-    {{-- ========================================================= --}}
     {{-- SMART SEARCH ENGINE --}}
     <div
         id="document-search"
@@ -866,7 +251,7 @@
     <section
         x-data="documentSearch"
 
-        class="mb-6"
+        class="mb-4"
     >
 
         <div
@@ -879,7 +264,7 @@
 
                    shadow-sm
 
-                   p-5"
+                   p-4 sm:p-5"
         >
 
 
@@ -895,7 +280,7 @@
                        lg:justify-between
                        gap-3
 
-                       mb-5"
+                       mb-3"
             >
 
                 <div>
@@ -946,14 +331,7 @@
                             </h2>
 
 
-                            <p
-                                class="mt-0.5
-                                       text-xs
-                                       text-slate-500"
-                            >
-                                Cari berdasarkan metadata dokumen,
-                                kategori, dan departemen.
-                            </p>
+                            
 
                         </div>
 
@@ -1001,7 +379,7 @@
 
                     </span>
 
-                    Mesin Pencarian Aktif
+                    Pencarian Aktif
 
                 </div>
 
@@ -1014,16 +392,13 @@
             {{-- ================================================= --}}
 
             <div
-                class="flex
-                       flex-col
-                       xl:flex-row
-                       gap-3"
+                class="grid grid-cols-1 gap-2 md:grid-cols-3"
             >
 
 
                 {{-- SEARCH INPUT --}}
 
-                <div class="relative flex-1">
+                <div class="relative min-w-0 md:col-span-3">
 
                     <div
                         class="absolute
@@ -1694,12 +1069,12 @@
 
                 {{-- DEPARTMENT FILTER --}}
 
-                <select
-                    x-model="department"
+                <select data-qh-searchable-select
+x-model="department"
 
                     @change="performSearch()"
 
-                    class="rounded-xl
+                    class="min-w-0 w-full rounded-xl
 
                            border-slate-200
 
@@ -1736,12 +1111,12 @@
 
                 {{-- CATEGORY FILTER --}}
 
-                <select
-                    x-model="category"
+                <select data-qh-searchable-select
+x-model="category"
 
                     @change="performSearch()"
 
-                    class="rounded-xl
+                    class="min-w-0 w-full rounded-xl
 
                            border-slate-200
 
@@ -1778,12 +1153,12 @@
 
                 {{-- FILE TYPE FILTER --}}
 
-                <select
-                    x-model="extension"
+                <select data-qh-searchable-select
+x-model="extension"
 
                     @change="performSearch()"
 
-                    class="rounded-xl
+                    class="min-w-0 w-full rounded-xl
 
                            border-slate-200
 
@@ -1824,18 +1199,16 @@
             {{-- QUICK FIND — DOKUMEN QC --}}
             {{-- ================================================= --}}
 
-            <div class="mt-4 rounded-xl border border-blue-100 bg-blue-50/50 p-3">
-                <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+            <div class="mt-3 rounded-xl border border-blue-100 bg-blue-50/40 px-3 py-2.5">
+                <div class="flex flex-wrap items-center gap-2.5">
                     <div>
                         <p class="text-xs font-bold text-slate-700">
                             Temukan Cepat
                         </p>
-                        <p class="mt-0.5 text-[11px] text-slate-500">
-                            Klik jenis atau metadata QC tanpa perlu menebak kata pencarian.
-                        </p>
+                        
                     </div>
 
-                    <div class="flex flex-wrap gap-2">
+                    <div class="flex flex-wrap gap-1.5">
                         <button type="button"
                             @click="quickType('Retooling')"
                             class="rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100">
@@ -1883,15 +1256,18 @@
 
 
             {{-- ================================================= --}}
-            {{-- ADVANCED FILTER --}}
-            {{-- ================================================= --}}
-
+            <details class="group mt-3 border-t border-slate-100 pt-2" data-qh-documents-advanced
+                @if(request()->filled('document_type') || request()->filled('date_from') || request()->filled('date_to')) open @endif>
+                <summary class="flex w-fit cursor-pointer list-none items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 [&::-webkit-details-marker]:hidden">
+                    <svg class="h-4 w-4 transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                    Filter Lanjutan
+                </summary>
             <div
                 class="mt-4
 
                        grid
                        sm:grid-cols-2
-                       xl:grid-cols-5
+                       lg:grid-cols-3 xl:grid-cols-5
 
                        gap-3"
             >
@@ -1907,8 +1283,8 @@
                         Jenis Dokumen QC
                     </label>
 
-                    <select
-                        id="smartfind-document-type"
+                    <select data-qh-searchable-select
+id="smartfind-document-type"
                         x-model="documentType"
                         @change="performSearch()"
                         class="w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-700 focus:border-blue-500 focus:ring-blue-500"
@@ -2136,8 +1512,7 @@
                 </div>
 
             </div>
-
-
+            </details>
 
             {{-- ================================================= --}}
             {{-- SEARCH ERROR --}}
@@ -2170,85 +1545,128 @@
 
 
             {{-- ================================================= --}}
-            {{-- SEARCH STATUS --}}
-            {{-- ================================================= --}}
-
-            <div
-                class="mt-4
-
-                       flex
-                       flex-wrap
-                       items-center
-                       gap-2
-
-                       text-xs
-                       text-slate-400"
-            >
-
-                <span
-                    class="w-2
-                           h-2
-                           rounded-full
-                           bg-emerald-500"
-                ></span>
-
-                Pencarian metadata real-time aktif
-
-                <span>•</span>
-
-                <span>
-                    Judul
-                </span>
-
-                <span>•</span>
-
-                <span>
-                    Nama File
-                </span>
-
-                <span>•</span>
-
-                <span>
-                    Kode Dokumen
-                </span>
-
-                <span>•</span>
-
-                <span>
-                    Nomor Part
-                </span>
-
-                <span>•</span>
-
-                <span>
-                    Jenis QC / Type / Posisi / Varian
-                </span>
-
-                <span>•</span>
-
-                <span>
-                    Kata Kunci
-                </span>
-
-                <span>•</span>
-
-                <span>
-                    Kategori
-                </span>
-
-                <span>•</span>
-
-                <span>
-                    Departemen
-                </span>
-
-            </div>
-
         </div>
 
     </section>
 
 
+
+    {{-- ========================================================= --}}
+    {{-- AI search remains available without occupying the default viewport. --}}
+    <section x-data="aiSmartSearch" class="mb-4">
+        <details class="group overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-sm shadow-slate-900/5" data-qh-ai-search>
+            <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 text-sm font-bold text-slate-900 hover:bg-blue-50/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 [&::-webkit-details-marker]:hidden">
+                <span class="flex items-center gap-2.5">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-700" aria-hidden="true">
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3a4 4 0 0 0-4 4v1a4 4 0 0 0-2 7.5A4 4 0 0 0 10 21h2"/><path d="M12 3a4 4 0 0 1 4 4v1a4 4 0 0 1 2 7.5A4 4 0 0 1 14 21h-2"/><path d="M9 8h6M8 13h8M12 8v13"/></svg>
+                    </span>
+                    AI Smart Search
+                    <span class="hidden rounded-lg bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700 sm:inline-flex">Pencarian lanjutan</span>
+                </span>
+                <svg class="h-4 w-4 text-blue-700 transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            </summary>
+            <div class="border-t border-slate-100 px-4 py-4 sm:px-5">
+            <form class="mt-0" @submit.prevent="performAiSearch()">
+                <label for="ai-smart-search-query" class="block text-sm font-semibold text-slate-700">
+                    Permintaan pencarian
+                </label>
+
+                <div class="mt-2 flex flex-col gap-3 sm:flex-row">
+                    <input
+                        id="ai-smart-search-query"
+                        x-model="query"
+                        type="search"
+                        maxlength="500"
+                        autocomplete="off"
+                        required
+                        placeholder="Contoh: cari dokumen retooling line 2 bulan September"
+                        aria-describedby="ai-smart-search-help ai-smart-search-status"
+                        :aria-invalid="error ? 'true' : 'false'"
+                        class="min-w-0 flex-1 rounded-xl border-slate-200 bg-slate-50 px-4 py-3 text-sm placeholder:text-slate-400 focus:border-indigo-500 focus:ring-indigo-500"
+                    >
+
+                    <button
+                        type="submit"
+                        :disabled="loading"
+                        :aria-busy="loading"
+                        aria-controls="ai-smart-search-results"
+                        class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                    >
+                        <svg x-show="loading" class="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true" x-cloak>
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"></path>
+                        </svg>
+                        <span x-text="loading ? 'Mencari...' : 'Cari dengan AI'"></span>
+                    </button>
+                </div>
+
+                <p id="ai-smart-search-help" class="sr-only">Cari dokumen dengan deskripsi Anda.</p>
+            </form>
+
+            <p id="ai-smart-search-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true" x-text="statusMessage"></p>
+
+            <div x-show="loading" class="mt-4 rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm text-indigo-700" role="status" x-cloak>
+                AI lokal sedang memahami permintaan dan mengurutkan metadata dokumen.
+            </div>
+
+            <div x-show="error || fallback" class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3" role="alert" x-cloak>
+                <p
+                    class="text-sm font-semibold text-amber-800"
+                    x-text="fallback ? 'AI Smart Search lokal sedang tidak tersedia.' : error"
+                ></p>
+                <p x-show="fallback" class="mt-1 text-xs text-amber-700" x-text="message"></p>
+                <p x-show="error" class="mt-1 text-xs text-amber-700">
+                    Pencarian QualityHub biasa di bawah tetap dapat digunakan.
+                </p>
+                <a
+                    x-show="fallbackUrl"
+                    :href="fallbackUrl"
+                    class="mt-3 inline-flex items-center rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+                >
+                    Cari dengan pencarian biasa
+                </a>
+            </div>
+
+            <div id="ai-smart-search-results" x-show="searched && !loading && !error" :aria-busy="loading" class="mt-5" x-cloak>
+                <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-800" x-text="fallback ? 'Hasil pencarian biasa' : 'Hasil AI Smart Search'"></h3>
+                        <p x-show="message && !fallback" class="mt-0.5 text-xs text-slate-500" x-text="message"></p>
+                    </div>
+                    <span class="text-xs font-semibold text-indigo-700" x-text="results.length + ' dokumen'"></span>
+                </div>
+
+                <div x-show="results.length === 0" class="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-5 py-6 text-center">
+                    <p class="text-sm font-semibold text-slate-700">Dokumen yang sesuai tidak ditemukan</p>
+                    <p class="mt-1 text-xs text-slate-500">Coba deskripsi yang lebih singkat atau gunakan pencarian biasa.</p>
+                </div>
+
+                <div x-show="results.length > 0" class="mt-3 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">
+                    <template x-for="document in results" :key="document.id">
+                        <a
+                            :href="document.url"
+                            class="group flex items-start gap-3 bg-white px-4 py-4 transition hover:bg-indigo-50/50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
+                        >
+                            <div class="min-w-0 flex-1">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <p class="min-w-0 truncate text-sm font-semibold text-slate-800" x-text="document.title"></p>
+                                    <span x-show="document.extension" class="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500" x-text="document.extension"></span>
+                                </div>
+                                <p x-show="document.explanation" class="mt-1 text-xs font-medium text-indigo-700" x-text="document.explanation"></p>
+                                <p x-show="document.metadata" class="mt-1 text-xs text-slate-500" x-text="document.metadata"></p>
+                            </div>
+
+                            <svg class="mt-1 flex-shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-indigo-600" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path d="m9 18 6-6-6-6"/>
+                            </svg>
+                        </a>
+                    </template>
+                </div>
+            </div>
+
+            </div>
+        </details>
+    </section>
 
     {{-- ========================================================= --}}
     {{-- DOCUMENT LIBRARY --}}
@@ -2410,7 +1828,7 @@
 
             <div class="hidden lg:flex items-center justify-between gap-3 px-6 py-3 border-b border-slate-100 bg-slate-50/40">
                 <p class="text-[11px] text-slate-400">
-                    Tampilan tabel dioptimalkan agar judul dokumen tetap terbaca. Geser horizontal hanya jika layar lebih sempit.
+                    
                 </p>
                 <span class="inline-flex flex-shrink-0 items-center gap-1.5 text-[11px] font-medium text-slate-500">
                     <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -2418,7 +1836,7 @@
                         <path d="m15 8 4 4-4 4"/>
                         <path d="m9 16-4-4 4-4"/>
                     </svg>
-                    Responsive Table
+                    Tabel Dokumen
                 </span>
             </div>
 

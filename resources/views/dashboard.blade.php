@@ -114,332 +114,49 @@
 
     <div
         id="analytics-dashboard"
-        class="space-y-7"
+        class="mx-auto max-w-[1300px] space-y-4 pb-4"
     >
 
         {{-- ========================================================= --}}
-        {{-- HERO / DASHBOARD HEADER --}}
+        {{-- MINIMAL DASHBOARD HEADER --}}
         {{-- ========================================================= --}}
 
-        <section
-            class="analytics-enter relative overflow-hidden
-                   rounded-[28px]
-                   bg-gradient-to-br from-blue-950 via-blue-900 to-blue-700
-                   shadow-xl shadow-blue-950/10"
-        >
-
-            <div
-                class="absolute -right-24 -top-28
-                       h-80 w-80 rounded-full
-                       bg-white/[0.06]"
-            ></div>
-
-            <div
-                class="absolute right-20 -bottom-40
-                       h-72 w-72 rounded-full
-                       bg-blue-300/[0.08]"
-            ></div>
-
-            <div
-                class="absolute left-[42%] top-0
-                       h-full w-px
-                       bg-gradient-to-b from-transparent via-white/10 to-transparent
-                       hidden xl:block"
-            ></div>
-
-            <div
-                class="relative z-10
-                       grid gap-7
-                       xl:grid-cols-[1.25fr_0.75fr]
-                       p-6 sm:p-8"
-            >
-
-                <div>
-
-                    <div
-                        class="inline-flex items-center gap-2
-                               rounded-full
-                               border border-white/10
-                               bg-white/[0.08]
-                               px-3 py-1.5
-                               text-xs font-semibold
-                               text-blue-100"
-                    >
-                        <span
-                            class="h-2 w-2 rounded-full
-                                   bg-emerald-400
-                                   shadow-[0_0_0_4px_rgba(52,211,153,0.12)]"
-                        ></span>
-
-                        Analitik data real BMC QualityHub
+        {{-- BMC signature navy/blue welcome banner --}}
+        <section class="analytics-enter relative overflow-hidden rounded-2xl border border-blue-800/60 bg-gradient-to-r from-blue-950 via-blue-900 to-blue-700 p-4 text-white shadow-sm sm:p-5" data-qh-dashboard-header>
+            <div class="pointer-events-none absolute -right-16 -top-28 h-64 w-64 rounded-full bg-white/5" aria-hidden="true"></div>
+            <div class="relative z-10">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div class="min-w-0">
+                        <p class="text-[11px] font-extrabold uppercase tracking-[0.14em] text-blue-100">BMC QUALITYHUB</p>
+                        <h1 class="mt-1 !text-[21px] font-extrabold leading-tight tracking-tight text-white">Selamat datang, {{ Auth::user()->name }}</h1>
+                        <p class="mt-1.5 text-xs font-medium text-blue-100">{{ $periodDateLabel }}</p>
                     </div>
-
-                    <p
-                        class="mt-5
-                               text-sm font-medium
-                               text-blue-200"
-                    >
-                        Selamat datang kembali,
-                    </p>
-
-                    <h1
-                        class="mt-1
-                               text-3xl sm:text-4xl
-                               font-bold tracking-tight
-                               text-white"
-                    >
-                        {{ Auth::user()->name }}
-                    </h1>
-
-                    <p
-                        class="mt-3
-                               max-w-2xl
-                               text-sm sm:text-base
-                               leading-relaxed
-                               text-blue-100/75"
-                    >
-                        Pantau dokumen, revisi, aktivitas, kategori,
-                        departemen, dan jenis file dari satu dashboard
-                        yang terhubung langsung dengan database BMC QualityHub.
-                    </p>
-
-
-                    {{-- GLOBAL SEARCH --}}
-
-                    <form
-                        method="GET"
-                        action="{{ route('documents.index') }}"
-                        class="mt-6
-                               flex flex-col sm:flex-row
-                               gap-2
-                               max-w-2xl"
-                    >
-
-                        <div class="relative flex-1">
-
-                            <div
-                                class="absolute inset-y-0 left-0
-                                       pl-4
-                                       flex items-center
-                                       pointer-events-none
-                                       text-slate-400"
-                            >
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="19"
-                                    height="19"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2"
-                                >
-                                    <circle cx="11" cy="11" r="8"/>
-                                    <path d="m21 21-4.3-4.3"/>
-                                </svg>
-                            </div>
-
-                            <input
-                                type="text"
-                                name="search"
-                                autocomplete="off"
-                                placeholder="Cari dokumen, nomor part, kode, atau kata kunci..."
-                                class="w-full
-                                       rounded-2xl
-                                       border-0
-                                       bg-white
-                                       pl-12 pr-4 py-3.5
-                                       text-sm text-slate-900
-                                       placeholder:text-slate-400
-                                       shadow-xl shadow-blue-950/10
-                                       focus:ring-4 focus:ring-blue-300/30"
-                            >
-
-                        </div>
-
-                        <button
-                            type="submit"
-                            class="rounded-2xl
-                                   bg-white/10
-                                   border border-white/10
-                                   px-5 py-3.5
-                                   text-sm font-semibold
-                                   text-white
-                                   backdrop-blur-sm
-                                   hover:bg-white/20
-                                   transition"
-                        >
-                            Cari Dokumen
-                        </button>
-
-                    </form>
-
-                </div>
-
-
-                {{-- PERIOD PANEL --}}
-
-                <div
-                    class="rounded-3xl
-                           border border-white/10
-                           bg-white/[0.08]
-                           p-5 sm:p-6
-                           backdrop-blur-sm"
-                >
-
-                    <div
-                        class="flex items-start justify-between gap-4"
-                    >
-
-                        <div>
-
-                            <p
-                                class="text-xs font-semibold
-                                       uppercase tracking-[0.18em]
-                                       text-blue-200/80"
-                            >
-                                Periode Analitik
-                            </p>
-
-                            <p
-                                class="mt-2
-                                       text-2xl font-bold
-                                       text-white"
-                            >
-                                {{ $periodLabel }}
-                            </p>
-
-                            <p
-                                class="mt-1
-                                       text-xs
-                                       text-blue-100/65"
-                            >
-                                {{ $periodDateLabel }}
-                            </p>
-
-                        </div>
-
-                        <div
-                            class="h-11 w-11
-                                   rounded-2xl
-                                   bg-white/10
-                                   flex items-center justify-center
-                                   text-blue-100"
-                        >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="20"
-                                height="20"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                            >
-                                <path d="M8 2v4"/>
-                                <path d="M16 2v4"/>
-                                <rect width="18" height="18" x="3" y="4" rx="2"/>
-                                <path d="M3 10h18"/>
-                            </svg>
-                        </div>
-
-                    </div>
-
-                    <form
-                        method="GET"
-                        action="{{ route('dashboard') }}"
-                        class="mt-5"
-                    >
-                        <label
-                            for="dashboard-period"
-                            class="sr-only"
-                        >
-                            Pilih periode analitik
-                        </label>
-
-                        <select
-                            id="dashboard-period"
-                            name="period"
-                            data-auto-submit
-                            class="w-full
-                                   rounded-xl
-                                   border-white/10
-                                   bg-blue-950/40
-                                   text-sm text-white
-                                   focus:border-blue-300
-                                   focus:ring-blue-300"
-                        >
+                    <form method="GET" action="{{ route('dashboard') }}" class="shrink-0">
+                        <label for="dashboard-period" class="sr-only">Pilih periode analitik</label>
+                        <select id="dashboard-period" name="period" data-auto-submit
+                            class="min-h-[42px] w-full rounded-xl border-white/30 bg-white px-3 pr-9 text-sm font-semibold text-blue-900 shadow-sm focus:border-blue-300 focus:ring-blue-300 sm:w-auto">
                             @foreach([
                                 7 => '7 Hari Terakhir',
                                 30 => '30 Hari Terakhir',
                                 90 => '90 Hari Terakhir',
                                 365 => '1 Tahun Terakhir',
                             ] as $value => $label)
-
-                                <option
-                                    value="{{ $value }}"
-                                    @selected($period === $value)
-                                    class="text-slate-900"
-                                >
-                                    {{ $label }}
-                                </option>
-
+                                <option value="{{ $value }}" @selected($period === $value)>{{ $label }}</option>
                             @endforeach
                         </select>
                     </form>
-
-
-                    <div
-                        class="mt-5
-                               grid grid-cols-2 gap-3"
-                    >
-
-                        <div
-                            class="rounded-2xl
-                                   bg-white/[0.07]
-                                   p-3"
-                        >
-                            <p
-                                class="text-[11px]
-                                       text-blue-100/65"
-                            >
-                                Dokumen baru
-                            </p>
-
-                            <p
-                                class="mt-1
-                                       text-xl font-bold
-                                       text-white"
-                            >
-                                {{ number_format($newDocumentsInPeriod) }}
-                            </p>
-                        </div>
-
-                        <div
-                            class="rounded-2xl
-                                   bg-white/[0.07]
-                                   p-3"
-                        >
-                            <p
-                                class="text-[11px]
-                                       text-blue-100/65"
-                            >
-                                Aktivitas
-                            </p>
-
-                            <p
-                                class="mt-1
-                                       text-xl font-bold
-                                       text-white"
-                            >
-                                {{ number_format($activityInPeriod) }}
-                            </p>
-                        </div>
-
-                    </div>
-
                 </div>
-
+                <form method="GET" action="{{ route('documents.index') }}" role="search" aria-label="Pencarian dokumen" class="mt-4 flex flex-col gap-2 sm:flex-row">
+                    <div class="relative min-w-0 flex-1">
+                        <svg class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                        <label for="dashboard-global-search" class="sr-only">Cari dokumen</label>
+                        <input id="dashboard-global-search" name="search" type="search" autocomplete="off"
+                            placeholder="Cari dokumen, kode, nomor part..."
+                            class="block min-h-[42px] w-full rounded-xl border border-white/80 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-500 shadow-sm focus:border-blue-300 focus:ring-blue-300">
+                    </div>
+                    <button type="submit" class="min-h-[42px] rounded-xl border border-white bg-white px-5 text-sm font-bold text-blue-900 shadow-sm transition hover:bg-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Cari Dokumen</button>
+                </form>
             </div>
-
         </section>
 
 
@@ -448,20 +165,18 @@
         {{-- ========================================================= --}}
 
         <section
-            class="grid grid-cols-1 sm:grid-cols-2
-                   xl:grid-cols-3 2xl:grid-cols-6
-                   gap-4"
+            class="grid grid-cols-2 gap-3 md:grid-cols-3" data-qh-dashboard-kpi
         >
 
             {{-- ACTIVE DOCUMENTS --}}
 
             <article
                 class="analytics-enter analytics-card
-                       group
-                       rounded-3xl
+                       group flex min-h-[132px] flex-col justify-between
+                       rounded-2xl
                        border border-slate-200/70
                        bg-white
-                       p-5
+                       p-4
                        shadow-sm"
             >
 
@@ -469,13 +184,13 @@
 
                     <div>
 
-                        <p class="text-sm font-medium text-slate-500">
+                        <p class="text-xs font-semibold text-slate-500">
                             Dokumen Aktif
                         </p>
 
                         <p
-                            class="mt-3
-                                   text-3xl font-bold
+                            class="mt-2
+                                   text-[26px] font-bold
                                    tracking-tight
                                    text-slate-900
                                    analytics-counter"
@@ -487,7 +202,7 @@
                     </div>
 
                     <div
-                        class="h-11 w-11
+                        class="h-9 w-9
                                rounded-2xl
                                bg-blue-50
                                text-blue-700
@@ -512,7 +227,7 @@
                 </div>
 
                 <div
-                    class="mt-4
+                    class="mt-2
                            flex items-center gap-2
                            text-xs"
                 >
@@ -534,11 +249,11 @@
 
             <article
                 class="analytics-enter analytics-card
-                       group
-                       rounded-3xl
+                       group flex min-h-[132px] flex-col justify-between
+                       rounded-2xl
                        border border-slate-200/70
                        bg-white
-                       p-5
+                       p-4
                        shadow-sm"
             >
 
@@ -546,13 +261,13 @@
 
                     <div>
 
-                        <p class="text-sm font-medium text-slate-500">
+                        <p class="text-xs font-semibold text-slate-500">
                             Dokumen Arsip
                         </p>
 
                         <p
-                            class="mt-3
-                                   text-3xl font-bold
+                            class="mt-2
+                                   text-[26px] font-bold
                                    tracking-tight
                                    text-slate-900
                                    analytics-counter"
@@ -564,7 +279,7 @@
                     </div>
 
                     <div
-                        class="h-11 w-11
+                        class="h-9 w-9
                                rounded-2xl
                                bg-amber-50
                                text-amber-700
@@ -589,7 +304,7 @@
 
                 </div>
 
-                <p class="mt-4 text-xs text-slate-400">
+                <p class="mt-2 text-xs text-slate-400">
                     Tetap tersimpan tanpa hard delete
                 </p>
 
@@ -600,11 +315,11 @@
 
             <article
                 class="analytics-enter analytics-card
-                       group
-                       rounded-3xl
+                       group flex min-h-[132px] flex-col justify-between
+                       rounded-2xl
                        border border-slate-200/70
                        bg-white
-                       p-5
+                       p-4
                        shadow-sm"
             >
 
@@ -612,13 +327,13 @@
 
                     <div>
 
-                        <p class="text-sm font-medium text-slate-500">
+                        <p class="text-xs font-semibold text-slate-500">
                             Total Revisi
                         </p>
 
                         <p
-                            class="mt-3
-                                   text-3xl font-bold
+                            class="mt-2
+                                   text-[26px] font-bold
                                    tracking-tight
                                    text-slate-900
                                    analytics-counter"
@@ -630,7 +345,7 @@
                     </div>
 
                     <div
-                        class="h-11 w-11
+                        class="h-9 w-9
                                rounded-2xl
                                bg-violet-50
                                text-violet-700
@@ -654,7 +369,7 @@
 
                 </div>
 
-                <p class="mt-4 text-xs text-slate-400">
+                <p class="mt-2 text-xs text-slate-400">
                     Menghitung Revisi 1 dan seterusnya
                 </p>
 
@@ -665,11 +380,11 @@
 
             <article
                 class="analytics-enter analytics-card
-                       group
-                       rounded-3xl
+                       group flex min-h-[132px] flex-col justify-between
+                       rounded-2xl
                        border border-slate-200/70
                        bg-white
-                       p-5
+                       p-4
                        shadow-sm"
             >
 
@@ -677,13 +392,13 @@
 
                     <div>
 
-                        <p class="text-sm font-medium text-slate-500">
+                        <p class="text-xs font-semibold text-slate-500">
                             Departemen Aktif
                         </p>
 
                         <p
-                            class="mt-3
-                                   text-3xl font-bold
+                            class="mt-2
+                                   text-[26px] font-bold
                                    tracking-tight
                                    text-slate-900
                                    analytics-counter"
@@ -695,7 +410,7 @@
                     </div>
 
                     <div
-                        class="h-11 w-11
+                        class="h-9 w-9
                                rounded-2xl
                                bg-indigo-50
                                text-indigo-700
@@ -722,7 +437,7 @@
 
                 </div>
 
-                <p class="mt-4 text-xs text-slate-400">
+                <p class="mt-2 text-xs text-slate-400">
                     {{ number_format($totalCategories) }} kategori aktif
                 </p>
 
@@ -733,11 +448,11 @@
 
             <article
                 class="analytics-enter analytics-card
-                       group
-                       rounded-3xl
+                       group flex min-h-[132px] flex-col justify-between
+                       rounded-2xl
                        border border-slate-200/70
                        bg-white
-                       p-5
+                       p-4
                        shadow-sm"
             >
 
@@ -745,13 +460,13 @@
 
                     <div>
 
-                        <p class="text-sm font-medium text-slate-500">
+                        <p class="text-xs font-semibold text-slate-500">
                             Pengguna Aktif
                         </p>
 
                         <p
-                            class="mt-3
-                                   text-3xl font-bold
+                            class="mt-2
+                                   text-[26px] font-bold
                                    tracking-tight
                                    text-slate-900
                                    analytics-counter"
@@ -763,7 +478,7 @@
                     </div>
 
                     <div
-                        class="h-11 w-11
+                        class="h-9 w-9
                                rounded-2xl
                                bg-emerald-50
                                text-emerald-700
@@ -788,7 +503,7 @@
 
                 </div>
 
-                <p class="mt-4 text-xs text-slate-400">
+                <p class="mt-2 text-xs text-slate-400">
                     {{ number_format($pendingUsers) }} menunggu persetujuan
                 </p>
 
@@ -799,11 +514,11 @@
 
             <article
                 class="analytics-enter analytics-card
-                       group
-                       rounded-3xl
+                       group flex min-h-[132px] flex-col justify-between
+                       rounded-2xl
                        border border-slate-200/70
                        bg-white
-                       p-5
+                       p-4
                        shadow-sm"
             >
 
@@ -811,13 +526,13 @@
 
                     <div>
 
-                        <p class="text-sm font-medium text-slate-500">
+                        <p class="text-xs font-semibold text-slate-500">
                             Aktivitas {{ $periodLabel }}
                         </p>
 
                         <p
-                            class="mt-3
-                                   text-3xl font-bold
+                            class="mt-2
+                                   text-[26px] font-bold
                                    tracking-tight
                                    text-slate-900
                                    analytics-counter"
@@ -829,7 +544,7 @@
                     </div>
 
                     <div
-                        class="h-11 w-11
+                        class="h-9 w-9
                                rounded-2xl
                                bg-cyan-50
                                text-cyan-700
@@ -853,185 +568,53 @@
 
                 </div>
 
-                <p class="mt-4 text-xs text-slate-400">
+                <p class="mt-2 text-xs text-slate-400">
                     Aktivitas tercatat pada periode aktif
                 </p>
 
             </article>
-
+            {{-- Supporting metrics use the same layout as the other six KPIs. --}}
+            <article class="analytics-enter analytics-card group flex min-h-[132px] flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-2">
+                    <div class="min-w-0"><p class="text-xs font-semibold text-slate-500">Spreadsheet Aktif</p><p class="mt-2 text-[26px] font-bold tracking-tight text-slate-900">{{ number_format($spreadsheetDocuments) }}</p></div>
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700" aria-hidden="true"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3h10M7 7h10M5 11h14v10H5z"/></svg></span>
+                </div>
+                <p class="mt-2 text-xs text-slate-500">XLSX, XLS, CSV</p>
+            </article>
+            <article class="analytics-enter analytics-card group flex min-h-[132px] flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-2">
+                    <div class="min-w-0"><p class="text-xs font-semibold text-slate-500">Ukuran Dokumen Aktif</p><p class="mt-2 text-[26px] font-bold tracking-tight text-slate-900">{{ $formatBytes($totalStorageBytes) }}</p></div>
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700" aria-hidden="true"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg></span>
+                </div>
+                <p class="mt-2 text-xs text-slate-500">Berdasarkan metadata file</p>
+            </article>
+            <article class="analytics-enter analytics-card group flex min-h-[132px] flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-2">
+                    <div class="min-w-0"><p class="text-xs font-semibold text-slate-500">Dokumen Baru</p><p class="mt-2 text-[26px] font-bold tracking-tight text-slate-900">{{ number_format($newDocumentsInPeriod) }}</p></div>
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-700" aria-hidden="true"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M12 3v18"/></svg></span>
+                </div>
+                <p class="mt-2 break-words text-xs text-slate-500">{{ $growthLabel }}</p>
+            </article>
         </section>
 
 
         {{-- ========================================================= --}}
-        {{-- SECONDARY SUMMARY --}}
+        {{-- SUPPORTING KPIS INTEGRATED INTO MAIN GRID --}}
         {{-- ========================================================= --}}
 
-        <section
-            class="analytics-enter
-                   grid gap-4
-                   md:grid-cols-3"
-        >
 
-            <div
-                class="rounded-3xl
-                       border border-slate-200/70
-                       bg-white
-                       p-5
-                       shadow-sm
-                       flex items-center gap-4"
-            >
-
-                <div
-                    class="h-12 w-12
-                           rounded-2xl
-                           bg-emerald-50
-                           text-emerald-700
-                           flex items-center justify-center"
-                >
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="21"
-                        height="21"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                    >
-                        <path d="M7 3h10"/>
-                        <path d="M7 7h10"/>
-                        <path d="M5 11h14v10H5z"/>
-                    </svg>
-                </div>
-
-                <div>
-                    <p class="text-xs font-medium text-slate-400">
-                        Spreadsheet Aktif
-                    </p>
-
-                    <p class="mt-1 text-xl font-bold text-slate-900">
-                        {{ number_format($spreadsheetDocuments) }}
-                    </p>
-
-                    <p class="mt-1 text-xs text-slate-400">
-                        XLSX, XLS, dan CSV
-                    </p>
-                </div>
-
-            </div>
-
-
-            <div
-                class="rounded-3xl
-                       border border-slate-200/70
-                       bg-white
-                       p-5
-                       shadow-sm
-                       flex items-center gap-4"
-            >
-
-                <div
-                    class="h-12 w-12
-                           rounded-2xl
-                           bg-blue-50
-                           text-blue-700
-                           flex items-center justify-center"
-                >
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="21"
-                        height="21"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                    >
-                        <ellipse cx="12" cy="5" rx="8" ry="3"/>
-                        <path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/>
-                        <path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>
-                    </svg>
-                </div>
-
-                <div>
-                    <p class="text-xs font-medium text-slate-400">
-                        Ukuran Dokumen Aktif
-                    </p>
-
-                    <p class="mt-1 text-xl font-bold text-slate-900">
-                        {{ $formatBytes($totalStorageBytes) }}
-                    </p>
-
-                    <p class="mt-1 text-xs text-slate-400">
-                        Berdasarkan metadata file
-                    </p>
-                </div>
-
-            </div>
-
-
-            <div
-                class="rounded-3xl
-                       border border-slate-200/70
-                       bg-white
-                       p-5
-                       shadow-sm
-                       flex items-center gap-4"
-            >
-
-                <div
-                    class="h-12 w-12
-                           rounded-2xl
-                           bg-violet-50
-                           text-violet-700
-                           flex items-center justify-center"
-                >
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="21"
-                        height="21"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                    >
-                        <path d="M3 12h18"/>
-                        <path d="M12 3v18"/>
-                    </svg>
-                </div>
-
-                <div>
-                    <p class="text-xs font-medium text-slate-400">
-                        Dokumen Baru
-                    </p>
-
-                    <p class="mt-1 text-xl font-bold text-slate-900">
-                        {{ number_format($newDocumentsInPeriod) }}
-                    </p>
-
-                    <p class="mt-1 text-xs text-slate-400">
-                        {{ $growthLabel }}
-                    </p>
-                </div>
-
-            </div>
-
-        </section>
 
 
         {{-- ========================================================= --}}
         {{-- MAIN ANALYTICS --}}
         {{-- ========================================================= --}}
 
-        <section
-            class="grid gap-5
-                   2xl:grid-cols-3"
-        >
 
-            {{-- TREND --}}
-
+        {{-- MAIN ANALYTICS: trend retains original SVG renderer --}}
+        <section class="grid grid-cols-1 gap-4" data-qh-dashboard-trend>
             <article
                 class="analytics-enter
-                       2xl:col-span-2
-                       rounded-3xl
+                       rounded-2xl
                        border border-slate-200/70
                        bg-white
                        shadow-sm
@@ -1039,7 +622,7 @@
             >
 
                 <div
-                    class="p-5 sm:p-6
+                    class="p-4 sm:p-5
                            flex flex-col sm:flex-row
                            sm:items-center
                            justify-between
@@ -1064,7 +647,7 @@
                         </div>
 
                         <p class="mt-1 text-sm text-slate-500">
-                            Pergerakan data harian selama {{ $periodLabel }}.
+                            Tren selama {{ $periodLabel }}.
                         </p>
 
                     </div>
@@ -1090,20 +673,21 @@
 
                     <div
                         id="trend-chart"
-                        class="chart-stage min-h-[310px]"
+                        class="chart-stage min-h-[270px]"
                         aria-label="Grafik tren dokumen dan aktivitas"
                     ></div>
 
                 </div>
 
             </article>
+        </section>
 
-
-            {{-- CATEGORY DONUT --}}
-
+                {{-- Balanced independent columns keep short analytics from leaving empty grid rows. --}}
+        <section class="grid grid-cols-1 items-start gap-4 lg:grid-cols-2" data-qh-dashboard-distributions>
+            <div class="flex min-w-0 flex-col gap-4">
             <article
                 class="analytics-enter
-                       rounded-3xl
+                       rounded-2xl
                        border border-slate-200/70
                        bg-white
                        shadow-sm
@@ -1111,59 +695,42 @@
             >
 
                 <div
-                    class="p-5 sm:p-6
+                    class="p-4 sm:p-5
                            border-b border-slate-100"
                 >
                     <h2 class="font-bold text-slate-900">
                         Dokumen per Kategori
                     </h2>
 
-                    <p class="mt-1 text-sm text-slate-500">
-                        Komposisi seluruh dokumen aktif.
-                    </p>
+
                 </div>
 
-                <div class="p-5 sm:p-6">
+                <div class="grid grid-cols-1 items-center gap-4 p-4 sm:grid-cols-[0.9fr_1.1fr] sm:p-5">
 
                     <div
                         id="category-donut-chart"
-                        class="chart-stage min-h-[240px]"
+                        class="chart-stage min-h-[200px]"
                         aria-label="Diagram komposisi dokumen per kategori"
                     ></div>
 
                     <div
                         id="category-donut-legend"
-                        class="mt-4 space-y-2"
+                        class="min-w-0 space-y-1.5"
                     ></div>
 
                 </div>
 
             </article>
-
-        </section>
-
-
-        {{-- ========================================================= --}}
-        {{-- DISTRIBUTION GRID --}}
-        {{-- ========================================================= --}}
-
-        <section
-            class="grid gap-5
-                   xl:grid-cols-2"
-        >
-
-            {{-- DEPARTMENT --}}
-
             <article
                 class="analytics-enter
-                       rounded-3xl
+                       rounded-2xl
                        border border-slate-200/70
                        bg-white
                        shadow-sm"
             >
 
                 <div
-                    class="p-5 sm:p-6
+                    class="p-4 sm:p-5
                            flex items-start justify-between gap-4
                            border-b border-slate-100"
                 >
@@ -1172,9 +739,7 @@
                             Distribusi Departemen
                         </h2>
 
-                        <p class="mt-1 text-sm text-slate-500">
-                            Jumlah dokumen aktif berdasarkan departemen.
-                        </p>
+
                     </div>
 
                     <span
@@ -1188,127 +753,33 @@
                     </span>
                 </div>
 
-                <div class="p-5 sm:p-6">
+                <div class="p-4 sm:p-5">
                     <div
                         id="department-bar-chart"
-                        class="space-y-4"
+                        class="space-y-3"
                     ></div>
                 </div>
 
             </article>
-
-
-            {{-- FILE TYPES --}}
-
+                {{-- Document access ranking, aligned beneath the shorter department panel. --}}
+                <div class="min-w-0" data-qh-dashboard-documents>
             <article
-                class="analytics-enter
-                       rounded-3xl
+                class="analytics-enter min-w-0
+                       rounded-2xl
                        border border-slate-200/70
                        bg-white
                        shadow-sm"
             >
 
                 <div
-                    class="p-5 sm:p-6
-                           border-b border-slate-100"
-                >
-                    <h2 class="font-bold text-slate-900">
-                        Distribusi Jenis File
-                    </h2>
-
-                    <p class="mt-1 text-sm text-slate-500">
-                        Format file yang terindeks pada dokumen aktif.
-                    </p>
-                </div>
-
-                <div
-                    class="p-5 sm:p-6
-                           grid gap-5
-                           md:grid-cols-[0.9fr_1.1fr]
-                           items-center"
-                >
-
-                    <div
-                        id="filetype-donut-chart"
-                        class="chart-stage min-h-[220px]"
-                        aria-label="Diagram distribusi jenis file"
-                    ></div>
-
-                    <div
-                        id="filetype-donut-legend"
-                        class="space-y-2"
-                    ></div>
-
-                </div>
-
-            </article>
-
-        </section>
-
-
-        {{-- ========================================================= --}}
-        {{-- ACTIVITY + TOP DOCUMENTS --}}
-        {{-- ========================================================= --}}
-
-        <section
-            class="grid gap-5
-                   xl:grid-cols-2"
-        >
-
-            {{-- ACTIVITY BREAKDOWN --}}
-
-            <article
-                class="analytics-enter
-                       rounded-3xl
-                       border border-slate-200/70
-                       bg-white
-                       shadow-sm"
-            >
-
-                <div
-                    class="p-5 sm:p-6
-                           border-b border-slate-100"
-                >
-                    <h2 class="font-bold text-slate-900">
-                        Komposisi Aktivitas
-                    </h2>
-
-                    <p class="mt-1 text-sm text-slate-500">
-                        Aktivitas sistem selama {{ $periodLabel }}.
-                    </p>
-                </div>
-
-                <div class="p-5 sm:p-6">
-                    <div
-                        id="activity-bar-chart"
-                        class="space-y-4"
-                    ></div>
-                </div>
-
-            </article>
-
-
-            {{-- TOP DOCUMENTS --}}
-
-            <article
-                class="analytics-enter
-                       rounded-3xl
-                       border border-slate-200/70
-                       bg-white
-                       shadow-sm"
-            >
-
-                <div
-                    class="p-5 sm:p-6
+                    class="p-4 sm:p-5
                            border-b border-slate-100"
                 >
                     <h2 class="font-bold text-slate-900">
                         Dokumen Paling Sering Diakses
                     </h2>
 
-                    <p class="mt-1 text-sm text-slate-500">
-                        Berdasarkan buka, lihat, dan unduh selama {{ $periodLabel }}.
-                    </p>
+
                 </div>
 
                 <div class="p-3">
@@ -1318,9 +789,9 @@
                         <a
                             href="{{ route('documents.show', $document->id) }}"
                             class="group
-                                   flex items-center gap-4
+                                   flex items-center gap-3
                                    rounded-2xl
-                                   px-4 py-3.5
+                                   px-3 py-3
                                    hover:bg-slate-50
                                    transition"
                         >
@@ -1428,25 +899,81 @@
                 </div>
 
             </article>
-
-        </section>
-
-
-        {{-- ========================================================= --}}
-        {{-- RECENT DOCUMENTS + RECENT ACTIVITY --}}
-        {{-- ========================================================= --}}
-
-        <section
-            class="grid gap-5
-                   xl:grid-cols-3"
-        >
-
-            {{-- RECENT DOCUMENTS --}}
-
+                </div>
+            </div>
+            <div class="flex min-w-0 flex-col gap-4">
             <article
                 class="analytics-enter
-                       xl:col-span-2
-                       rounded-3xl
+                       rounded-2xl
+                       border border-slate-200/70
+                       bg-white
+                       shadow-sm"
+            >
+
+                <div
+                    class="p-4 sm:p-5
+                           border-b border-slate-100"
+                >
+                    <h2 class="font-bold text-slate-900">
+                        Distribusi Jenis File
+                    </h2>
+
+
+                </div>
+
+                <div
+                    class="p-4 sm:p-5
+                           grid gap-5
+                           sm:grid-cols-[0.9fr_1.1fr]
+                           items-center"
+                >
+
+                    <div
+                        id="filetype-donut-chart"
+                        class="chart-stage min-h-[200px]"
+                        aria-label="Diagram distribusi jenis file"
+                    ></div>
+
+                    <div
+                        id="filetype-donut-legend"
+                        class="space-y-2"
+                    ></div>
+
+                </div>
+
+            </article>
+            <article
+                class="analytics-enter
+                       rounded-2xl
+                       border border-slate-200/70
+                       bg-white
+                       shadow-sm"
+            >
+
+                <div
+                    class="p-4 sm:p-5
+                           border-b border-slate-100"
+                >
+                    <h2 class="font-bold text-slate-900">
+                        Komposisi Aktivitas
+                    </h2>
+
+
+                </div>
+
+                <div class="p-4 sm:p-5">
+                    <div
+                        id="activity-bar-chart"
+                        class="space-y-3"
+                    ></div>
+                </div>
+
+            </article>
+                {{-- Recently indexed documents, aligned beneath activity distribution. --}}
+                <div class="min-w-0" data-qh-dashboard-documents>
+            <article
+                class="analytics-enter min-w-0
+                       rounded-2xl
                        border border-slate-200/70
                        bg-white
                        shadow-sm
@@ -1454,7 +981,7 @@
             >
 
                 <div
-                    class="p-5 sm:p-6
+                    class="p-4 sm:p-5
                            flex items-center justify-between gap-4
                            border-b border-slate-100"
                 >
@@ -1464,9 +991,7 @@
                             Dokumen Terbaru
                         </h2>
 
-                        <p class="mt-1 text-sm text-slate-500">
-                            Dokumen aktif yang paling baru terindeks.
-                        </p>
+
                     </div>
 
                     <a
@@ -1488,9 +1013,9 @@
                         <a
                             href="{{ route('documents.show', $document) }}"
                             class="group
-                                   flex items-center gap-4
+                                   flex items-center gap-3
                                    rounded-2xl
-                                   px-4 py-4
+                                   px-3 py-3
                                    hover:bg-slate-50
                                    transition"
                         >
@@ -1603,13 +1128,15 @@
                 </div>
 
             </article>
+                </div>
+            </div>
+        </section>
 
-
-            {{-- RECENT ACTIVITY --}}
-
+        {{-- Recent audit activity --}}
+        <section class="grid grid-cols-1 gap-4" data-qh-dashboard-activities>
             <article
                 class="analytics-enter
-                       rounded-3xl
+                       rounded-2xl
                        border border-slate-200/70
                        bg-white
                        shadow-sm
@@ -1617,24 +1144,22 @@
             >
 
                 <div
-                    class="p-5 sm:p-6
+                    class="p-4 sm:p-5
                            border-b border-slate-100"
                 >
                     <h2 class="font-bold text-slate-900">
                         Aktivitas Terbaru
                     </h2>
 
-                    <p class="mt-1 text-sm text-slate-500">
-                        Jejak aktivitas terbaru dalam sistem.
-                    </p>
+
                 </div>
 
 
-                <div class="p-5 space-y-5">
+                <div class="divide-y divide-slate-100 p-3 sm:p-4">
 
                     @forelse($recentActivities as $activity)
 
-                        <div class="flex gap-3">
+                        <div class="flex min-w-0 gap-3 rounded-lg px-2 py-2.5 transition hover:bg-slate-50">
 
                             <div
                                 class="mt-1
@@ -1654,9 +1179,7 @@
                             <div class="min-w-0">
 
                                 <p
-                                    class="text-sm
-                                           leading-relaxed
-                                           text-slate-700"
+                                    class="line-clamp-2 text-sm leading-5 text-slate-700"
                                 >
                                     {{ $activityDescription($activity) }}
                                 </p>
@@ -1699,7 +1222,6 @@
                 </div>
 
             </article>
-
         </section>
 
     </div>

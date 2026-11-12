@@ -277,7 +277,7 @@
             </div>
 
 
-            <select
+            <select data-qh-searchable-select
                 name="department_id"
 
                 class="rounded-xl
@@ -309,7 +309,7 @@
             </select>
 
 
-            <select
+            <select data-qh-searchable-select
                 name="status"
 
                 class="rounded-xl

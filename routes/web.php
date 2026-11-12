@@ -9,6 +9,7 @@ use App\Http\Controllers\DocumentVersionController;
 use App\Http\Controllers\DepartmentManagementController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProfilePhotoController;
 use App\Http\Controllers\ScanDocumentController;
 use App\Http\Controllers\RetoolingMasterDataController;
 use App\Http\Controllers\UserManagementController;
@@ -448,6 +449,12 @@ Route::middleware([
         [UserManagementController::class, 'index']
     )->name('users.index');
 
+    // Photos on User Management are visible only to authenticated Super Admins.
+    // Controller performs the same authorization as UserManagementController@index.
+    Route::get('/users/{user}/photo', [ProfilePhotoController::class, 'showManagedUser'])
+        ->whereNumber('user')
+        ->name('users.photo.show');
+
     Route::get('/users/create', [AdminAccountController::class, 'create'])
         ->name('users.create');
     Route::post('/users', [AdminAccountController::class, 'store'])
@@ -500,6 +507,13 @@ Route::middleware([
         [ActivityLogController::class, 'index']
     )->name('activity-logs.index');
 
+    // Activity Log is available to Super Admin and Admin Dokumen.
+    // Photos stay private; authorization is repeated at the image endpoint.
+    Route::get(
+        '/activity-logs/users/{user}/photo',
+        [ProfilePhotoController::class, 'showAuditUser']
+    )->whereNumber('user')->name('activity-logs.photo.show');
+
 
     /*
     |--------------------------------------------------------------------------
@@ -511,6 +525,16 @@ Route::middleware([
         '/profile',
         [ProfileController::class, 'edit']
     )->name('profile.edit');
+
+    // Own-avatar requests only: no arbitrary user ID or file path is accepted.
+    Route::get('/profile/photo', [ProfilePhotoController::class, 'show'])
+        ->name('profile.photo.show');
+    Route::post('/profile/photo', [ProfilePhotoController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('profile.photo.store');
+    Route::delete('/profile/photo', [ProfilePhotoController::class, 'destroy'])
+        ->middleware('throttle:10,1')
+        ->name('profile.photo.destroy');
 
     Route::patch(
         '/profile',

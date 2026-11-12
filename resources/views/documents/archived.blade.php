@@ -156,7 +156,7 @@
             </div>
 
 
-            <select
+            <select data-qh-searchable-select
                 name="department"
 
                 class="rounded-xl
@@ -190,7 +190,7 @@
             </select>
 
 
-            <select
+            <select data-qh-searchable-select
                 name="category"
 
                 class="rounded-xl

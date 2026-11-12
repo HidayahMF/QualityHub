@@ -194,7 +194,7 @@ class EnsureSessionFreshness
 
         if (
             $user->must_change_password
-            && ! $request->routeIs('profile.edit', 'password.update', 'logout')
+            && ! $request->routeIs('profile.edit', 'profile.photo.show', 'password.update', 'logout')
         ) {
             if ($request->expectsJson()) {
                 return response()->json([
