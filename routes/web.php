@@ -10,6 +10,7 @@ use App\Http\Controllers\DepartmentManagementController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ScanDocumentController;
+use App\Http\Controllers\ScanUploadBatchController;
 use App\Http\Controllers\RetoolingMasterDataController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\AdminAccountController;
@@ -174,21 +175,21 @@ Route::middleware([
     // rejecting a thousand photos in a single request.
     Route::post(
         '/documents/scan/batches/start',
-        [\\App\\Http\\Controllers\\ScanUploadBatchController::class, 'start']
+        [ScanUploadBatchController::class, 'start']
     )
         ->middleware('throttle:10,1')
         ->name('documents.scan.batches.start');
 
     Route::post(
         '/documents/scan/batches/upload',
-        [\\App\\Http\\Controllers\\ScanUploadBatchController::class, 'upload']
+        [ScanUploadBatchController::class, 'upload']
     )
         ->middleware('throttle:180,1')
         ->name('documents.scan.batches.upload');
 
     Route::delete(
         '/documents/scan/batches/{batchId}',
-        [\\App\\Http\\Controllers\\ScanUploadBatchController::class, 'discard']
+        [ScanUploadBatchController::class, 'discard']
     )
         ->whereUuid('batchId')
         ->middleware('throttle:30,1')
