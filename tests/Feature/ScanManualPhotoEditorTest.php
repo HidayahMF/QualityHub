@@ -67,6 +67,35 @@ class ScanManualPhotoEditorTest extends TestCase
         $this->assertStringContainsString('selectedItems.forEach(item => transfer.items.add(item.file))', $html);
     }
 
+    public function test_manual_crop_modal_uses_responsive_qualityhub_theme_and_body_portal(): void
+    {
+        $admin = User::factory()->create([
+            'role' => 'super_admin',
+            'account_status' => 'active',
+        ]);
+
+        $html = $this->actingAs($admin)
+            ->get(route('documents.scan.create'))
+            ->assertOk()
+            ->baseResponse
+            ->getContent();
+
+        $this->assertStringContainsString('id="manualCropPanel" class="qh-crop-panel"', $html);
+        $this->assertStringContainsString('BMC QUALITYHUB · EDITOR FOTO', $html);
+        $this->assertStringContainsString('id="manualCropPhotoName"', $html);
+        $this->assertStringContainsString('id="manualCropHelp"', $html);
+        $this->assertStringContainsString('body.qh-crop-open', $html);
+        $this->assertStringContainsString('.qh-crop-overlay:not(.hidden)', $html);
+        $this->assertStringContainsString('z-index: 2147483000', $html);
+        $this->assertStringContainsString('max-height: calc(100dvh - 24px)', $html);
+        $this->assertStringContainsString('document.body.appendChild(manualCropModal)', $html);
+        $this->assertStringContainsString("document.body.classList.add('qh-crop-open')", $html);
+        $this->assertStringContainsString("document.body.classList.remove('qh-crop-open')", $html);
+        $this->assertStringContainsString('aria-modal="true"', $html);
+        $this->assertStringContainsString('Terapkan Crop', $html);
+        $this->assertStringContainsString('Pilih Seluruh Foto', $html);
+    }
+
     public function test_employee_cannot_access_scan_editor(): void
     {
         $employee = User::factory()->create([
