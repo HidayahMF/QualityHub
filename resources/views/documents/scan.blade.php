@@ -1341,133 +1341,65 @@
         </div>
     </div>
 
-    {{-- ================================================================ --}}
-    {{-- CAMERA MODAL --}}
-    {{-- ================================================================ --}}
-    <div
-        id="cameraModal"
-        class="fixed inset-0 z-[100] hidden bg-slate-950/90 backdrop-blur-sm"
-    >
-
-        <div class="flex min-h-full items-center justify-center p-4">
-
-            <div class="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl">
-
-                {{-- CAMERA HEADER --}}
-                <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-
-                    <div>
-                        <h3 class="text-sm font-semibold text-slate-900">
-                            Ambil Foto Berkas
-                        </h3>
-
-                        <p class="mt-1 text-xs text-slate-500">
-                            Posisikan berkas QC di dalam area kamera.
-                        </p>
-                    </div>
-
-                    <button
-                        type="button"
-                        id="closeCameraButton"
-                        class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
-                        aria-label="Tutup kamera"
-                    >
-                        ✕
-                    </button>
-
-                </div>
-
-
-                {{-- CAMERA AREA --}}
-                <div class="relative bg-black">
-
-                    <video
-                        id="cameraVideo"
-                        autoplay
-                        playsinline
-                        muted
-                        class="block aspect-video w-full object-cover"
-                    ></video>
-
-                    {{-- CAMERA LOADING --}}
-                    <div
-                        id="cameraLoading"
-                        class="absolute inset-0 flex items-center justify-center bg-slate-950"
-                    >
-                        <div class="text-center text-white">
-
-                            <div class="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
-
-                            <p class="text-sm font-medium">
-                                Mengaktifkan kamera...
-                            </p>
-
-                        </div>
-                    </div>
-
-                </div>
-
-
-                {{-- CAMERA FOOTER --}}
-                <div class="border-t border-slate-200 bg-white px-5 py-4">
-
-                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-
-                        <div class="min-w-0 flex-1">
-                            <label
-                                for="cameraSelect"
-                                class="mb-1 block text-xs font-semibold text-slate-600"
-                            >
-                                Kamera
-                            </label>
-
-                            <select
-                                id="cameraSelect"
-                                disabled
-                                class="block w-full rounded-xl border-slate-300 bg-white text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            >
-                                <option value="">Mendeteksi kamera...</option>
-                            </select>
-                        </div>
-
-                        <div class="flex items-center justify-center gap-3">
-
-                            <button
-                                type="button"
-                                id="switchCameraButton"
-                                disabled
-                                class="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                            >
-                                Ganti Kamera
-                            </button>
-
-                            <button
-                                type="button"
-                                id="captureButton"
-                                disabled
-                                class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
-                                aria-label="Ambil foto"
-                            >
-                                <span class="h-5 w-5 rounded-full border-2 border-white"></span>
-                            </button>
-
-                        </div>
-
-                    </div>
-
-                    <p
-                        id="cameraStatus"
-                        class="mt-2 text-center text-xs text-slate-400"
-                    >
-                        Kamera akan digunakan langsung. Pilih kamera jika perangkat memiliki lebih dari satu kamera.
+    {{-- Camera dialog is portalled to <body>, above the sticky header/sidebar. --}}
+    <div id="cameraModal" role="dialog" aria-modal="true" aria-labelledby="cameraDialogTitle" aria-describedby="cameraDialogHelp"
+        class="qh-camera-overlay hidden" tabindex="-1">
+        <section id="cameraDialogPanel" class="qh-camera-panel">
+            <header class="qh-camera-header">
+                <div class="qh-camera-heading">
+                    <div class="qh-camera-kicker"><span class="qh-camera-live-dot"></span> BMC QUALITYHUB · SCAN / CAPTURE</div>
+                    <h3 id="cameraDialogTitle" class="qh-camera-title">Ambil Foto Berkas</h3>
+                    <p id="cameraDialogHelp" class="qh-camera-description">
+                        Arahkan kamera ke dokumen QC, pastikan seluruh halaman terlihat, lalu tekan Ambil Foto.
                     </p>
-
                 </div>
+                <button type="button" id="closeCameraButton" class="qh-camera-close"
+                    aria-label="Tutup kamera tanpa mengambil foto" title="Tutup kamera">✕</button>
+            </header>
 
+            <div class="qh-camera-body">
+                <div class="qh-camera-preview">
+                    <video id="cameraVideo" autoplay playsinline muted
+                        aria-label="Pratinjau kamera langsung"></video>
+                    <div class="qh-camera-frame" aria-hidden="true">
+                        <span class="qh-camera-frame-tl"></span>
+                        <span class="qh-camera-frame-tr"></span>
+                        <span class="qh-camera-frame-bl"></span>
+                        <span class="qh-camera-frame-br"></span>
+                    </div>
+                    <div id="cameraLoading" class="qh-camera-loading">
+                        <div class="qh-camera-loader" aria-hidden="true"></div>
+                        <p>Mengaktifkan kamera...</p>
+                    </div>
+                </div>
+                <div class="qh-camera-tip">
+                    <span class="qh-camera-tip-icon" aria-hidden="true">✓</span>
+                    <span>Pastikan foto tidak buram dan semua tepi dokumen masuk ke dalam gambar.</span>
+                </div>
             </div>
 
-        </div>
-
+            <footer class="qh-camera-footer">
+                <div class="qh-camera-controls">
+                    <div class="qh-camera-device">
+                        <label for="cameraSelect">Pilih Kamera</label>
+                        <select id="cameraSelect" disabled>
+                            <option value="">Mendeteksi kamera...</option>
+                        </select>
+                    </div>
+                    <div class="qh-camera-buttons">
+                        <button type="button" id="switchCameraButton" disabled class="qh-camera-switch">Ganti Kamera</button>
+                        <button type="button" id="captureButton" disabled class="qh-camera-shutter"
+                            aria-label="Ambil foto dokumen" title="Ambil foto dokumen">
+                            <span class="qh-camera-shutter-ring" aria-hidden="true"></span>
+                            <span>Ambil Foto</span>
+                        </button>
+                    </div>
+                </div>
+                <p id="cameraStatus" role="status" aria-live="polite" class="qh-camera-status">
+                    Kamera akan digunakan langsung. Pilih kamera jika perangkat memiliki lebih dari satu kamera.
+                </p>
+            </footer>
+        </section>
     </div>
 
 
@@ -1484,6 +1416,104 @@
 <style nonce="{{ $cspNonce }}">
     .edit-action { display:inline-flex; align-items:center; justify-content:center; gap:.4rem; border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:.75rem; padding:.65rem .75rem; font-size:.75rem; font-weight:700; transition:.2s; }
     .edit-action:hover { border-color:#93c5fd; background:#eff6ff; color:#1d4ed8; }
+    /* QualityHub camera overlay — outside the sidebar/header stacking context. */
+    body.qh-camera-open { overflow: hidden !important; }
+    .qh-camera-overlay { position: fixed !important; inset: 0 !important; z-index: 2147483000 !important;
+        align-items: center; justify-content: center; padding: clamp(9px, 2vw, 22px);
+        background: rgba(10, 27, 62, .74); backdrop-filter: blur(5px); overscroll-behavior: contain; }
+    .qh-camera-overlay.hidden { display: none !important; }
+    .qh-camera-overlay:not(.hidden) { display: flex !important; }
+    .qh-camera-panel { position: relative; display: flex; flex-direction: column;
+        width: min(100%, 1020px); min-height: 0; max-height: calc(100dvh - 20px);
+        overflow: hidden; border: 1px solid #c7dcfb; border-radius: 22px; background: #fff;
+        box-shadow: 0 28px 90px rgba(3, 20, 52, .4); }
+    .qh-camera-panel::before { content: ''; position: absolute; inset: 0 0 auto; height: 5px;
+        z-index: 1; background: linear-gradient(90deg, #102c68, #2563eb, #60a5fa); }
+    .qh-camera-header { display: flex; flex: 0 0 auto; align-items: flex-start; justify-content: space-between;
+        gap: 14px; padding: 23px 26px 17px; background: #fff; border-bottom: 1px solid #dce8f6; }
+    .qh-camera-heading { min-width: 0; }
+    .qh-camera-kicker { display: flex; align-items: center; gap: 7px; color: #1d4ed8;
+        font-size: 10px; font-weight: 800; letter-spacing: .12em; }
+    .qh-camera-live-dot { display: inline-block; width: 8px; height: 8px; flex-shrink: 0;
+        border-radius: 50%; background: #2563eb; }
+    .qh-camera-title { margin: 7px 0 3px; color: #112756; font-size: clamp(18px, 2vw, 23px);
+        font-weight: 800; line-height: 1.25; }
+    .qh-camera-description { margin: 0; color: #60718d; font-size: 12px; line-height: 1.55; }
+    .qh-camera-close { display: grid; flex: 0 0 auto; place-items: center; width: 36px; height: 36px;
+        border: 1px solid #d7e2ef; border-radius: 10px; color: #475569; background: #fff;
+        font-size: 16px; cursor: pointer; }
+    .qh-camera-close:hover { background: #eff6ff; border-color: #93c5fd; color: #1d4ed8; }
+    .qh-camera-body { display: flex; flex: 1 1 auto; flex-direction: column; gap: 11px; min-height: 0;
+        overflow-y: auto; padding: 15px 24px 12px; background: #f5f9ff; }
+    .qh-camera-preview { position: relative; display: flex; flex: 1 1 auto; min-height: 135px;
+        align-items: center; justify-content: center; overflow: hidden; border: 1px solid #cbdcf5;
+        border-radius: 15px; padding: 9px; background: #eaf2fc; }
+    #cameraVideo { display: block; width: 100%; height: min(47dvh, 490px); min-height: 135px;
+        object-fit: contain; border-radius: 10px; background: #12264b; }
+    .qh-camera-frame { position: absolute; inset: 23px; pointer-events: none; }
+    .qh-camera-frame span { position: absolute; width: 28px; height: 28px; border-color: #93c5fd; border-style: solid;
+        filter: drop-shadow(0 1px 2px rgba(2, 6, 23, .75)); }
+    .qh-camera-frame-tl { top: 0; left: 0; border-width: 3px 0 0 3px; border-radius: 6px 0 0 0; }
+    .qh-camera-frame-tr { top: 0; right: 0; border-width: 3px 3px 0 0; border-radius: 0 6px 0 0; }
+    .qh-camera-frame-bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-radius: 0 0 0 6px; }
+    .qh-camera-frame-br { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 6px 0; }
+    .qh-camera-loading { position: absolute; inset: 9px; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 10px; border-radius: 10px;
+        color: #fff; background: rgba(16, 40, 85, .96); font-size: 13px; font-weight: 650; }
+    .qh-camera-loading.hidden { display: none !important; }
+    .qh-camera-loader { width: 33px; height: 33px; border: 3px solid rgba(191, 219, 254, .35);
+        border-top-color: #93c5fd; border-radius: 50%; animation: qh-camera-spin .8s linear infinite; }
+    @keyframes qh-camera-spin { to { transform: rotate(360deg); } }
+    .qh-camera-tip { display: flex; align-items: center; gap: 9px; color: #385477;
+        font-size: 11px; line-height: 1.5; }
+    .qh-camera-tip-icon { display: inline-grid; flex: 0 0 auto; place-items: center; width: 21px; height: 21px;
+        border-radius: 7px; color: #1d4ed8; background: #dbeafe; font-size: 12px; font-weight: 800; }
+    .qh-camera-footer { display: flex; flex: 0 0 auto; flex-direction: column; gap: 8px;
+        padding: 14px 24px 16px; border-top: 1px solid #dce8f6; background: #fff; }
+    .qh-camera-controls { display: flex; align-items: end; justify-content: space-between; gap: 14px; }
+    .qh-camera-device { flex: 1 1 auto; min-width: 0; }
+    .qh-camera-device label { display: block; margin-bottom: 5px; color: #475569; font-size: 11px; font-weight: 750; }
+    #cameraSelect { display: block; width: 100%; max-width: 100%; min-height: 43px; padding: 8px 12px;
+        border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fbff; color: #243b60;
+        font-size: 12px; }
+    #cameraSelect:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, .12); outline: none; }
+    #cameraSelect:disabled { opacity: .65; }
+    .qh-camera-buttons { display: flex; align-items: center; gap: 9px; flex: 0 0 auto; }
+    .qh-camera-switch, .qh-camera-shutter { min-height: 43px; padding: 9px 15px; border-radius: 10px;
+        font-size: 12px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+    .qh-camera-switch { border: 1px solid #cbd5e1; background: #fff; color: #334155; }
+    .qh-camera-switch:hover { border-color: #93c5fd; background: #eff6ff; }
+    .qh-camera-shutter { display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+        border: 1px solid #1d4ed8; background: #2563eb; color: #fff;
+        box-shadow: 0 5px 15px rgba(37, 99, 235, .17); }
+    .qh-camera-shutter:hover { background: #1d4ed8; }
+    .qh-camera-shutter-ring { display: block; width: 17px; height: 17px; border: 2px solid #fff; border-radius: 50%; }
+    .qh-camera-buttons button:disabled { opacity: .45; cursor: not-allowed; }
+    .qh-camera-status { color: #64748b; font-size: 11px; line-height: 1.4; text-align: left; }
+    .qh-camera-status-error { color: #b91c1c; font-weight: 700; }
+    .qh-camera-overlay :is(button, select):focus-visible { outline: 3px solid #60a5fa; outline-offset: 2px; }
+    @media (max-width: 640px) {
+        .qh-camera-panel { max-height: calc(100dvh - 14px); border-radius: 16px; }
+        .qh-camera-header { padding: 19px 15px 12px; }
+        .qh-camera-kicker { font-size: 9px; }
+        .qh-camera-title { font-size: 19px; }
+        .qh-camera-description { font-size: 11px; }
+        .qh-camera-body { padding: 11px; gap: 8px; }
+        .qh-camera-preview { padding: 7px; min-height: 120px; }
+        #cameraVideo { height: min(39dvh, 350px); min-height: 120px; }
+        .qh-camera-frame { inset: 17px; }
+        .qh-camera-footer { padding: 11px 13px; }
+        .qh-camera-controls { flex-direction: column; align-items: stretch; gap: 10px; }
+        .qh-camera-buttons { justify-content: flex-end; }
+        .qh-camera-switch, .qh-camera-shutter { flex: 1; }
+    }
+    @media (max-height: 650px) {
+        .qh-camera-header { padding-top: 14px; padding-bottom: 10px; }
+        .qh-camera-body { padding-top: 8px; padding-bottom: 8px; }
+        #cameraVideo { height: min(34dvh, 280px); min-height: 105px; }
+        .qh-camera-footer { padding-top: 9px; padding-bottom: 9px; }
+    }
+
     /* Ordered photo cards: keep readable text even when the scan column is narrow. */
     #photoQueue { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; }
     .qh-photo-card { box-sizing: border-box; width: 100%; min-width: 0; padding: 12px;
