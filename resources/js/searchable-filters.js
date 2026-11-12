@@ -221,7 +221,10 @@ function enhanceFilter(select) {
             event.preventDefault();
             close(true);
         } else if (event.key === 'Tab') {
-            close();
+            // Search lives in a body portal. Do not leave keyboard focus in
+            // an element that becomes hidden after the dropdown closes.
+            event.preventDefault();
+            close(true);
         }
     });
 
