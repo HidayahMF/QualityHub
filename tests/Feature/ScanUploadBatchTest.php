@@ -2,6 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category;
+use App\Models\Department;
+use App\Models\Document;
 use App\Models\User;
 use App\Services\ScanUploadBatchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -18,6 +21,7 @@ class ScanUploadBatchTest extends TestCase
     {
         parent::setUp();
         Storage::fake('local');
+        Storage::fake('bmc_documents');
     }
 
     private function admin(): User
@@ -110,15 +114,68 @@ class ScanUploadBatchTest extends TestCase
             ->assertCreated()
             ->json('batch_id');
 
-        $this->actingAs($anotherAdmin)
-            ->withHeader('Accept', 'application/json')
+        // Ownership is verified in the storage service, without swapping the
+        // authenticated actor in one Laravel test session (session hardening).
+        $this->expectException(ValidationException::class);
+        app(ScanUploadBatchService::class)
+            ->filesForCompletion($id, $anotherAdmin->id, 2);
+    }
+
+    public function test_staged_upload_can_complete_through_existing_document_transaction(): void
+    {
+        $admin = $this->admin();
+        $department = Department::create([
+            'name' => 'Quality Control',
+            'code' => 'QC',
+            'is_active' => true,
+        ]);
+        $category = Category::create([
+            'department_id' => $department->id,
+            'name' => 'QC Scan Batch',
+            'slug' => 'qc-scan-batch',
+            'is_active' => true,
+        ]);
+
+        $batch = $this->actingAs($admin)
+            ->postJson(route('documents.scan.batches.start'), ['expected_count' => 2])
+            ->assertCreated()
+            ->json('batch_id');
+
+        $this->withHeader('Accept', 'application/json')
             ->post(route('documents.scan.batches.upload'), [
-                'batch_id' => $id,
+                'batch_id' => $batch,
                 'offset' => 0,
-                'files' => [UploadedFile::fake()->image('page.png')],
+                'files' => [
+                    UploadedFile::fake()->image('first.png', 50, 80),
+                    UploadedFile::fake()->image('second.png', 80, 50),
+                ],
             ])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors('batch_id');
+            ->assertOk()
+            ->assertJsonPath('received', 2);
+
+        // Browser's final POST contains metadata and a batch ID, NOT files[].
+        // If Request caches an empty FileBag before staged injection this test
+        // will fail, protecting against a subtle Laravel validation regression.
+        $this->from(route('documents.scan.create'))
+            ->post(route('documents.scan.store'), [
+                'title' => 'Dokumen QC 2 halaman',
+                'file_name' => 'scan-qc-batch',
+                'scan_type' => 'Lainnya',
+                'scan_type_other' => 'Dokumen Pengujian',
+                'scan_date' => '2026-11-12',
+                'category_id' => $category->id,
+                'expected_photo_count' => 2,
+                'batch_id' => $batch,
+            ])
+            ->assertRedirect(route('documents.scan.create'))
+            ->assertSessionHas('success');
+
+        $document = Document::query()->sole();
+        $this->assertSame('pdf', $document->file_extension);
+        $this->assertGreaterThan(0, $document->file_size);
+        $this->assertSame('application/pdf', $document->mime_type);
+        Storage::disk('bmc_documents')->assertExists($document->file_path);
+        Storage::disk('local')->assertMissing('scan-upload-batches/'.$batch.'/manifest.json');
     }
 
     public function test_employee_cannot_start_upload_batch(): void
