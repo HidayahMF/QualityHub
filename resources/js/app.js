@@ -1,6 +1,7 @@
 ﻿import './bootstrap';
 import { initializeCategoryComboboxes } from './category-combobox';
 import { initializeCategoryDocumentsModal } from './category-documents-modal';
+import { initializeSearchableFilters } from './searchable-filters';
 
 import Alpine from '@alpinejs/csp';
 
@@ -284,6 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initializeCategoryComboboxes();
     initializeCategoryDocumentsModal();
+    initializeSearchableFilters();
 
 
 
