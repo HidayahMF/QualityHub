@@ -116,3 +116,30 @@ Updated in PR #11 after reviewing four user-provided profile UI references.
 - Existing private local storage, path ownership validation, and private/no-store image responses reused. No public image URL, new migration, or audit-record mutation.
 - \`ActivityLog::with('user')\` already eager loads the user, so no additional database relationship query per row.
 - QA: \`php artisan test --filter=ActivityLogAvatarTest\`, \`--filter=UserManagementAvatarTest\`, \`--filter=ProfilePhotoTest\`, \`--filter=AdminAccountManagementTest\`. Verify same user avatar in My Profile, Users, and Activity Log; fallback for blank/system/deleted user; unauthorized account denied.
+
+
+---
+
+## Full-page Activity Log UI redesign · 2026-11-12
+- Replaced 6-column audit table with balanced responsive feed: avatar/actor, action/target/short summary, time/IP.
+- Removed tall metric cards and verbose header paragraphs; introduced compact four-KPI strip and search bar.
+- Advanced GET filters retain exact names: \`search\`, \`user_id\`, \`action\`, \`document_id\`, \`ip_address\`, \`date_from\`, \`date_to\`. Native \`<details>\` reveals advanced filters and opens automatically when filters are active.
+- Kept original Indonesian action-label map and \`data-qh-searchable-select\` hooks for later PR #9 integration.
+- Each audit entry uses native disclosure \`<details><summary>\`, without CSP-incompatible Alpine inline state or x-collapse. Full original description, user agent, metadata and database-generated target data remain accessible.
+- All existing doc links, private photo avatars, audit role permissions, controller queries, pagination, status, and audit records unchanged. No migration.
+- New \`ActivityLogRedesignTest\` covers metadata, filters, system activity and authorization.
+
+### QA before merge
+\`\`\`powershell
+php artisan test --filter=ActivityLogRedesignTest
+php artisan test --filter=ActivityLogAvatarTest
+php artisan test --filter=UserManagementAvatarTest
+php artisan test --filter=ProfilePhotoTest
+php artisan test --filter=AdminAccountManagementTest
+npm run build
+php artisan view:cache
+php artisan view:clear
+\`\`\`
+- Review 1366×768 desktop, 390×844 mobile, and entries with long user agents or metadata.
+- Verify multi-page links and filters, nested metadata, empty results and image fallback.
+- Do not merge PR #11 or redeploy without full QA and Mas IT approval.

@@ -1,680 +1,8 @@
 <x-app-layout>
-
-    {{-- ========================================================= --}}
-    {{-- HEADER --}}
-    {{-- ========================================================= --}}
-
-    <section
-        class="flex flex-col
-               xl:flex-row
-               xl:items-center
-               xl:justify-between
-               gap-5
-               mb-8"
-    >
-
-        <div>
-
-            <div
-                class="inline-flex
-                       items-center
-                       gap-2
-                       mb-2
-                       text-sm
-                       font-semibold
-                       text-blue-700"
-            >
-
-                <span
-                    class="w-2
-                           h-2
-                           rounded-full
-                           bg-blue-600"
-                ></span>
-
-                Keamanan & Audit
-
-            </div>
-
-
-            <h1
-                class="text-3xl
-                       sm:text-4xl
-                       font-bold
-                       tracking-tight
-                       text-slate-900"
-            >
-                Activity Log
-            </h1>
-
-
-            <p
-                class="mt-2
-                       text-sm
-                       sm:text-base
-                       text-slate-500"
-            >
-                Pantau aktivitas penting yang dilakukan di dalam
-                BMC QualityHub.
-            </p>
-
-        </div>
-
-
-        <div
-            class="inline-flex
-                   items-center
-                   gap-2
-
-                   rounded-xl
-
-                   border
-                   border-emerald-200
-
-                   bg-emerald-50
-
-                   px-4
-                   py-2.5
-
-                   text-sm
-                   font-semibold
-                   text-emerald-700"
-        >
-
-            <span
-                class="relative
-                       flex
-                       h-2.5
-                       w-2.5"
-            >
-
-                <span
-                    class="absolute
-                           inline-flex
-                           h-full
-                           w-full
-                           animate-ping
-                           rounded-full
-                           bg-emerald-400
-                           opacity-60"
-                ></span>
-
-                <span
-                    class="relative
-                           inline-flex
-                           h-2.5
-                           w-2.5
-                           rounded-full
-                           bg-emerald-500"
-                ></span>
-
-            </span>
-
-            Jejak Audit Aktif
-
-        </div>
-
-    </section>
-
-
-
-    {{-- ========================================================= --}}
-    {{-- STATISTICS --}}
-    {{-- ========================================================= --}}
-
-    <section
-        class="grid
-               grid-cols-1
-               sm:grid-cols-2
-               xl:grid-cols-4
-               gap-5
-               mb-6"
-    >
-
-
-        {{-- TOTAL --}}
-
-        <div
-            class="bg-white
-                   rounded-2xl
-                   border border-slate-200/70
-                   shadow-sm
-                   p-5"
-        >
-
-            <div
-                class="flex
-                       items-center
-                       justify-between"
-            >
-
-                <div>
-
-                    <p
-                        class="text-sm
-                               font-medium
-                               text-slate-500"
-                    >
-                        Total Aktivitas
-                    </p>
-
-                    <p
-                        class="mt-2
-                               text-3xl
-                               font-bold
-                               text-slate-900"
-                    >
-                        {{ number_format($statistics['total']) }}
-                    </p>
-
-                </div>
-
-
-                <div
-                    class="w-12
-                           h-12
-                           rounded-2xl
-                           bg-blue-50
-                           text-blue-700
-                           flex
-                           items-center
-                           justify-center"
-                >
-
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="22"
-                        height="22"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                    >
-                        <path d="M12 8v4l3 3"/>
-                        <circle cx="12" cy="12" r="9"/>
-                    </svg>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-
-        {{-- TODAY --}}
-
-        <div
-            class="bg-white
-                   rounded-2xl
-                   border border-slate-200/70
-                   shadow-sm
-                   p-5"
-        >
-
-            <div
-                class="flex
-                       items-center
-                       justify-between"
-            >
-
-                <div>
-
-                    <p
-                        class="text-sm
-                               font-medium
-                               text-slate-500"
-                    >
-                        Hari Ini
-                    </p>
-
-                    <p
-                        class="mt-2
-                               text-3xl
-                               font-bold
-                               text-emerald-700"
-                    >
-                        {{ number_format($statistics['today']) }}
-                    </p>
-
-                </div>
-
-
-                <div
-                    class="w-12
-                           h-12
-                           rounded-2xl
-                           bg-emerald-50
-                           text-emerald-700
-                           flex
-                           items-center
-                           justify-center"
-                >
-
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="22"
-                        height="22"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                    >
-                        <path d="M8 2v4"/>
-                        <path d="M16 2v4"/>
-                        <rect
-                            width="18"
-                            height="18"
-                            x="3"
-                            y="4"
-                            rx="2"
-                        />
-                        <path d="M3 10h18"/>
-                    </svg>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-
-        {{-- DOCUMENT ACTIVITY --}}
-
-        <div
-            class="bg-white
-                   rounded-2xl
-                   border border-slate-200/70
-                   shadow-sm
-                   p-5"
-        >
-
-            <div
-                class="flex
-                       items-center
-                       justify-between"
-            >
-
-                <div>
-
-                    <p
-                        class="text-sm
-                               font-medium
-                               text-slate-500"
-                    >
-                        Aktivitas Dokumen
-                    </p>
-
-                    <p
-                        class="mt-2
-                               text-3xl
-                               font-bold
-                               text-indigo-700"
-                    >
-                        {{ number_format(
-                            $statistics['document_activity']
-                        ) }}
-                    </p>
-
-                </div>
-
-
-                <div
-                    class="w-12
-                           h-12
-                           rounded-2xl
-                           bg-indigo-50
-                           text-indigo-700
-                           flex
-                           items-center
-                           justify-center"
-                >
-
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="22"
-                        height="22"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                    >
-                        <path
-                            d="M14.5 2H6
-                               a2 2 0 0 0-2 2
-                               v16
-                               a2 2 0 0 0 2 2
-                               h12
-                               a2 2 0 0 0 2-2
-                               V7.5Z"
-                        />
-                        <polyline points="14 2 14 8 20 8"/>
-                    </svg>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-
-        {{-- USER MANAGEMENT --}}
-
-        <div
-            class="bg-white
-                   rounded-2xl
-                   border border-slate-200/70
-                   shadow-sm
-                   p-5"
-        >
-
-            <div
-                class="flex
-                       items-center
-                       justify-between"
-            >
-
-                <div>
-
-                    <p
-                        class="text-sm
-                               font-medium
-                               text-slate-500"
-                    >
-                        Aktivitas Akun
-                    </p>
-
-                    <p
-                        class="mt-2
-                               text-3xl
-                               font-bold
-                               text-amber-700"
-                    >
-                        {{ number_format(
-                            $statistics['user_management']
-                        ) }}
-                    </p>
-
-                </div>
-
-
-                <div
-                    class="w-12
-                           h-12
-                           rounded-2xl
-                           bg-amber-50
-                           text-amber-700
-                           flex
-                           items-center
-                           justify-center"
-                >
-
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="22"
-                        height="22"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                    >
-                        <path
-                            d="M16 21v-2
-                               a4 4 0 0 0-4-4H6
-                               a4 4 0 0 0-4 4v2"
-                        />
-                        <circle cx="9" cy="7" r="4"/>
-                        <path d="m17 11 2 2 4-4"/>
-                    </svg>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </section>
-
-
-
-    {{-- ========================================================= --}}
-    {{-- FILTER PANEL --}}
-    {{-- ========================================================= --}}
-
-    <form
-        method="GET"
-        action="{{ route('activity-logs.index') }}"
-
-        class="bg-white
-               rounded-2xl
-               border border-slate-200/70
-               shadow-sm
-               p-5
-               mb-6"
-    >
-
-        <div
-            class="flex
-                   items-center
-                   justify-between
-                   gap-4
-                   mb-5"
-        >
-
-            <div>
-
-                <h2
-                    class="font-bold
-                           text-slate-900"
-                >
-                    Pencarian & Filter Audit
-                </h2>
-
-                <p
-                    class="mt-1
-                           text-sm
-                           text-slate-500"
-                >
-                    Temukan aktivitas berdasarkan pengguna, aksi, dokumen,
-                    alamat IP, atau tanggal.
-                </p>
-
-            </div>
-
-
-            @if(request()->hasAny([
-                'search',
-                'user_id',
-                'action',
-                'document_id',
-                'ip_address',
-                'date_from',
-                'date_to'
-            ]))
-
-                <a
-                    href="{{ route('activity-logs.index') }}"
-
-                    class="hidden
-                           sm:inline-flex
-                           text-xs
-                           font-semibold
-                           text-red-600
-                           hover:text-red-700"
-                >
-                    Hapus semua filter
-                </a>
-
-            @endif
-
-        </div>
-
-
-
-        <div
-            class="grid
-                   md:grid-cols-2
-                   xl:grid-cols-4
-                   gap-4"
-        >
-
-
-            {{-- GLOBAL SEARCH --}}
-
-            <div class="md:col-span-2">
-
-                <label
-                    for="search"
-                    class="block
-                           mb-2
-                           text-xs
-                           font-semibold
-                           text-slate-500"
-                >
-                    Pencarian
-                </label>
-
-
-                <div class="relative">
-
-                    <div
-                        class="absolute
-                               inset-y-0
-                               left-0
-                               pl-4
-                               flex
-                               items-center
-                               pointer-events-none
-                               text-slate-400"
-                    >
-
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="18"
-                            height="18"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                        >
-                            <circle cx="11" cy="11" r="8"/>
-                            <path d="m21 21-4.3-4.3"/>
-                        </svg>
-
-                    </div>
-
-
-                    <input
-                        id="search"
-                        type="text"
-                        name="search"
-
-                        value="{{ request('search') }}"
-
-                        placeholder="Pengguna, dokumen, aksi, deskripsi..."
-
-                        class="w-full
-                               rounded-xl
-                               border-slate-200
-                               bg-slate-50
-                               pl-11
-                               pr-4
-                               py-3
-                               text-sm
-                               focus:border-blue-500
-                               focus:ring-blue-500"
-                    >
-
-                </div>
-
-            </div>
-
-
-
-            {{-- USER --}}
-
-            <div>
-
-                <label
-                    for="user_id"
-                    class="block
-                           mb-2
-                           text-xs
-                           font-semibold
-                           text-slate-500"
-                >
-                    Pengguna
-                </label>
-
-
-                <select
-                    id="user_id"
-                    name="user_id"
-
-                    class="w-full
-                           rounded-xl
-                           border-slate-200
-                           bg-slate-50
-                           px-4
-                           py-3
-                           text-sm
-                           focus:border-blue-500
-                           focus:ring-blue-500"
-                >
-
-                    <option value="">
-                        Semua Pengguna
-                    </option>
-
-
-                    @foreach($users as $user)
-
-                        <option
-                            value="{{ $user->id }}"
-
-                            @selected(
-                                (string) request('user_id')
-                                === (string) $user->id
-                            )
-                        >
-                            {{ $user->name }}
-                        </option>
-
-                    @endforeach
-
-                </select>
-
-            </div>
-
-
-
-            {{-- ACTION --}}
-
-            <div>
-
-                <label
-                    for="action"
-                    class="block
-                           mb-2
-                           text-xs
-                           font-semibold
-                           text-slate-500"
-                >
-                    Aksi
-                </label>
-
-
-                @php
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Label aksi Activity Log
-                    |--------------------------------------------------------------------------
-                    | Nilai teknis/raw action TIDAK diubah.
-                    | Yang diubah hanya label tampilan agar konsisten Bahasa Indonesia.
-                    */
-                    $actionLabels = [
+    {{-- BMC QualityHub · Activity Log · compact enterprise blue-white UI.
+         Existing GET filters, audits, metadata and permissions stay intact. --}}
+    @php
+        $actionLabels = [
                         'activate_category' => 'Aktifkan Kategori',
                         'activate_department' => 'Aktifkan Departemen',
                         'activate_user' => 'Aktifkan Pengguna',
@@ -703,1282 +31,314 @@
                         'view_document' => 'Lihat Dokumen',
                     ];
 
-                    $sortedActions = collect($actions)
-                        ->sortBy(
-                            fn ($action) => strtolower(
-                                $actionLabels[$action]
-                                ?? ucwords(str_replace('_', ' ', $action))
-                            )
-                        )
-                        ->values();
-                @endphp
+        $sortedActions = collect($actions)
+            ->sortBy(fn ($action) => strtolower(
+                $actionLabels[$action] ?? ucwords(str_replace('_', ' ', (string) $action))
+            ))->values();
 
+        $hasExtraFilters = request()->filled('user_id')
+            || request()->filled('action')
+            || request()->filled('document_id')
+            || request()->filled('ip_address')
+            || request()->filled('date_from')
+            || request()->filled('date_to');
 
-                <select
-                    id="action"
-                    name="action"
+        $hasAnyFilters = $hasExtraFilters || request()->filled('search');
+    @endphp
 
-                    class="w-full
-                           rounded-xl
-                           border-slate-200
-                           bg-slate-50
-                           px-4
-                           py-3
-                           text-sm
-                           focus:border-blue-500
-                           focus:ring-blue-500"
-                >
+    <div class="mx-auto max-w-[1220px] space-y-4 pb-7" data-qh-audit-page>
+        {{-- Compact page title --}}
+        <header class="flex flex-wrap items-center justify-between gap-3">
+            <div class="min-w-0">
+                <div class="mb-1 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.13em] text-blue-700">
+                    <span class="h-3.5 w-1 rounded-full bg-blue-700" aria-hidden="true"></span>
+                    Keamanan & Audit
+                </div>
+                <h1 class="!text-[26px] font-extrabold tracking-tight text-slate-900">Activity Log</h1>
+            </div>
+            <span class="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs font-bold text-emerald-700">
+                <span class="h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true"></span>
+                Jejak Audit Aktif
+            </span>
+        </header>
 
-                    <option value="">
-                        Semua Aksi
-                    </option>
+        {{-- Four statistics in one restrained strip instead of tall separate cards. --}}
+        <section aria-label="Ringkasan audit" class="grid grid-cols-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-900/5 md:grid-cols-4">
+            @foreach([
+                ['label' => 'Total Aktivitas', 'value' => $statistics['total'], 'accent' => 'text-blue-800'],
+                ['label' => 'Hari Ini', 'value' => $statistics['today'], 'accent' => 'text-emerald-700'],
+                ['label' => 'Aktivitas Dokumen', 'value' => $statistics['document_activity'], 'accent' => 'text-blue-800'],
+                ['label' => 'Aktivitas Akun', 'value' => $statistics['user_management'], 'accent' => 'text-slate-900'],
+            ] as $stat)
+                <div class="min-w-0 border-b border-r border-slate-100 px-4 py-3.5 last:border-r-0 sm:px-5">
+                    <p class="text-[12px] font-semibold text-slate-500">{{ $stat['label'] }}</p>
+                    <p class="mt-1 !text-[24px] font-extrabold leading-tight {{ $stat['accent'] }}">{{ number_format($stat['value']) }}</p>
+                </div>
+            @endforeach
+        </section>
 
+        {{-- Search is always visible; advanced filters stay available but compact. --}}
+        <section class="rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-900/5" aria-label="Filter audit">
+            <form method="GET" action="{{ route('activity-logs.index') }}" class="px-4 py-4 sm:px-5">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+                    <div class="min-w-0 flex-1">
+                        <label for="search" class="mb-1.5 block text-xs font-semibold text-slate-600">Cari aktivitas</label>
+                        <div class="relative">
+                            <svg class="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+                            </svg>
+                            <input id="search" name="search" type="search" value="{{ request('search') }}" maxlength="255"
+                                placeholder="Pengguna, dokumen, aksi, atau IP..."
+                                class="block min-h-[43px] w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-11 pr-4 text-sm text-slate-900 shadow-sm focus:border-blue-600 focus:ring-blue-600">
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button type="submit" class="inline-flex min-h-[43px] items-center justify-center rounded-xl bg-blue-700 px-5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600">
+                            Cari
+                        </button>
+                        <a href="{{ route('activity-logs.index') }}" class="inline-flex min-h-[43px] items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
+                            Atur Ulang
+                        </a>
+                    </div>
+                </div>
 
-                    @foreach($sortedActions as $action)
+                <details class="group mt-3 border-t border-slate-100 pt-3" @if($hasExtraFilters) open @endif>
+                    <summary class="flex w-fit cursor-pointer list-none items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-bold text-blue-700 transition hover:bg-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 [&::-webkit-details-marker]:hidden">
+                        <svg class="h-4 w-4 transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                        Filter Lanjutan
+                        @if($hasExtraFilters)
+                            <span class="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] text-blue-800">Aktif</span>
+                        @endif
+                    </summary>
+                    <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        <div class="min-w-0">
+                            <label for="user_id" class="mb-1.5 block text-xs font-semibold text-slate-600">Pengguna</label>
+                            <select data-qh-searchable-select id="user_id" name="user_id" class="block min-h-[42px] w-full rounded-xl border-slate-200 bg-slate-50 text-sm text-slate-800 focus:border-blue-600 focus:ring-blue-600">
+                                <option value="">Semua Pengguna</option>
+                                @foreach($users as $user)
+                                    <option value="{{ $user->id }}" @selected((string) request('user_id') === (string) $user->id)>{{ $user->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="min-w-0">
+                            <label for="action" class="mb-1.5 block text-xs font-semibold text-slate-600">Aksi</label>
+                            <select data-qh-searchable-select id="action" name="action" class="block min-h-[42px] w-full rounded-xl border-slate-200 bg-slate-50 text-sm text-slate-800 focus:border-blue-600 focus:ring-blue-600">
+                                <option value="">Semua Aksi</option>
+                                @foreach($sortedActions as $action)
+                                    <option value="{{ $action }}" @selected(request('action') === $action)>{{ $actionLabels[$action] ?? ucwords(str_replace('_', ' ', $action)) }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="min-w-0">
+                            <label for="document_id" class="mb-1.5 block text-xs font-semibold text-slate-600">Dokumen</label>
+                            <select data-qh-searchable-select id="document_id" name="document_id" class="block min-h-[42px] w-full rounded-xl border-slate-200 bg-slate-50 text-sm text-slate-800 focus:border-blue-600 focus:ring-blue-600">
+                                <option value="">Semua Dokumen</option>
+                                @foreach($documents as $document)
+                                    <option value="{{ $document->id }}" @selected((string) request('document_id') === (string) $document->id)>{{ $document->title }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="min-w-0">
+                            <label for="ip_address" class="mb-1.5 block text-xs font-semibold text-slate-600">Alamat IP</label>
+                            <input id="ip_address" name="ip_address" type="text" value="{{ request('ip_address') }}" maxlength="45" placeholder="127.0.0.1"
+                                class="block min-h-[42px] w-full rounded-xl border-slate-200 bg-slate-50 text-sm text-slate-800 focus:border-blue-600 focus:ring-blue-600">
+                        </div>
+                        <div class="min-w-0">
+                            <label for="date_from" class="mb-1.5 block text-xs font-semibold text-slate-600">Tanggal Mulai</label>
+                            <input id="date_from" name="date_from" type="date" value="{{ request('date_from') }}"
+                                class="block min-h-[42px] w-full rounded-xl border-slate-200 bg-slate-50 text-sm text-slate-800 focus:border-blue-600 focus:ring-blue-600">
+                        </div>
+                        <div class="min-w-0">
+                            <label for="date_to" class="mb-1.5 block text-xs font-semibold text-slate-600">Tanggal Akhir</label>
+                            <input id="date_to" name="date_to" type="date" value="{{ request('date_to') }}"
+                                class="block min-h-[42px] w-full rounded-xl border-slate-200 bg-slate-50 text-sm text-slate-800 focus:border-blue-600 focus:ring-blue-600">
+                        </div>
+                        <div class="flex items-end sm:col-span-2 xl:col-span-2">
+                            <button type="submit" class="min-h-[42px] rounded-xl bg-blue-700 px-5 text-sm font-bold text-white transition hover:bg-blue-800">Terapkan Filter</button>
+                        </div>
+                    </div>
+                </details>
+            </form>
+        </section>
 
-                        <option
-                            value="{{ $action }}"
-
-                            @selected(
-                                request('action') === $action
-                            )
-                        >
-                            {{ $actionLabels[$action]
-                                ?? ucwords(str_replace('_', ' ', $action))
-                            }}
-                        </option>
-
-                    @endforeach
-
-                </select>
-
+        {{-- Readable, responsive activity feed. Detail is native <details>, no CSP-unsafe x-data. --}}
+        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-900/5" aria-labelledby="qhAuditHeading">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-4 sm:px-5">
+                <div class="min-w-0">
+                    <h2 id="qhAuditHeading" class="!text-[17px] font-extrabold text-slate-900">Catatan Audit</h2>
+                    <p class="mt-0.5 text-xs text-slate-500">{{ number_format($logs->total()) }} catatan ditemukan</p>
+                </div>
+                <span class="rounded-lg bg-blue-50 px-3 py-1.5 text-[11px] font-semibold text-blue-800">Terbaru dahulu</span>
             </div>
 
-
-
-            {{-- DOCUMENT --}}
-
-            <div>
-
-                <label
-                    for="document_id"
-                    class="block
-                           mb-2
-                           text-xs
-                           font-semibold
-                           text-slate-500"
-                >
-                    Dokumen
-                </label>
-
-
-                <select
-                    id="document_id"
-                    name="document_id"
-
-                    class="w-full
-                           rounded-xl
-                           border-slate-200
-                           bg-slate-50
-                           px-4
-                           py-3
-                           text-sm
-                           focus:border-blue-500
-                           focus:ring-blue-500"
-                >
-
-                    <option value="">
-                        Semua Dokumen
-                    </option>
-
-
-                    @foreach($documents as $document)
-
-                        <option
-                            value="{{ $document->id }}"
-
-                            @selected(
-                                (string) request('document_id')
-                                === (string) $document->id
-                            )
-                        >
-                            {{ $document->title }}
-                        </option>
-
-                    @endforeach
-
-                </select>
-
-            </div>
-
-
-
-            {{-- IP ADDRESS --}}
-
-            <div>
-
-                <label
-                    for="ip_address"
-                    class="block
-                           mb-2
-                           text-xs
-                           font-semibold
-                           text-slate-500"
-                >
-                    Alamat IP
-                </label>
-
-
-                <input
-                    id="ip_address"
-                    type="text"
-                    name="ip_address"
-
-                    value="{{ request('ip_address') }}"
-
-                    placeholder="Contoh: 127.0.0.1"
-
-                    class="w-full
-                           rounded-xl
-                           border-slate-200
-                           bg-slate-50
-                           px-4
-                           py-3
-                           text-sm
-                           focus:border-blue-500
-                           focus:ring-blue-500"
-                >
-
-            </div>
-
-
-
-            {{-- DATE FROM --}}
-
-            <div>
-
-                <label
-                    for="date_from"
-                    class="block
-                           mb-2
-                           text-xs
-                           font-semibold
-                           text-slate-500"
-                >
-                    Tanggal Mulai
-                </label>
-
-
-                <input
-                    id="date_from"
-                    type="date"
-                    name="date_from"
-
-                    value="{{ request('date_from') }}"
-
-                    class="w-full
-                           rounded-xl
-                           border-slate-200
-                           bg-slate-50
-                           px-4
-                           py-3
-                           text-sm
-                           focus:border-blue-500
-                           focus:ring-blue-500"
-                >
-
-            </div>
-
-
-
-            {{-- DATE TO --}}
-
-            <div>
-
-                <label
-                    for="date_to"
-                    class="block
-                           mb-2
-                           text-xs
-                           font-semibold
-                           text-slate-500"
-                >
-                    Tanggal Akhir
-                </label>
-
-
-                <input
-                    id="date_to"
-                    type="date"
-                    name="date_to"
-
-                    value="{{ request('date_to') }}"
-
-                    class="w-full
-                           rounded-xl
-                           border-slate-200
-                           bg-slate-50
-                           px-4
-                           py-3
-                           text-sm
-                           focus:border-blue-500
-                           focus:ring-blue-500"
-                >
-
-            </div>
-
-        </div>
-
-
-
-        {{-- BUTTONS --}}
-
-        <div
-            class="mt-5
-                   flex
-                   flex-wrap
-                   gap-3"
-        >
-
-            <button
-                type="submit"
-
-                class="inline-flex
-                       items-center
-                       justify-center
-                       gap-2
-
-                       rounded-xl
-
-                       bg-blue-800
-
-                       px-5
-                       py-2.5
-
-                       text-sm
-                       font-semibold
-                       text-white
-
-                       hover:bg-blue-900
-
-                       transition"
-            >
-
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                >
-                    <path d="M4 21v-7"/>
-                    <path d="M4 10V3"/>
-                    <path d="M12 21v-9"/>
-                    <path d="M12 8V3"/>
-                    <path d="M20 21v-5"/>
-                    <path d="M20 12V3"/>
-                </svg>
-
-                Terapkan Filter
-
-            </button>
-
-
-            <a
-                href="{{ route('activity-logs.index') }}"
-
-                class="inline-flex
-                       items-center
-                       justify-center
-
-                       rounded-xl
-
-                       border
-                       border-slate-200
-
-                       bg-white
-
-                       px-5
-                       py-2.5
-
-                       text-sm
-                       font-semibold
-                       text-slate-600
-
-                       hover:bg-slate-50
-
-                       transition"
-            >
-                Atur Ulang
-            </a>
-
-        </div>
-
-    </form>
-
-
-
-    {{-- ========================================================= --}}
-    {{-- ACTIVITY TABLE --}}
-    {{-- ========================================================= --}}
-
-    <section
-        class="bg-white
-               rounded-2xl
-               border border-slate-200/70
-               shadow-sm
-               overflow-hidden"
-    >
-
-
-        {{-- TABLE HEADER --}}
-
-        <div
-            class="px-6
-                   py-5
-
-                   border-b
-                   border-slate-100
-
-                   flex
-                   flex-col
-                   sm:flex-row
-                   sm:items-center
-                   sm:justify-between
-                   gap-2"
-        >
-
-            <div>
-
-                <h2
-                    class="font-bold
-                           text-slate-900"
-                >
-                    Catatan Audit
-                </h2>
-
-                <p
-                    class="mt-1
-                           text-sm
-                           text-slate-500"
-                >
-                    {{ number_format($logs->total()) }}
-                    catatan aktivitas ditemukan.
-                </p>
-
-            </div>
-
-
-            <div
-                class="text-xs
-                       text-slate-400"
-            >
-                Aktivitas terbaru ditampilkan terlebih dahulu
-            </div>
-
-        </div>
-
-
-
-        @if($logs->count())
-
-
-            <div class="overflow-x-auto">
-
-                <table class="w-full text-left">
-
-
-                    {{-- TABLE HEADER --}}
-
-                    <thead class="bg-slate-50/80">
-
-                        <tr
-                            class="text-[11px]
-                                   uppercase
-                                   tracking-wider
-                                   text-slate-500"
-                        >
-
-                            <th
-                                class="px-6
-                                       py-4
-                                       font-semibold"
-                            >
-                                Pengguna
-                            </th>
-
-                            <th
-                                class="px-6
-                                       py-4
-                                       font-semibold"
-                            >
-                                Aksi
-                            </th>
-
-                            <th
-                                class="px-6
-                                       py-4
-                                       font-semibold"
-                            >
-                                Target / Dokumen
-                            </th>
-
-                            <th
-                                class="px-6
-                                       py-4
-                                       font-semibold"
-                            >
-                                Alamat IP
-                            </th>
-
-                            <th
-                                class="px-6
-                                       py-4
-                                       font-semibold"
-                            >
-                                Waktu
-                            </th>
-
-                            <th
-                                class="px-6
-                                       py-4
-                                       font-semibold
-                                       text-right"
-                            >
-                                Detail
-                            </th>
-
-                        </tr>
-
-                    </thead>
-
-
-
-                    <tbody
-                        class="divide-y
-                               divide-slate-100"
-                    >
-
-
-                        @foreach($logs as $log)
-
-                            @php
-
-                                $actionStyle = match($log->action) {
-                                    'upload_document_revision' =>
-                                        'bg-indigo-50 text-indigo-700',
-
-                                    'open_document_revision' =>
-                                        'bg-violet-50 text-violet-700',
-
-                                    'download_document_revision' =>
-                                        'bg-cyan-50 text-cyan-700',
-
-                                    'update_document' =>
-                                        'bg-blue-50 text-blue-700',
-
-                                    'archive_document' =>
-                                        'bg-amber-50 text-amber-700',
-
-                                    'permanent_delete_document' =>
-                                        'bg-red-50 text-red-700',
-
-                                    'restore_document' =>
-                                        'bg-emerald-50 text-emerald-700',
-
-                                    'add_favorite' =>
-                                        'bg-amber-50 text-amber-700',
-
-                                    'remove_favorite' =>
-                                        'bg-rose-50 text-rose-700',
-
-                                    'upload_document' =>
-                                        'bg-blue-50 text-blue-700',
-
-                                    'view_document' =>
-                                        'bg-indigo-50 text-indigo-700',
-
-                                    'open_document' =>
-                                        'bg-cyan-50 text-cyan-700',
-
-                                    'download_document' =>
-                                        'bg-emerald-50 text-emerald-700',
-
-                                    'approve_user',
-                                    'activate_user' =>
-                                        'bg-emerald-50 text-emerald-700',
-
-                                    'reject_user' =>
-                                        'bg-red-50 text-red-700',
-
-                                    'deactivate_user' =>
-                                        'bg-amber-50 text-amber-700',
-
-                                    'delete_category' =>
-                                        'bg-red-50 text-red-700',
-
-                                    'create_category',
-                                    'create_department',
-                                    'update_category',
-                                    'update_department' =>
-                                        'bg-blue-50 text-blue-700',
-
-                                    'activate_category',
-                                    'activate_department' =>
-                                        'bg-emerald-50 text-emerald-700',
-
-                                    'deactivate_category',
-                                    'deactivate_department' =>
-                                        'bg-amber-50 text-amber-700',
-
-                                    default =>
-                                        'bg-slate-100 text-slate-600',
-                                };
-
-
-                                $metadata = is_array($log->metadata)
-                                    ? $log->metadata
-                                    : [];
-
-                            @endphp
-
-
-                            <tr
-                                x-data="{ expanded: false }"
-
-                                class="hover:bg-slate-50/70
-                                       transition"
-                            >
-
-
-                                {{-- USER --}}
-
-                                <td
-                                    class="px-6
-                                           py-4
-                                           align-top"
-                                >
-
-                                    <div
-                                        class="flex
-                                               items-center
-                                               gap-3"
-                                    >
-
-                                        <div
-                                            class="w-11
-                                                   h-11
-                                                   rounded-xl
-                                                   border border-blue-100
-                                                   bg-blue-100
-                                                   text-blue-800
-                                                   flex
-                                                   items-center
-                                                   justify-center
-                                                   overflow-hidden
-                                                   font-bold
-                                                   flex-shrink-0"
-                                        >
-                                            @if($log->user?->profile_photo_path)
-                                                <img
-                                                    src="{{ route('activity-logs.photo.show', $log->user) }}"
-                                                    alt="Foto profil {{ $log->user->name }}"
-                                                    class="h-full w-full object-cover"
-                                                    loading="lazy"
-                                                    decoding="async"
-                                                >
-                                            @else
-                                                <span aria-label="{{ $log->user ? 'Inisial '.$log->user->name : 'Aktivitas sistem' }}">
-                                                    {{ strtoupper(substr($log->user?->name ?? 'S', 0, 1)) }}
-                                                </span>
-                                            @endif
-                                        </div>
-
-
-                                        <div class="min-w-0">
-
-                                            <p
-                                                class="text-sm
-                                                       font-semibold
-                                                       text-slate-900"
-                                            >
-                                                {{ $log->user?->name ?? 'Sistem' }}
-                                            </p>
-
-
-                                            <p
-                                                class="mt-1
-                                                       text-xs
-                                                       text-slate-400"
-                                            >
-                                                {{ $log->user?->email ?? 'Aktivitas sistem' }}
-                                            </p>
-
-                                        </div>
-
+            @if($logs->count())
+                <div class="divide-y divide-slate-100" data-qh-audit-list>
+                    @foreach($logs as $log)
+                        @php
+                            $metadata = is_array($log->metadata) ? $log->metadata : [];
+                            $actionLabel = $actionLabels[$log->action]
+                                ?? ucwords(str_replace('_', ' ', $log->action));
+
+                            $actionStyle = match (true) {
+                                in_array($log->action, [
+                                    'permanent_delete_document', 'delete_category', 'reject_user',
+                                ], true) => 'bg-rose-50 text-rose-800 border-rose-100',
+                                in_array($log->action, [
+                                    'archive_document', 'deactivate_user', 'deactivate_department', 'deactivate_category',
+                                ], true) => 'bg-amber-50 text-amber-800 border-amber-100',
+                                in_array($log->action, [
+                                    'restore_document', 'approve_user', 'activate_user', 'activate_category', 'activate_department',
+                                ], true) => 'bg-emerald-50 text-emerald-800 border-emerald-100',
+                                default => 'bg-blue-50 text-blue-800 border-blue-100',
+                            };
+
+                            $documentTitle = $log->document?->title
+                                ?? (is_string($metadata['document_title'] ?? null) ? $metadata['document_title'] : null);
+                            $targetName = is_string($metadata['target_name'] ?? null) ? $metadata['target_name'] : null;
+                            $targetTitle = $documentTitle ?? $targetName;
+                            $documentCode = $log->document?->document_code
+                                ?? (is_string($metadata['document_code'] ?? null) ? $metadata['document_code'] : null);
+                            $summary = (string) ($log->description ?? '');
+                        @endphp
+
+                        <article class="px-4 py-4 transition-colors hover:bg-blue-50/30 sm:px-5" data-qh-audit-entry>
+                            <div class="grid min-w-0 grid-cols-1 items-start gap-3 lg:grid-cols-[190px_minmax(0,1fr)_150px] lg:gap-5">
+                                {{-- Who: fixed width on desktop, not a narrow table column. --}}
+                                <div class="flex min-w-0 items-center gap-2.5">
+                                    <div class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-blue-100 bg-blue-100 font-bold text-blue-800">
+                                        @if($log->user?->profile_photo_path)
+                                            <img src="{{ route('activity-logs.photo.show', $log->user) }}" alt="Foto profil {{ $log->user->name }}"
+                                                class="h-full w-full object-cover" loading="lazy" decoding="async">
+                                        @else
+                                            <span aria-label="{{ $log->user ? 'Inisial '.$log->user->name : 'Aktivitas sistem' }}">
+                                                {{ strtoupper(substr($log->user?->name ?? 'S', 0, 1)) }}
+                                            </span>
+                                        @endif
                                     </div>
+                                    <div class="min-w-0">
+                                        <p class="truncate text-[13px] font-bold text-slate-900" title="{{ $log->user?->name ?? 'Sistem' }}">{{ $log->user?->name ?? 'Sistem' }}</p>
+                                        <p class="truncate text-[11px] text-slate-500" title="{{ $log->user?->email ?? 'Aktivitas sistem' }}">{{ $log->user?->email ?? 'Aktivitas sistem' }}</p>
+                                    </div>
+                                </div>
 
-                                </td>
-
-
-
-                                {{-- ACTION --}}
-
-                                <td
-                                    class="px-6
-                                           py-4
-                                           align-top"
-                                >
-
-                                    <span
-                                        class="inline-flex
-                                               rounded-lg
-
-                                               px-2.5
-                                               py-1
-
-                                               text-xs
-                                               font-semibold
-
-                                               {{ $actionStyle }}"
-                                    >
-                                        {{ $actionLabels[$log->action]
-                                            ?? ucwords(str_replace('_', ' ', $log->action))
-                                        }}
-                                    </span>
-
-
-                                    @if($log->description)
-
-                                        @php
-                                            $actorName = $log->user?->name ?? 'Sistem';
-                                            $targetDocumentTitle =
-                                                $log->document?->title
-                                                ?? ($metadata['document_title'] ?? null);
-
-                                            $revisionNumber =
-                                                $metadata['new_revision']
-                                                ?? $metadata['revision_number']
-                                                ?? $metadata['current_revision']
-                                                ?? null;
-
-                                            $activityDescription = match($log->action) {
-                                                'upload_document_revision' =>
-                                                    $targetDocumentTitle
-                                                        ? $actorName
-                                                            . ' mengunggah Revisi '
-                                                            . ($revisionNumber ?? '-')
-                                                            . ' untuk dokumen "'
-                                                            . $targetDocumentTitle
-                                                            . '".'
-                                                        : $actorName
-                                                            . ' mengunggah revisi dokumen.',
-
-                                                'open_document_revision' =>
-                                                    $targetDocumentTitle
-                                                        ? $actorName
-                                                            . ' membuka Revisi '
-                                                            . ($revisionNumber ?? '-')
-                                                            . ' dari dokumen "'
-                                                            . $targetDocumentTitle
-                                                            . '".'
-                                                        : $actorName
-                                                            . ' membuka revisi dokumen.',
-
-                                                'download_document_revision' =>
-                                                    $targetDocumentTitle
-                                                        ? $actorName
-                                                            . ' mengunduh Revisi '
-                                                            . ($revisionNumber ?? '-')
-                                                            . ' dari dokumen "'
-                                                            . $targetDocumentTitle
-                                                            . '".'
-                                                        : $actorName
-                                                            . ' mengunduh revisi dokumen.',
-
-                                                'upload_document' =>
-                                                    $targetDocumentTitle
-                                                        ? $actorName
-                                                            . ' mengunggah dokumen "'
-                                                            . $targetDocumentTitle
-                                                            . '".'
-                                                        : $actorName
-                                                            . ' mengunggah dokumen.',
-
-                                                'view_document' =>
-                                                    $targetDocumentTitle
-                                                        ? $actorName
-                                                            . ' melihat dokumen "'
-                                                            . $targetDocumentTitle
-                                                            . '".'
-                                                        : $actorName
-                                                            . ' melihat dokumen.',
-
-                                                'open_document' =>
-                                                    $targetDocumentTitle
-                                                        ? $actorName
-                                                            . ' membuka dokumen "'
-                                                            . $targetDocumentTitle
-                                                            . '".'
-                                                        : $actorName
-                                                            . ' membuka dokumen.',
-
-                                                'download_document' =>
-                                                    $targetDocumentTitle
-                                                        ? $actorName
-                                                            . ' mengunduh dokumen "'
-                                                            . $targetDocumentTitle
-                                                            . '".'
-                                                        : $actorName
-                                                            . ' mengunduh dokumen.',
-
-                                                'update_document' =>
-                                                    $targetDocumentTitle
-                                                        ? $actorName
-                                                            . ' memperbarui metadata dokumen "'
-                                                            . $targetDocumentTitle
-                                                            . '".'
-                                                        : $actorName
-                                                            . ' memperbarui metadata dokumen.',
-
-                                                'archive_document' =>
-                                                    $targetDocumentTitle
-                                                        ? $actorName
-                                                            . ' mengarsipkan dokumen "'
-                                                            . $targetDocumentTitle
-                                                            . '".'
-                                                        : $actorName
-                                                            . ' mengarsipkan dokumen.',
-
-                                                'restore_document' =>
-                                                    $targetDocumentTitle
-                                                        ? $actorName
-                                                            . ' memulihkan dokumen "'
-                                                            . $targetDocumentTitle
-                                                            . '".'
-                                                        : $actorName
-                                                            . ' memulihkan dokumen.',
-
-                                                'add_favorite' =>
-                                                    $targetDocumentTitle
-                                                        ? $actorName
-                                                            . ' menambahkan dokumen "'
-                                                            . $targetDocumentTitle
-                                                            . '" ke Favorit.'
-                                                        : $actorName
-                                                            . ' menambahkan dokumen ke Favorit.',
-
-                                                'remove_favorite' =>
-                                                    $targetDocumentTitle
-                                                        ? $actorName
-                                                            . ' menghapus dokumen "'
-                                                            . $targetDocumentTitle
-                                                            . '" dari Favorit.'
-                                                        : $actorName
-                                                            . ' menghapus dokumen dari Favorit.',
-
-                                                'approve_user' =>
-                                                    $actorName
-                                                        . ' menyetujui akun pengguna '
-                                                        . ($metadata['target_name'] ?? '') . '.',
-
-                                                'reject_user' =>
-                                                    $actorName
-                                                        . ' menolak akun pengguna '
-                                                        . ($metadata['target_name'] ?? '') . '.',
-
-                                                'activate_user' =>
-                                                    $actorName
-                                                        . ' mengaktifkan akun pengguna '
-                                                        . ($metadata['target_name'] ?? '') . '.',
-
-                                                'deactivate_user' =>
-                                                    $actorName
-                                                        . ' menonaktifkan akun pengguna '
-                                                        . ($metadata['target_name'] ?? '') . '.',
-
-                                                default =>
-                                                    $log->description,
-                                            };
-                                        @endphp
-
-                                        <p
-                                            class="mt-2
-                                                   max-w-[280px]
-                                                   text-xs
-                                                   leading-relaxed
-                                                   text-slate-500"
-                                        >
-                                            {{ $activityDescription }}
-                                        </p>
-
-                                    @endif
-
-                                </td>
-
-
-
-                                {{-- DOCUMENT --}}
-
-                                <td
-                                    class="px-6
-                                           py-4
-                                           align-top"
-                                >
+                                {{-- What and which target --}}
+                                <div class="min-w-0 space-y-1.5">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="inline-flex max-w-full items-center rounded-lg border px-2.5 py-1 text-[11px] font-bold {{ $actionStyle }}">{{ $actionLabel }}</span>
+                                        @if($documentCode)
+                                            <span class="max-w-full truncate rounded-md bg-slate-100 px-2 py-1 text-[11px] text-slate-600">{{ $documentCode }}</span>
+                                        @endif
+                                    </div>
 
                                     @if($log->document)
-
-                                        <a
-                                            href="{{ route(
-                                                'documents.show',
-                                                $log->document
-                                            ) }}"
-
-                                            class="block
-                                                   max-w-[240px]
-                                                   text-sm
-                                                   font-semibold
-                                                   text-blue-700
-                                                   hover:text-blue-900
-                                                   hover:underline"
-                                        >
+                                        <a href="{{ route('documents.show', $log->document) }}" class="block break-words text-sm font-bold leading-snug text-blue-800 hover:underline">
                                             {{ $log->document->title }}
                                         </a>
-
-
-                                        <p
-                                            class="mt-1
-                                                   text-xs
-                                                   text-slate-400"
-                                        >
-                                            {{ $log->document->document_code
-                                                ?? 'Tidak ada kode dokumen'
-                                            }}
-                                        </p>
-
-
-                                        @if(
-                                            $log->document->category
-                                            && $log->document->category->department
-                                        )
-
-                                            <p
-                                                class="mt-1
-                                                       text-[11px]
-                                                       text-slate-400"
-                                            >
-                                                {{ $log->document->category->department->name }}
-                                                ·
-                                                {{ $log->document->category->name }}
-                                            </p>
-
-                                        @endif
-
-                                    @elseif(
-                                        isset(
-                                            $metadata['target_name']
-                                        )
-                                    )
-
-                                        <p
-                                            class="text-sm
-                                                   font-semibold
-                                                   text-slate-700"
-                                        >
-                                            {{ $metadata['target_name'] }}
-                                        </p>
-
-
-                                        <p
-                                            class="mt-1
-                                                   text-xs
-                                                   text-slate-400"
-                                        >
-                                            Akun Pengguna
-                                        </p>
-
-                                    @else
-
-                                        <span
-                                            class="text-sm
-                                                   text-slate-400"
-                                        >
-                                            -
-                                        </span>
-
+                                    @elseif($targetTitle)
+                                        <p class="break-words text-sm font-bold leading-snug text-slate-800">{{ $targetTitle }}</p>
                                     @endif
 
-                                </td>
-
-
-
-                                {{-- IP --}}
-
-                                <td
-                                    class="px-6
-                                           py-4
-                                           align-top"
-                                >
-
-                                    <code
-                                        class="inline-flex
-                                               rounded-lg
-                                               bg-slate-100
-                                               px-2.5
-                                               py-1.5
-                                               text-xs
-                                               text-slate-600"
-                                    >
-                                        {{ $log->ip_address ?? '-' }}
-                                    </code>
-
-                                </td>
-
-
-
-                                {{-- TIME --}}
-
-                                <td
-                                    class="px-6
-                                           py-4
-                                           align-top"
-                                >
-
-                                    <p
-                                        class="text-sm
-                                               font-semibold
-                                               text-slate-700"
-                                    >
-                                        {{ $log->created_at->locale('id')->translatedFormat(
-                                            'd M Y'
-                                        ) }}
-                                    </p>
-
-
-                                    <p
-                                        class="mt-1
-                                               text-xs
-                                               text-slate-400"
-                                    >
-                                        {{ $log->created_at->format(
-                                            'H:i:s'
-                                        ) }}
-                                    </p>
-
-                                </td>
-
-
-
-                                {{-- DETAILS --}}
-
-                                <td
-                                    class="px-6
-                                           py-4
-                                           text-right
-                                           align-top"
-                                >
-
-                                    <button
-                                        type="button"
-
-                                        @click="
-                                            expanded = !expanded
-                                        "
-
-                                        class="inline-flex
-                                               items-center
-                                               gap-1.5
-
-                                               rounded-lg
-
-                                               px-3
-                                               py-2
-
-                                               text-xs
-                                               font-semibold
-                                               text-slate-600
-
-                                               hover:bg-slate-100
-
-                                               transition"
-                                    >
-
-                                        <span
-                                            x-text="
-                                                expanded
-                                                    ? 'Sembunyikan'
-                                                    : 'Detail'
-                                            "
-                                        ></span>
-
-
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            width="14"
-                                            height="14"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            stroke-width="2"
-
-                                            class="transition-transform"
-
-                                            :class="
-                                                expanded
-                                                    ? 'rotate-180'
-                                                    : ''
-                                            "
-                                        >
-                                            <path d="m6 9 6 6 6-6"/>
-                                        </svg>
-
-                                    </button>
-
-
-
-                                    {{-- EXPANDED DETAIL --}}
-
-                                    <div
-                                        x-show="expanded"
-                                        x-collapse
-
-                                        class="mt-3
-
-                                               min-w-[280px]
-
-                                               rounded-xl
-
-                                               border
-                                               border-slate-200
-
-                                               bg-slate-50
-
-                                               p-4
-
-                                               text-left"
-
-                                        x-cloak
-                                    >
-
-                                        <p
-                                            class="text-[11px]
-                                                   uppercase
-                                                   tracking-wider
-                                                   font-semibold
-                                                   text-slate-400"
-                                        >
-                                            Agen Pengguna
-                                        </p>
-
-
-                                        <p
-                                            class="mt-1
-                                                   text-xs
-                                                   leading-relaxed
-                                                   text-slate-600
-                                                   break-all"
-                                        >
-                                            {{ $log->user_agent ?? '-' }}
-                                        </p>
-
-
-
-                                        @if(count($metadata))
-
-                                            <div
-                                                class="my-3
-                                                       border-t
-                                                       border-slate-200"
-                                            ></div>
-
-
-                                            <p
-                                                class="text-[11px]
-                                                       uppercase
-                                                       tracking-wider
-                                                       font-semibold
-                                                       text-slate-400"
-                                            >
-                                                Metadata
-                                            </p>
-
-
-                                            <dl
-                                                class="mt-2
-                                                       space-y-2"
-                                            >
-
-                                                @foreach(
-                                                    $metadata
-                                                    as $key => $value
-                                                )
-
-                                                    <div>
-
-                                                        <dt
-                                                            class="text-[11px]
-                                                                   font-semibold
-                                                                   text-slate-500"
-                                                        >
-                                                            {{ ucwords(
-                                                                str_replace(
-                                                                    '_',
-                                                                    ' ',
-                                                                    $key
-                                                                )
-                                                            ) }}
-                                                        </dt>
-
-
-                                                        <dd
-                                                            class="mt-0.5
-                                                                   text-xs
-                                                                   text-slate-700
-                                                                   break-all"
-                                                        >
-
-                                                            @if(is_array($value))
-
-                                                                {{ json_encode(
-                                                                    $value
-                                                                ) }}
-
-                                                            @elseif(is_bool($value))
-
-                                                                {{ $value
-                                                                    ? 'ya'
-                                                                    : 'tidak'
-                                                                }}
-
-                                                            @else
-
-                                                                {{ $value ?? '-' }}
-
-                                                            @endif
-
-                                                        </dd>
-
-                                                    </div>
-
-                                                @endforeach
-
+                                    @if($summary !== '')
+                                        <p class="break-words text-[13px] leading-5 text-slate-600">{{ \Illuminate\Support\Str::limit($summary, 150) }}</p>
+                                    @elseif(!$targetTitle)
+                                        <p class="text-xs text-slate-400">Aktivitas tercatat</p>
+                                    @endif
+                                </div>
+
+                                {{-- When and where, separated from content. --}}
+                                <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600 lg:block lg:text-right">
+                                    <time datetime="{{ $log->created_at?->toIso8601String() }}" class="font-bold text-slate-800">
+                                        {{ $log->created_at?->locale('id')->translatedFormat('d M Y') }}
+                                    </time>
+                                    <span class="text-slate-400 lg:mt-1 lg:block">{{ $log->created_at?->format('H:i:s') }}</span>
+                                    <span class="rounded-md bg-slate-100 px-2 py-1 font-mono text-[11px] text-slate-600 lg:mt-2 lg:inline-block">{{ $log->ip_address ?? 'IP tidak tersedia' }}</span>
+                                </div>
+                            </div>
+
+                            {{-- Native disclosure keeps long audit metadata out of row layout. --}}
+                            <details class="group mt-2.5 border-t border-slate-100 pt-2.5" data-qh-audit-detail>
+                                <summary class="flex w-fit cursor-pointer list-none items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 [&::-webkit-details-marker]:hidden">
+                                    <svg class="h-4 w-4 transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                                    Lihat Detail
+                                </summary>
+                                <div class="mt-2 rounded-xl border border-blue-100 bg-slate-50/80 p-4" data-qh-audit-detail-content>
+                                    <div class="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-2">
+                                        <div class="min-w-0">
+                                            <h3 class="mb-3 !text-[13px] font-bold text-slate-900">Informasi Aktivitas</h3>
+                                            <dl class="grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
+                                                <div class="min-w-0"><dt class="text-slate-500">Aksi</dt><dd class="mt-1 break-words font-semibold text-slate-800">{{ $actionLabel }}</dd></div>
+                                                <div class="min-w-0"><dt class="text-slate-500">Waktu</dt><dd class="mt-1 font-semibold text-slate-800">{{ $log->created_at?->format('d M Y H:i:s') }}</dd></div>
+                                                <div class="min-w-0"><dt class="text-slate-500">Pengguna</dt><dd class="mt-1 break-words font-semibold text-slate-800">{{ $log->user?->name ?? 'Sistem' }}</dd></div>
+                                                <div class="min-w-0"><dt class="text-slate-500">Alamat IP</dt><dd class="mt-1 break-all font-mono font-semibold text-slate-800">{{ $log->ip_address ?? '—' }}</dd></div>
+                                                @if($log->document?->category?->department)
+                                                    <div class="min-w-0"><dt class="text-slate-500">Departemen</dt><dd class="mt-1 break-words font-semibold text-slate-800">{{ $log->document->category->department->name }}</dd></div>
+                                                @endif
+                                                @if($log->document?->category)
+                                                    <div class="min-w-0"><dt class="text-slate-500">Kategori</dt><dd class="mt-1 break-words font-semibold text-slate-800">{{ $log->document->category->name }}</dd></div>
+                                                @endif
                                             </dl>
 
-                                        @endif
+                                            @if($summary !== '')
+                                                <div class="mt-3 border-t border-slate-200 pt-3">
+                                                    <p class="text-[11px] font-semibold text-slate-500">Deskripsi Lengkap</p>
+                                                    <p class="mt-1 whitespace-pre-wrap break-words text-xs leading-5 text-slate-700">{{ $summary }}</p>
+                                                </div>
+                                            @endif
+                                            <div class="mt-3 border-t border-slate-200 pt-3">
+                                                <p class="text-[11px] font-semibold text-slate-500">Agen Pengguna</p>
+                                                <p class="mt-1 break-all text-xs leading-5 text-slate-700">{{ $log->user_agent ?? '—' }}</p>
+                                            </div>
+                                        </div>
 
+                                        <div class="min-w-0">
+                                            <h3 class="mb-3 !text-[13px] font-bold text-slate-900">Metadata</h3>
+                                            @if(count($metadata))
+                                                <dl class="divide-y divide-slate-200/80 rounded-xl border border-slate-200 bg-white px-3">
+                                                    @foreach($metadata as $key => $value)
+                                                        <div class="grid min-w-0 grid-cols-1 gap-1 py-2.5 sm:grid-cols-[135px_minmax(0,1fr)] sm:gap-3">
+                                                            <dt class="break-words text-[11px] font-bold text-slate-500">{{ ucwords(str_replace('_', ' ', (string) $key)) }}</dt>
+                                                            <dd class="min-w-0 whitespace-pre-wrap break-words text-xs leading-5 text-slate-700">
+                                                                @if(is_array($value))
+                                                                    {{ json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) }}
+                                                                @elseif(is_bool($value))
+                                                                    {{ $value ? 'ya' : 'tidak' }}
+                                                                @else
+                                                                    {{ $value ?? '—' }}
+                                                                @endif
+                                                            </dd>
+                                                        </div>
+                                                    @endforeach
+                                                </dl>
+                                            @else
+                                                <p class="rounded-xl border border-slate-200 bg-white px-3 py-3 text-xs text-slate-500">Tidak ada metadata tambahan.</p>
+                                            @endif
+                                        </div>
                                     </div>
-
-                                </td>
-
-                            </tr>
-
-                        @endforeach
-
-                    </tbody>
-
-                </table>
-
-            </div>
-
-
-
-            {{-- PAGINATION --}}
-
-            @if($logs->hasPages())
-
-                <div
-                    class="px-6
-                           py-4
-                           border-t
-                           border-slate-100"
-                >
-                    {{ $logs->links() }}
+                                </div>
+                            </details>
+                        </article>
+                    @endforeach
                 </div>
 
+                @if($logs->hasPages())
+                    <div class="border-t border-slate-100 px-4 py-4 sm:px-5">
+                        {{ $logs->links() }}
+                    </div>
+                @endif
+            @else
+                <div class="px-5 py-14 text-center">
+                    <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
+                        <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/>
+                        </svg>
+                    </div>
+                    <h3 class="!text-[16px] font-bold text-slate-800">Tidak ada catatan aktivitas</h3>
+                    <p class="mt-1 text-sm text-slate-500">Coba ubah filter pencarian.</p>
+                    @if($hasAnyFilters)
+                        <a href="{{ route('activity-logs.index') }}" class="mt-4 inline-flex rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-800">Atur Ulang Filter</a>
+                    @endif
+                </div>
             @endif
-
-
-        @else
-
-
-            {{-- EMPTY STATE --}}
-
-            <div
-                class="py-20
-                       px-6
-                       text-center"
-            >
-
-                <div
-                    class="w-16
-                           h-16
-                           mx-auto
-                           rounded-2xl
-                           bg-slate-100
-                           text-slate-400
-                           flex
-                           items-center
-                           justify-center"
-                >
-
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="27"
-                        height="27"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                    >
-                        <path d="M12 8v4l3 3"/>
-                        <circle cx="12" cy="12" r="9"/>
-                    </svg>
-
-                </div>
-
-
-                <h3
-                    class="mt-5
-                           text-lg
-                           font-bold
-                           text-slate-700"
-                >
-                    Tidak ada catatan aktivitas yang ditemukan
-                </h3>
-
-
-                <p
-                    class="mt-2
-                           text-sm
-                           text-slate-400"
-                >
-                    Coba ubah filter pencarian yang dipilih.
-                </p>
-
-
-                <a
-                    href="{{ route('activity-logs.index') }}"
-
-                    class="mt-5
-                           inline-flex
-                           rounded-xl
-                           bg-blue-800
-                           px-5
-                           py-2.5
-                           text-sm
-                           font-semibold
-                           text-white
-                           hover:bg-blue-900"
-                >
-                    Atur Ulang Filter
-                </a>
-
-            </div>
-
-        @endif
-
-    </section>
-
+        </section>
+    </div>
 </x-app-layout>
