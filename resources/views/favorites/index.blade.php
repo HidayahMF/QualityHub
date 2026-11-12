@@ -334,7 +334,7 @@
 
 
 
-            <select
+            <select data-qh-searchable-select
                 name="department"
 
                 class="rounded-xl
@@ -369,7 +369,7 @@
 
 
 
-            <select
+            <select data-qh-searchable-select
                 name="category"
 
                 class="rounded-xl
@@ -404,7 +404,7 @@
 
 
 
-            <select
+            <select data-qh-searchable-select
                 name="extension"
 
                 class="rounded-xl
