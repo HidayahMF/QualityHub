@@ -1694,7 +1694,7 @@
 
                 {{-- DEPARTMENT FILTER --}}
 
-                <select
+                <select data-qh-searchable-select
                     x-model="department"
 
                     @change="performSearch()"
@@ -1736,7 +1736,7 @@
 
                 {{-- CATEGORY FILTER --}}
 
-                <select
+                <select data-qh-searchable-select
                     x-model="category"
 
                     @change="performSearch()"
@@ -1778,7 +1778,7 @@
 
                 {{-- FILE TYPE FILTER --}}
 
-                <select
+                <select data-qh-searchable-select
                     x-model="extension"
 
                     @change="performSearch()"
@@ -1907,7 +1907,7 @@
                         Jenis Dokumen QC
                     </label>
 
-                    <select
+                    <select data-qh-searchable-select
                         id="smartfind-document-type"
                         x-model="documentType"
                         @change="performSearch()"
