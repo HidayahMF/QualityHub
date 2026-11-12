@@ -32,6 +32,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -327,10 +328,16 @@ class ScanDocumentController extends Controller
             $batchId = $request->input('batch_id');
 
             if ($batchId !== null && $batchId !== '') {
-                $request->validate([
+                // Validate scalar fields WITHOUT calling Request::allFiles().
+                // Laravel caches converted files; validating the request first
+                // would cache an empty FileBag before staged files are injected.
+                Validator::make([
+                    'batch_id' => $batchId,
+                    'expected_photo_count' => $request->input('expected_photo_count'),
+                ], [
                     'batch_id' => ['required', 'uuid'],
                     'expected_photo_count' => ['required', 'integer', 'min:1', 'max:'.config('smartfind_scan_security.max_files')],
-                ]);
+                ])->validate();
 
                 // This restores the exact staged order into the existing secure
                 // validation/PDF/document transaction, without a huge POST body.
