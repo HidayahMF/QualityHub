@@ -4034,35 +4034,191 @@
             // ============================================================
             // GALLERY INPUT
             // ============================================================
-            uploadInput.addEventListener('change', () => {
-
+            uploadInput.addEventListener('change', async () => {
                 const files = Array.from(uploadInput.files || []);
+                uploadInput.value = '';
+                if (!files.length || galleryPhotoProcessing || stagedUploadBusy) return;
 
-                if (files.length === 0) {
+                if (selectedItems.length + files.length > MAX_PHOTOS) {
+                    alert('Maksimal ' + MAX_PHOTOS + ' foto dalam satu berkas.');
                     return;
                 }
 
-                addPhotos(files, 'upload', false);
+                galleryPhotoProcessing = true;
+                cameraProcessingStatus.classList.remove('hidden');
+                openCameraButton.disabled = true;
+                saveButton.disabled = true;
 
-                // Memungkinkan user memilih file yang sama lagi sebagai halaman lain.
-                uploadInput.value = '';
+                try {
+                    const prepared = [];
+                    let bytes = totalSelectedBytes();
 
+                    for (const [index, file] of files.entries()) {
+                        cameraProcessingStatus.textContent = 'Mengoptimalkan foto '
+                            + (index + 1) + ' dari ' + files.length + '...';
+
+                        if (!isCameraImageCandidate(file)) {
+                            throw new Error('File ' + (index + 1) + ' bukan format gambar yang didukung.');
+                        }
+
+                        const extension = (file.name || '').split('.').pop().toLowerCase();
+                        const needsConversion = file.size > CAMERA_MAX_OUTPUT_BYTES
+                            || ['heic', 'heif'].includes(extension)
+                            || ['image/heic', 'image/heif'].includes((file.type || '').toLowerCase());
+
+                        const safeFile = needsConversion
+                            ? await normalizeNativeCameraPhoto(file)
+                            : file;
+
+                        if (needsConversion) {
+                            // Preserve an identifiable filename/order instead of
+                            // naming every imported gallery image 'camera'.
+                            const basename = file.name.replace(/\.[^.]+$/, '')
+                                .replace(/[^a-zA-Z0-9_-]+/g, '-').slice(0, 75) || 'foto';
+                            prepared.push(new File([safeFile], basename + '-qc.jpg', {
+                                type: 'image/jpeg',
+                                lastModified: Date.now(),
+                            }));
+                        } else {
+                            prepared.push(safeFile);
+                        }
+
+                        bytes += prepared[prepared.length - 1].size;
+                        if (bytes > MAX_TOTAL_BYTES) {
+                            throw new Error('Batas total foto 200 MB tercapai. Kurangi jumlah atau ukuran foto.');
+                        }
+
+                        // Give Safari/Chrome time to free the previous canvas
+                        // before decoding the next high-resolution photo.
+                        if (index % 10 === 9) await new Promise(resolve => setTimeout(resolve, 0));
+                    }
+
+                    galleryPhotoProcessing = false;
+                    if (!addPhotos(prepared, 'upload', false)) {
+                        throw new Error('Foto gagal dimasukkan ke daftar.');
+                    }
+                } catch (error) {
+                    console.error('Gallery optimization error:', error);
+                    alert(error.message || 'Foto galeri gagal diproses. Coba format JPEG.');
+                } finally {
+                    galleryPhotoProcessing = false;
+                    cameraProcessingStatus.classList.add('hidden');
+                    cameraProcessingStatus.textContent = 'Memproses foto agar siap diunggah...';
+                    openCameraButton.disabled = false;
+                    updateMultiPhotoState();
+                }
             });
 
 
             // ============================================================
             // FINAL FORM SUBMIT
             // ============================================================
+            // ============================================================
+            // STAGED UPLOAD (51–1000 IMAGES, SEQUENTIAL 10-FILE REQUESTS)
+            // ============================================================
+            const csrfValue = scanDocumentForm.querySelector('input[name="_token"]')?.value;
+            const batchDiscardTemplate = @json(route('documents.scan.batches.discard', ['batchId' => '__BATCH__']));
+
+            function showUploadProgress(message, received = 0, count = selectedItems.length) {
+                scanUploadProgress.classList.remove('hidden');
+                scanUploadProgressLabel.textContent = message;
+                scanUploadProgressBar.value = count ? Math.round(received * 100 / count) : 0;
+            }
+
+            async function postBatchRequest(url, body, method = 'POST') {
+                const response = await fetch(url, {
+                    method,
+                    credentials: 'same-origin',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfValue,
+                        'Accept': 'application/json',
+                    },
+                    body,
+                });
+
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    const errors = payload.errors ? Object.values(payload.errors).flat() : [];
+                    throw new Error(errors[0] || payload.message || 'Upload gagal. Cek jaringan HP lalu coba lagi.');
+                }
+                return payload;
+            }
+
+            async function uploadScansInBatches() {
+                if (stagedUploadBusy) return;
+                stagedUploadBusy = true;
+                saveButton.disabled = true;
+                showUploadProgress('Menyiapkan upload ' + selectedItems.length + ' foto...');
+
+                let startedBatchId = '';
+                try {
+                    const creation = new FormData();
+                    creation.append('expected_count', String(selectedItems.length));
+                    const session = await postBatchRequest(BATCH_START_URL, creation);
+                    startedBatchId = session.batch_id;
+
+                    if (!startedBatchId) throw new Error('Sesi upload gagal dibuat.');
+
+                    for (let index = 0; index < selectedItems.length; index += BATCH_CHUNK_SIZE) {
+                        const chunk = selectedItems.slice(index, index + BATCH_CHUNK_SIZE);
+                        const body = new FormData();
+                        body.append('batch_id', startedBatchId);
+                        body.append('offset', String(index));
+                        chunk.forEach(item => body.append('files[]', item.file, item.file.name));
+
+                        // Sequential chunks preserve exact PDF page ordering.
+                        const uploaded = await postBatchRequest(BATCH_UPLOAD_URL, body);
+                        if (uploaded.received !== index + chunk.length) {
+                            throw new Error('Jumlah halaman tidak sesuai. Upload dihentikan agar urutan PDF tidak salah.');
+                        }
+                        showUploadProgress(
+                            'Mengunggah ' + uploaded.received + ' / ' + selectedItems.length
+                                + ' foto (' + Math.round(uploaded.received * 100 / selectedItems.length) + '%)',
+                            uploaded.received
+                        );
+                    }
+
+                    scanBatchId.value = startedBatchId;
+                    expectedPhotoCount.value = String(selectedItems.length);
+                    stagedUploadReady = true;
+                    stagedUploadBusy = false;
+                    showUploadProgress('Semua foto terunggah. Server sedang membuat 1 PDF dari '
+                        + selectedItems.length + ' halaman...', selectedItems.length);
+
+                    // Re-submit the actual form with metadata + batch_id only.
+                    // All source images already live on a private server volume.
+                    scanDocumentForm.requestSubmit();
+                } catch (error) {
+                    console.error('Staged scan upload failed:', error);
+                    if (startedBatchId) {
+                        const url = batchDiscardTemplate.replace('__BATCH__', encodeURIComponent(startedBatchId));
+                        try { await postBatchRequest(url, undefined, 'DELETE'); } catch (_) { /* expires in 12h */ }
+                    }
+                    stagedUploadBusy = false;
+                    stagedUploadReady = false;
+                    scanBatchId.value = '';
+                    scanUploadProgress.classList.add('hidden');
+                    saveButton.disabled = false;
+                    saveButton.textContent = 'Simpan Berkas QC';
+                    alert(error.message || 'Upload foto gagal. Daftar foto di HP tetap tersedia untuk dicoba ulang.');
+                }
+            }
+
             scanDocumentForm.addEventListener('submit', event => {
-                if (cameraPhotoProcessing) {
+                if (cameraPhotoProcessing || galleryPhotoProcessing || editorBusy) {
                     event.preventDefault();
-                    alert('Foto kamera masih diproses. Tunggu sampai selesai sebelum menyimpan.');
+                    alert('Foto masih diproses. Selesaikan proses edit atau optimasi terlebih dahulu.');
                     return;
                 }
 
                 if (selectedItems.length === 0) {
                     event.preventDefault();
                     alert('Pilih minimal satu foto berkas QC.');
+                    return;
+                }
+
+                if (stagedUploadBusy) {
+                    event.preventDefault();
                     return;
                 }
 
@@ -4073,6 +4229,12 @@
                 }
 
                 expectedPhotoCount.value = String(selectedItems.length);
+
+                if (selectedItems.length > BATCH_THRESHOLD && !stagedUploadReady) {
+                    event.preventDefault();
+                    uploadScansInBatches();
+                    return;
+                }
 
                 saveButton.disabled = true;
                 saveButton.textContent = selectedItems.length > 1
