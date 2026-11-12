@@ -340,7 +340,7 @@
                                                             <dt class="w-[38%] shrink-0 break-words text-[11px] font-semibold leading-5 text-slate-500">
                                                                 {{ ucwords(str_replace('_', ' ', (string) $key)) }}
                                                             </dt>
-                                                            <dd class="min-w-0 flex-1 whitespace-pre-wrap break-words text-left text-[12px] font-medium leading-5 text-slate-800">
+                                                            <dd class="min-w-0 flex-1 break-words text-left text-[12px] font-medium leading-5 text-slate-800">
                                                                 @if(is_array($value))
                                                                     {{ json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}
                                                                 @elseif(is_bool($value))
