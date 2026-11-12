@@ -219,15 +219,53 @@
                                 <div class="mb-1 flex justify-between text-xs font-semibold text-slate-600"><span>Zoom</span><span id="zoomValue">100%</span></div>
                                 <input id="zoomRange" type="range" min="100" max="160" value="100" class="w-full accent-blue-600">
                             </label>
-                            <label class="block">
-                                <div class="mb-1 flex justify-between text-xs font-semibold text-slate-600"><span>Crop / Potong</span><span id="cropValue">0%</span></div>
-                                <input id="cropRange" type="range" min="0" max="25" value="0" class="w-full accent-blue-600">
-                            </label>
+                            <div class="block">
+                                <div class="mb-1 text-xs font-semibold text-slate-600">Crop / Potong Manual</div>
+                                <button type="button" id="manualCropButton" class="w-full rounded-xl border border-blue-300 bg-white px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-50">
+                                    Pilih Area Crop Manual
+                                </button>
+                                <p class="mt-1 text-[11px] leading-4 text-slate-500">Geser kotak crop dan tarik tepi/sudut sesuai bagian foto yang ingin disimpan.</p>
+                            </div>
                         </div>
 
                         <button type="button" id="applyEditButton" class="mt-4 w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">
                             Terapkan Perubahan ke Berkas
                         </button>
+                    </div>
+
+                    {{-- Manual crop, per photo. The entire source is preserved until the user confirms. --}}
+                    <div id="manualCropModal" role="dialog" aria-modal="true" aria-labelledby="manualCropTitle" class="fixed inset-0 z-[80] hidden overflow-y-auto bg-slate-950/85 p-3 sm:p-6">
+                        <div class="mx-auto flex min-h-full w-full max-w-5xl flex-col justify-center gap-4">
+                            <div class="flex flex-wrap items-center justify-between gap-3 text-white">
+                                <div>
+                                    <h3 id="manualCropTitle" class="text-lg font-bold">Crop Manual — Foto Aktif</h3>
+                                    <p class="mt-1 text-sm text-slate-200">Geser kotak biru untuk memilih area. Tarik sisi atau sudut untuk memotong atas, bawah, kiri, atau kanan.</p>
+                                </div>
+                                <button type="button" id="cancelCropButton" class="rounded-xl border border-slate-500 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Batal</button>
+                            </div>
+                            <div class="flex min-h-0 items-center justify-center rounded-2xl bg-slate-900 p-2 sm:p-4">
+                                <div id="manualCropStage">
+                                    <canvas id="manualCropCanvas" aria-label="Pratinjau gambar untuk crop manual"></canvas>
+                                    <div id="manualCropSelection" aria-label="Area crop manual yang dipilih">
+                                        <span data-crop-handle="nw"></span>
+                                        <span data-crop-handle="n"></span>
+                                        <span data-crop-handle="ne"></span>
+                                        <span data-crop-handle="e"></span>
+                                        <span data-crop-handle="se"></span>
+                                        <span data-crop-handle="s"></span>
+                                        <span data-crop-handle="sw"></span>
+                                        <span data-crop-handle="w"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white p-3">
+                                <p id="manualCropInfo" class="text-xs font-semibold text-slate-600">Area terpilih: 100% × 100%</p>
+                                <div class="flex flex-wrap gap-2">
+                                    <button type="button" id="resetCropButton" class="rounded-lg border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Pilih Seluruh Foto</button>
+                                    <button type="button" id="confirmCropButton" class="rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50">Terapkan Crop</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {{-- ================================================= --}}
@@ -1421,6 +1459,18 @@
 <style nonce="{{ $cspNonce }}">
     .edit-action { display:inline-flex; align-items:center; justify-content:center; gap:.4rem; border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:.75rem; padding:.65rem .75rem; font-size:.75rem; font-weight:700; transition:.2s; }
     .edit-action:hover { border-color:#93c5fd; background:#eff6ff; color:#1d4ed8; }
+    #manualCropStage { position: relative; display: inline-block; max-width: 100%; overflow: hidden; line-height: 0; touch-action: none; }
+    #manualCropCanvas { display: block; width: auto; height: auto; max-width: min(90vw, 940px); max-height: 62vh; cursor: crosshair; }
+    #manualCropSelection { position: absolute; box-sizing: border-box; border: 2px solid #3b82f6; box-shadow: 0 0 0 9999px rgba(2, 6, 23, .52); cursor: move; touch-action: none; }
+    #manualCropSelection [data-crop-handle] { position: absolute; display: block; width: 14px; height: 14px; border: 2px solid #2563eb; border-radius: 4px; background: #fff; touch-action: none; }
+    #manualCropSelection [data-crop-handle="nw"] { top: -7px; left: -7px; cursor: nwse-resize; }
+    #manualCropSelection [data-crop-handle="n"] { top: -7px; left: calc(50% - 7px); cursor: ns-resize; }
+    #manualCropSelection [data-crop-handle="ne"] { top: -7px; right: -7px; cursor: nesw-resize; }
+    #manualCropSelection [data-crop-handle="e"] { top: calc(50% - 7px); right: -7px; cursor: ew-resize; }
+    #manualCropSelection [data-crop-handle="se"] { bottom: -7px; right: -7px; cursor: nwse-resize; }
+    #manualCropSelection [data-crop-handle="s"] { bottom: -7px; left: calc(50% - 7px); cursor: ns-resize; }
+    #manualCropSelection [data-crop-handle="sw"] { bottom: -7px; left: -7px; cursor: nesw-resize; }
+    #manualCropSelection [data-crop-handle="w"] { top: calc(50% - 7px); left: -7px; cursor: ew-resize; }
 </style>
 
     {{-- ================================================================ --}}
@@ -1469,11 +1519,19 @@
             const brightnessRange = document.getElementById('brightnessRange');
             const contrastRange = document.getElementById('contrastRange');
             const zoomRange = document.getElementById('zoomRange');
-            const cropRange = document.getElementById('cropRange');
+            const manualCropButton = document.getElementById('manualCropButton');
+            const manualCropModal = document.getElementById('manualCropModal');
+            const manualCropStage = document.getElementById('manualCropStage');
+            const manualCropCanvas = document.getElementById('manualCropCanvas');
+            const manualCropSelection = document.getElementById('manualCropSelection');
+            const manualCropInfo = document.getElementById('manualCropInfo');
+            const confirmCropButton = document.getElementById('confirmCropButton');
+            const cancelCropButton = document.getElementById('cancelCropButton');
+            const resetCropButton = document.getElementById('resetCropButton');
             const brightnessValue = document.getElementById('brightnessValue');
             const contrastValue = document.getElementById('contrastValue');
             const zoomValue = document.getElementById('zoomValue');
-            const cropValue = document.getElementById('cropValue');
+
 
             // ============================================================
             // DOCUMENT TYPE / CHECKSHEET METADATA
@@ -1555,7 +1613,11 @@
             let replaceOnNextCapture = false;
             let originalFile = null;
             let originalImage = null;
-            let editState = { rotation: 0, brightness: 100, contrast: 100, grayscale: 0, zoom: 100, crop: 0 };
+            let editState = { rotation: 0, brightness: 100, contrast: 100, grayscale: 0, zoom: 100 };
+            let cropSelection = { x: 0, y: 0, w: 1, h: 1 };
+            let cropDrag = null;
+            let cropSourceIndex = -1;
+            let editorBusy = false;
             let objectUrl = null;
 
 
