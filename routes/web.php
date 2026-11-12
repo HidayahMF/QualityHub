@@ -170,6 +170,30 @@ Route::middleware([
         ->middleware('throttle:10,1')
         ->name('documents.scan.store');
 
+    // Batched Scan/Capture upload: avoids PHP max_file_uploads/post_max_size
+    // rejecting a thousand photos in a single request.
+    Route::post(
+        '/documents/scan/batches/start',
+        [\\App\\Http\\Controllers\\ScanUploadBatchController::class, 'start']
+    )
+        ->middleware('throttle:10,1')
+        ->name('documents.scan.batches.start');
+
+    Route::post(
+        '/documents/scan/batches/upload',
+        [\\App\\Http\\Controllers\\ScanUploadBatchController::class, 'upload']
+    )
+        ->middleware('throttle:180,1')
+        ->name('documents.scan.batches.upload');
+
+    Route::delete(
+        '/documents/scan/batches/{batchId}',
+        [\\App\\Http\\Controllers\\ScanUploadBatchController::class, 'discard']
+    )
+        ->whereUuid('batchId')
+        ->middleware('throttle:30,1')
+        ->name('documents.scan.batches.discard');
+
     Route::get(
         '/documents/scan/types',
         [ScanDocumentController::class, 'scanTypes']
