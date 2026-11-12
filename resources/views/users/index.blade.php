@@ -380,7 +380,7 @@
 
 
             {{-- STATUS --}}
-            <select
+            <select data-qh-searchable-select
                 name="status"
 
                 class="rounded-xl
@@ -429,7 +429,7 @@
 
 
             {{-- ROLE --}}
-            <select
+            <select data-qh-searchable-select
                 name="role"
 
                 class="rounded-xl
