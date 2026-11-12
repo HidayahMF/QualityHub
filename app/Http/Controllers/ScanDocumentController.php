@@ -23,6 +23,7 @@ use App\Services\MultiPageScanPdfService;
 use App\Services\PrivateDocumentStorageService;
 use App\Services\RetoolingDateRule;
 use App\Services\ScanImageSecurityService;
+use App\Services\ScanUploadBatchService;
 use App\Services\ShiftTimeRule;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -318,16 +319,48 @@ class ScanDocumentController extends Controller
         ScanImageSecurityService $imageSecurity,
         MultiPageScanPdfService $pdfService,
         PrivateDocumentStorageService $privateStorage,
-        CategoryAssignmentService $categoryAssignment
+        CategoryAssignmentService $categoryAssignment,
+        ScanUploadBatchService $batchService
     ): RedirectResponse {
         try {
-            return $this->storeScan(
+            $this->ensureAdmin();
+            $batchId = $request->input('batch_id');
+
+            if ($batchId !== null && $batchId !== '') {
+                $request->validate([
+                    'batch_id' => ['required', 'uuid'],
+                    'expected_photo_count' => ['required', 'integer', 'min:1', 'max:'.config('smartfind_scan_security.max_files')],
+                ]);
+
+                // This restores the exact staged order into the existing secure
+                // validation/PDF/document transaction, without a huge POST body.
+                $stagedFiles = $batchService->filesForCompletion(
+                    (string) $batchId,
+                    (int) Auth::id(),
+                    (int) $request->input('expected_photo_count')
+                );
+                $request->files->set('files', $stagedFiles);
+            }
+
+            $response = $this->storeScan(
                 $request,
                 $imageSecurity,
                 $pdfService,
                 $privateStorage,
                 $categoryAssignment
             );
+
+            // storeScan now either succeeds or throws. Delete staged images
+            // only after the PDF and database transaction both succeed.
+            if ($batchId !== null && $batchId !== '') {
+                try {
+                    $batchService->discard((string) $batchId, (int) Auth::id());
+                } catch (Throwable $cleanupError) {
+                    report($cleanupError);
+                }
+            }
+
+            return $response;
         } catch (ValidationException $exception) {
             throw $exception->redirectTo(route('documents.scan.create'));
         } catch (Throwable $exception) {
@@ -839,11 +872,9 @@ class ScanDocumentController extends Controller
         if ($safeBaseName === '') {
             $pdfService->cleanup($generatedPdfPath);
 
-            return redirect()->route('documents.scan.create')
-                ->withInput()
-                ->withErrors([
-                    'file_name' => 'Nama file tidak menghasilkan nama yang valid.',
-                ]);
+            throw ValidationException::withMessages([
+                'file_name' => 'Nama file tidak menghasilkan nama yang valid.',
+            ]);
         }
 
         $displayFileName = $safeBaseName . '.' . $extension;
@@ -1249,11 +1280,9 @@ class ScanDocumentController extends Controller
 
             report($exception);
 
-            return redirect()->route('documents.scan.create')
-                ->withInput()
-                ->withErrors([
-                    'files' => 'Berkas scan tidak dapat disimpan. Proses dibatalkan dengan aman.',
-                ]);
+            throw ValidationException::withMessages([
+                'files' => 'Berkas scan tidak dapat disimpan. Proses dibatalkan dengan aman.',
+            ]);
         } finally {
             $pdfService->cleanup($generatedPdfPath);
         }
