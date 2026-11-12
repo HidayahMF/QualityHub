@@ -34,13 +34,14 @@ The Retooling test suite has **pre-existing failures** because it references old
 1. Open **Scan / Capture** and add eight disposable photo files. Verify each card reads `Foto 1` ... `Foto 8`, with `Halaman PDF 1 dari 8 · PERTAMA` and `Halaman PDF 8 dari 8 · TERAKHIR`. Filenames stay separately readable.
 2. Select **Foto 3**, click **Pilih Area Crop Manual**. A dialog opens with full selection.
 3. Pull the top handle down and left handle right; move the selection, then resize with a corner. Confirm only the inside pixels are kept after clicking **Terapkan Crop**.
-4. Check the edited image replaced **Foto 3 only**. Other thumbnails stay unchanged; clicking **Batal** must not modify a picture.
-5. Select another photo, rotate it 90 degrees, then open crop. Confirm the selection matches the rotated image and output.
-6. Reorder **Foto 8** to the first slot using arrow buttons. Verify the number/first marker now matches its new position and the old first photo moves to slot two.
-7. Remove a middle photo and add another. The page numbers must be consecutive and the first/last labels accurate.
-8. Submit **only if safe local test DB/storage are confirmed**. Verify all pages in the PDF match queue order and crop results, and no old crop slider appears.
-9. If using touch/mobile, repeat selection move and side/corner resizing with a finger. Confirm the dialog fits the screen and no accidental page scrolling occurs during drag.
-10. Check `php artisan test --filter=ScanManualPhotoEditorTest` passes, and inspect the browser console for JavaScript errors.
+4. **Layout regression:** at 100% browser zoom on a laptop (e.g., 1366×768), open crop. Verify the white/blue dialog sits above the sidebar/header, the full header and **Terapkan Crop** button are visible, and you can scroll inside the dialog if its contents do not fit. Repeat in Edge mobile device emulation (e.g., 390×844), including finger/touch pointer selection. Clicking the ✕ button or Escape must restore normal page scrolling without editing the photo.
+5. Check the edited image replaced **Foto 3 only**. Other thumbnails stay unchanged; clicking **Batal** must not modify a picture.
+6. Select another photo, rotate it 90 degrees, then open crop. Confirm the selection matches the rotated image and output.
+7. Reorder **Foto 8** to the first slot using arrow buttons. Verify the number/first marker now matches its new position and the old first photo moves to slot two.
+8. Remove a middle photo and add another. The page numbers must be consecutive and the first/last labels accurate.
+9. Submit **only if safe local test DB/storage are confirmed**. Verify all pages in the PDF match queue order and crop results, and no old crop slider appears.
+10. If using touch/mobile, repeat selection move and side/corner resizing with a finger. Confirm the dialog fits the screen and no accidental page scrolling occurs during drag.
+11. Check `php artisan test --filter=ScanManualPhotoEditorTest` passes, and inspect the browser console for JavaScript errors.
 
 ## Out of scope
 - Repairing MTC/PPIC Retooling integration (separate branch/PR).
