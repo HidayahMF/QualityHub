@@ -269,6 +269,10 @@ Alpine.data('departmentStatusConfirm', () => ({
 }));
 
 
+// Vite's deferred module executes after the page is parsed. Enhance the
+// filter selects before Alpine starts observing x-model: moving a select
+// after Alpine init can otherwise cause directive teardown/reinitialization.
+initializeSearchableFilters();
 Alpine.start();
 
 /*
@@ -285,6 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initializeCategoryComboboxes();
     initializeCategoryDocumentsModal();
+    // Safe idempotent fallback for deferred/dynamically injected views.
     initializeSearchableFilters();
 
 
