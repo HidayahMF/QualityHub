@@ -298,7 +298,7 @@
             >
 
 
-            <select
+            <select data-qh-searchable-select
                 name="status"
 
                 class="rounded-xl
