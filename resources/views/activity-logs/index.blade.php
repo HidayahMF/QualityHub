@@ -261,59 +261,133 @@
                                     <svg class="h-4 w-4 transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
                                     Lihat Detail
                                 </summary>
-                                <div class="mt-2 rounded-xl border border-blue-100 bg-slate-50/80 p-4" data-qh-audit-detail-content>
-                                    <div class="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-2">
-                                        <div class="min-w-0">
-                                            <h3 class="mb-3 !text-[13px] font-bold text-slate-900">Informasi Aktivitas</h3>
-                                            <dl class="grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
-                                                <div class="min-w-0"><dt class="text-slate-500">Aksi</dt><dd class="mt-1 break-words font-semibold text-slate-800">{{ $actionLabel }}</dd></div>
-                                                <div class="min-w-0"><dt class="text-slate-500">Waktu</dt><dd class="mt-1 font-semibold text-slate-800">{{ $log->created_at?->format('d M Y H:i:s') }}</dd></div>
-                                                <div class="min-w-0"><dt class="text-slate-500">Pengguna</dt><dd class="mt-1 break-words font-semibold text-slate-800">{{ $log->user?->name ?? 'Sistem' }}</dd></div>
-                                                <div class="min-w-0"><dt class="text-slate-500">Alamat IP</dt><dd class="mt-1 break-all font-mono font-semibold text-slate-800">{{ $log->ip_address ?? '—' }}</dd></div>
+                                @php
+                                    // Preserve the original metadata untouched. Empty values are
+                                    // available on demand instead of creating very tall audit cards.
+                                    // Numeric zero and boolean false are meaningful, not empty.
+                                    $hasAuditValue = static fn ($value): bool => $value !== null
+                                        && (!is_string($value) || trim($value) !== '')
+                                        && (!is_array($value) || count($value) > 0);
+                                    $metadataWithValues = collect($metadata)->filter($hasAuditValue);
+                                    $metadataWithoutValues = collect($metadata)->reject($hasAuditValue);
+                                @endphp
+
+                                <div class="mt-2 rounded-xl border border-blue-100 bg-white p-3 shadow-sm sm:p-4" data-qh-audit-detail-content>
+                                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                                        <h3 class="!text-[13px] font-extrabold text-slate-900">Rincian Audit</h3>
+                                        <span class="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-800">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-blue-600" aria-hidden="true"></span>
+                                            {{ $log->created_at?->locale('id')->translatedFormat('d M Y · H:i:s') }}
+                                        </span>
+                                    </div>
+
+                                    <div class="mt-3 grid min-w-0 grid-cols-1 items-start gap-4 lg:grid-cols-2">
+                                        {{-- Core audit fields. Compact layout; no blank left panel. --}}
+                                        <section class="min-w-0 rounded-xl border border-slate-100 bg-slate-50/70 p-3" aria-label="Informasi aktivitas">
+                                            <h4 class="mb-3 !text-[12px] font-bold text-slate-900">Informasi Aktivitas</h4>
+                                            <dl class="grid grid-cols-2 gap-x-3 gap-y-3 text-xs">
+                                                <div class="min-w-0">
+                                                    <dt class="text-[11px] text-slate-500">Aksi</dt>
+                                                    <dd class="mt-1 break-words font-semibold text-slate-900">{{ $actionLabel }}</dd>
+                                                </div>
+                                                <div class="min-w-0">
+                                                    <dt class="text-[11px] text-slate-500">Pengguna</dt>
+                                                    <dd class="mt-1 break-words font-semibold text-slate-900">{{ $log->user?->name ?? 'Sistem' }}</dd>
+                                                </div>
+                                                <div class="min-w-0">
+                                                    <dt class="text-[11px] text-slate-500">Alamat IP</dt>
+                                                    <dd class="mt-1 break-all font-mono font-semibold text-slate-800">{{ $log->ip_address ?? '—' }}</dd>
+                                                </div>
+                                                <div class="min-w-0">
+                                                    <dt class="text-[11px] text-slate-500">Waktu</dt>
+                                                    <dd class="mt-1 font-semibold text-slate-800">{{ $log->created_at?->format('H:i:s') }}</dd>
+                                                </div>
                                                 @if($log->document?->category?->department)
-                                                    <div class="min-w-0"><dt class="text-slate-500">Departemen</dt><dd class="mt-1 break-words font-semibold text-slate-800">{{ $log->document->category->department->name }}</dd></div>
+                                                    <div class="min-w-0">
+                                                        <dt class="text-[11px] text-slate-500">Departemen</dt>
+                                                        <dd class="mt-1 break-words font-semibold text-slate-800">{{ $log->document->category->department->name }}</dd>
+                                                    </div>
                                                 @endif
                                                 @if($log->document?->category)
-                                                    <div class="min-w-0"><dt class="text-slate-500">Kategori</dt><dd class="mt-1 break-words font-semibold text-slate-800">{{ $log->document->category->name }}</dd></div>
+                                                    <div class="min-w-0">
+                                                        <dt class="text-[11px] text-slate-500">Kategori</dt>
+                                                        <dd class="mt-1 break-words font-semibold text-slate-800">{{ $log->document->category->name }}</dd>
+                                                    </div>
                                                 @endif
                                             </dl>
 
                                             @if($summary !== '')
                                                 <div class="mt-3 border-t border-slate-200 pt-3">
                                                     <p class="text-[11px] font-semibold text-slate-500">Deskripsi Lengkap</p>
-                                                    <p class="mt-1 whitespace-pre-wrap break-words text-xs leading-5 text-slate-700">{{ $summary }}</p>
+                                                    <p class="mt-1 max-h-36 overflow-y-auto whitespace-pre-wrap break-words text-xs leading-5 text-slate-700" tabindex="0">{{ $summary }}</p>
                                                 </div>
                                             @endif
-                                            <div class="mt-3 border-t border-slate-200 pt-3">
-                                                <p class="text-[11px] font-semibold text-slate-500">Agen Pengguna</p>
-                                                <p class="mt-1 break-all text-xs leading-5 text-slate-700">{{ $log->user_agent ?? '—' }}</p>
-                                            </div>
-                                        </div>
+                                        </section>
 
-                                        <div class="min-w-0">
-                                            <h3 class="mb-3 !text-[13px] font-bold text-slate-900">Metadata</h3>
-                                            @if(count($metadata))
-                                                <dl class="divide-y divide-slate-200/80 rounded-xl border border-slate-200 bg-white px-3">
-                                                    @foreach($metadata as $key => $value)
-                                                        <div class="grid min-w-0 grid-cols-1 gap-1 py-2.5 sm:grid-cols-[135px_minmax(0,1fr)] sm:gap-3">
-                                                            <dt class="break-words text-[11px] font-bold text-slate-500">{{ ucwords(str_replace('_', ' ', (string) $key)) }}</dt>
-                                                            <dd class="min-w-0 whitespace-pre-wrap break-words text-xs leading-5 text-slate-700">
+                                        {{-- Metadata: dense label/value rows, optional empty field group. --}}
+                                        <section class="min-w-0 rounded-xl border border-slate-100 bg-slate-50/70 p-3" aria-label="Metadata aktivitas">
+                                            <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+                                                <h4 class="!text-[12px] font-bold text-slate-900">Metadata</h4>
+                                                <span class="rounded-md bg-white px-2 py-1 text-[11px] font-semibold text-slate-500">
+                                                    {{ $metadataWithValues->count() }} terisi
+                                                </span>
+                                            </div>
+
+                                            @if($metadataWithValues->isNotEmpty())
+                                                <dl class="max-h-64 divide-y divide-slate-100 overflow-y-auto rounded-lg border border-slate-200 bg-white px-3" tabindex="0" aria-label="Daftar metadata terisi" data-qh-audit-metadata-values>
+                                                    @foreach($metadataWithValues as $key => $value)
+                                                        <div class="flex min-w-0 items-start gap-3 py-2">
+                                                            <dt class="w-[38%] shrink-0 break-words text-[11px] font-semibold leading-5 text-slate-500">
+                                                                {{ ucwords(str_replace('_', ' ', (string) $key)) }}
+                                                            </dt>
+                                                            <dd class="min-w-0 flex-1 whitespace-pre-wrap break-words text-left text-[12px] font-medium leading-5 text-slate-800">
                                                                 @if(is_array($value))
-                                                                    {{ json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) }}
+                                                                    {{ json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}
                                                                 @elseif(is_bool($value))
                                                                     {{ $value ? 'ya' : 'tidak' }}
                                                                 @else
-                                                                    {{ $value ?? '—' }}
+                                                                    {{ $value }}
                                                                 @endif
                                                             </dd>
                                                         </div>
                                                     @endforeach
                                                 </dl>
                                             @else
-                                                <p class="rounded-xl border border-slate-200 bg-white px-3 py-3 text-xs text-slate-500">Tidak ada metadata tambahan.</p>
+                                                <p class="rounded-lg border border-slate-200 bg-white px-3 py-3 text-xs text-slate-500" data-qh-audit-metadata-values>
+                                                    Tidak ada metadata terisi.
+                                                </p>
                                             @endif
-                                        </div>
+
+                                            @if($metadataWithoutValues->isNotEmpty())
+                                                <details class="mt-2 rounded-lg border border-slate-200 bg-white" data-qh-audit-empty-metadata>
+                                                    <summary class="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-3 py-2 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 [&::-webkit-details-marker]:hidden">
+                                                        <span>Atribut kosong ({{ $metadataWithoutValues->count() }})</span>
+                                                        <span class="text-blue-700">Lihat</span>
+                                                    </summary>
+                                                    <dl class="max-h-40 divide-y divide-slate-100 overflow-y-auto border-t border-slate-100 px-3" tabindex="0" aria-label="Daftar metadata tanpa nilai">
+                                                        @foreach($metadataWithoutValues as $key => $value)
+                                                            <div class="flex min-w-0 items-start gap-3 py-1.5">
+                                                                <dt class="w-[38%] shrink-0 break-words text-[11px] leading-5 text-slate-500">{{ ucwords(str_replace('_', ' ', (string) $key)) }}</dt>
+                                                                <dd class="min-w-0 flex-1 break-words text-left text-[11px] text-slate-400">—</dd>
+                                                            </div>
+                                                        @endforeach
+                                                    </dl>
+                                                </details>
+                                            @endif
+                                        </section>
                                     </div>
+
+                                    {{-- Long technical context is available without dominating the audit UI. --}}
+                                    <details class="mt-3 rounded-lg border border-slate-200 bg-slate-50/60" data-qh-audit-technical>
+                                        <summary class="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-[11px] font-semibold text-slate-600 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 [&::-webkit-details-marker]:hidden">
+                                            <svg class="h-3.5 w-3.5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                                            Informasi Teknis
+                                        </summary>
+                                        <div class="border-t border-slate-200 px-3 py-2.5">
+                                            <p class="text-[11px] font-semibold text-slate-500">Agen Pengguna</p>
+                                            <p class="mt-1 break-all text-[11px] leading-5 text-slate-700">{{ $log->user_agent ?? '—' }}</p>
+                                        </div>
+                                    </details>
                                 </div>
                             </details>
                         </article>

@@ -50,6 +50,50 @@ class ActivityLogRedesignTest extends TestCase
         $this->assertStringNotContainsString('x-data="{ expanded: false }"', $response->getContent());
     }
 
+    public function test_detail_panel_compacts_missing_metadata_but_keeps_original_values_accessible(): void
+    {
+        $admin = $this->actor();
+
+        ActivityLog::create([
+            'user_id' => $admin->id,
+            'action' => 'upload_document',
+            'description' => 'Hasil scan diverifikasi oleh QC.',
+            'user_agent' => 'Windows Edge QA Browser',
+            'metadata' => [
+                'source_type' => 'scan',
+                'photo_count' => 0,
+                'multi_photo_pdf' => false,
+                'scan_date' => '2026-11-12',
+                'production_date' => null,
+                'line' => '',
+                'brake_part_prefix' => null,
+                'tags' => ['QC', 'verified'],
+            ],
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('activity-logs.index'))->assertOk();
+
+        $response->assertSee('data-qh-audit-detail-content', false)
+            ->assertSee('data-qh-audit-metadata-values', false)
+            ->assertSee('data-qh-audit-empty-metadata', false)
+            ->assertSee('Atribut kosong (3)')
+            ->assertSee('Photo Count')
+            ->assertSee('Multi Photo Pdf')
+            ->assertSee('tidak')
+            ->assertSee('Scan Date')
+            ->assertSee('Production Date')
+            ->assertSee('Brake Part Prefix')
+            ->assertSee('2026-11-12')
+            ->assertSee('QC')
+            ->assertSee('Informasi Teknis')
+            ->assertSee('Windows Edge QA Browser');
+
+        $html = $response->getContent();
+        $this->assertStringContainsString('max-h-64', $html);
+        $this->assertStringContainsString('max-h-40', $html);
+        $this->assertStringNotContainsString('x-data="{ expanded: false }"', $html);
+    }
+
     public function test_existing_get_filter_fields_are_preserved(): void
     {
         $admin = $this->actor();

@@ -143,3 +143,17 @@ php artisan view:clear
 - Review 1366×768 desktop, 390×844 mobile, and entries with long user agents or metadata.
 - Verify multi-page links and filters, nested metadata, empty results and image fallback.
 - Do not merge PR #11 or redeploy without full QA and Mas IT approval.
+
+
+---
+
+## Activity Log detail density and metadata handling — 12 Nov 2026
+Screenshots revealed a multi-screen detail panel: empty values caused oversized rows, and the left info area was half blank.
+
+- Detail now uses a short "Rincian Audit" header; compact two-column audit fields and bounded metadata list are aligned in balanced cards.
+- Metadata with actual values uses compact side-by-side label/value rows, wrapped text, and an independently scrollable list (keyboard focusable). Numeric zero and boolean false remain visible as meaningful values.
+- Missing/null/blank metadata keys remain available under the native, collapsed "Atribut kosong (N)" disclosure, so no audit content is removed or mutated.
+- Long user-agent strings remain available under "Informasi Teknis", collapsed by default. Full original description is still available with bounded scrolling.
+- No Alpine inline expressions or additional JavaScript; compatible with CSP. Audit queries, permissions, photo route, filters, pagination and database models unchanged.
+- Run \`php artisan test --filter=ActivityLogRedesignTest\`, \`php artisan test --filter=ActivityLogAvatarTest\`, \`php artisan test --filter=SearchableFilterSelectTest\`, \`npm run build\`, and \`php artisan view:cache\` on local integration branch before any merge/deploy.
+- Browser QA: log with many empty metadata fields, zero/false/array values, long user agent, mobile ~390px, and reopening details across pagination. Ensure no horizontal overflow and internal metadata scroller is keyboard accessible.
