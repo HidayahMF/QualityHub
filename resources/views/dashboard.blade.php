@@ -831,7 +831,7 @@
                         Dokumen per Kategori
                     </h2>
 
-                    
+
                 </div>
 
                 <div class="p-4 sm:p-5">
@@ -866,7 +866,7 @@
                         Distribusi Jenis File
                     </h2>
 
-                    
+
                 </div>
 
                 <div
@@ -908,7 +908,7 @@
                             Distribusi Departemen
                         </h2>
 
-                        
+
                     </div>
 
                     <span
@@ -946,7 +946,7 @@
                         Komposisi Aktivitas
                     </h2>
 
-                    
+
                 </div>
 
                 <div class="p-4 sm:p-5">
@@ -977,7 +977,7 @@
                         Dokumen Paling Sering Diakses
                     </h2>
 
-                    
+
                 </div>
 
                 <div class="p-3">
@@ -1118,7 +1118,7 @@
                             Dokumen Terbaru
                         </h2>
 
-                        
+
                     </div>
 
                     <a
@@ -1276,7 +1276,7 @@
                         Aktivitas Terbaru
                     </h2>
 
-                    
+
                 </div>
 
 
