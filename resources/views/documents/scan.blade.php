@@ -103,6 +103,7 @@
             @csrf
             <input id="captureSource" type="hidden" name="capture_source" value="{{ old('capture_source', 'upload') }}">
             <input id="expectedPhotoCount" type="hidden" name="expected_photo_count" value="0">
+            <input id="scanBatchId" type="hidden" name="batch_id" value="">
 
             {{-- File final yang benar-benar dikirim ke backend. JS menjaga urutan files[]. --}}
             <input
@@ -309,6 +310,11 @@
                         </div>
 
                         <div id="photoQueue" class="mt-3 grid grid-cols-1 gap-3"></div>
+                        <div id="photoQueueNavigation" class="mt-3 hidden flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-100 bg-white p-2">
+                            <button type="button" id="photoQueuePrevious" class="rounded-lg border border-blue-200 px-3 py-2 text-xs font-bold text-blue-700 disabled:opacity-40">← Sebelumnya</button>
+                            <span id="photoQueuePageInfo" role="status" class="text-xs font-semibold text-slate-600">Halaman daftar 1 dari 1</span>
+                            <button type="button" id="photoQueueNext" class="rounded-lg border border-blue-200 px-3 py-2 text-xs font-bold text-blue-700 disabled:opacity-40">Berikutnya →</button>
+                        </div>
                     </div>
 
 
@@ -387,7 +393,7 @@
 
 
                     <p class="mt-3 text-center text-xs text-slate-400">
-                        Format: JPG, JPEG, PNG, WEBP, GIF, BMP, TIF, TIFF · Maks. 20 MB/foto · Maks. 100 foto
+                        Maksimal 1.000 foto dalam 1 berkas PDF · Total foto maksimal 200 MB · Kamera HP/galeri akan dioptimalkan bila memungkinkan.
                     </p>
 
                     <p class="mt-1 text-center text-[11px] font-medium text-blue-600">
@@ -395,8 +401,13 @@
                     </p>
 
                     <p id="cameraProcessingStatus" role="status" aria-live="polite" class="mt-2 hidden text-center text-xs font-medium text-blue-700">
-                        Memproses foto kamera agar siap diunggah...
+                        Memproses foto agar siap diunggah...
                     </p>
+                    <div id="scanUploadProgress" class="mt-3 hidden rounded-xl border border-blue-200 bg-blue-50 p-3" role="status" aria-live="polite">
+                        <p id="scanUploadProgressLabel" class="text-xs font-bold text-blue-800">Mempersiapkan upload...</p>
+                        <progress id="scanUploadProgressBar" max="100" value="0" class="mt-2 h-2 w-full accent-blue-600"></progress>
+                        <p class="mt-1 text-[11px] text-slate-500">Jangan tutup atau refresh halaman sampai penyimpanan selesai.</p>
+                    </div>
 
                 </div>
             </section>
@@ -1680,6 +1691,14 @@
             const photoQueue = document.getElementById('photoQueue');
             const photoQueueCount = document.getElementById('photoQueueCount');
             const photoQueueHint = document.getElementById('photoQueueHint');
+            const photoQueueNavigation = document.getElementById('photoQueueNavigation');
+            const photoQueuePrevious = document.getElementById('photoQueuePrevious');
+            const photoQueueNext = document.getElementById('photoQueueNext');
+            const photoQueuePageInfo = document.getElementById('photoQueuePageInfo');
+            const scanBatchId = document.getElementById('scanBatchId');
+            const scanUploadProgress = document.getElementById('scanUploadProgress');
+            const scanUploadProgressLabel = document.getElementById('scanUploadProgressLabel');
+            const scanUploadProgressBar = document.getElementById('scanUploadProgressBar');
             const activePhotoPosition = document.getElementById('activePhotoPosition');
             const editToolbar = document.getElementById('editToolbar');
             const retakeButton = document.getElementById('retakeButton');
@@ -1770,7 +1789,16 @@
                 cameraInput.value = '';
                 cameraInput.click();
             }
-            const MAX_PHOTOS = 100;
+            const MAX_PHOTOS = 1000;
+            const BATCH_THRESHOLD = 50;
+            const BATCH_CHUNK_SIZE = 10;
+            const QUEUE_PAGE_SIZE = 25;
+            const BATCH_START_URL = @json(route('documents.scan.batches.start'));
+            const BATCH_UPLOAD_URL = @json(route('documents.scan.batches.upload'));
+            let queuePage = 0;
+            let stagedUploadBusy = false;
+            let stagedUploadReady = false;
+            let galleryPhotoProcessing = false;
             const MAX_TOTAL_BYTES = 200 * 1024 * 1024;
 
             // Kamera native HP kadang mengirim foto asli berukuran beberapa MB
@@ -1778,8 +1806,11 @@
             // File hasil kamera dinormalisasi menjadi JPEG kecil sebelum submit.
             // Batas server (upload_max_filesize / post_max_size) tetap wajib dicek IT.
             const CAMERA_MAX_SOURCE_BYTES = 80 * 1024 * 1024;
-            const CAMERA_MAX_OUTPUT_BYTES = Math.floor(1.6 * 1024 * 1024);
-            const CAMERA_MAX_LONG_EDGE = 2600;
+            // Keeping each picture around 170 KB makes up to 1,000
+            // photos feasible within the existing 200 MB safety ceiling.
+            // Final quality must be checked on actual QC document photos.
+            const CAMERA_MAX_OUTPUT_BYTES = Math.floor(0.17 * 1024 * 1024);
+            const CAMERA_MAX_LONG_EDGE = 2000;
             let cameraPhotoProcessing = false;
 
             let selectedItems = [];
