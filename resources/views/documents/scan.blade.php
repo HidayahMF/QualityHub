@@ -3345,7 +3345,7 @@
 
             function syncFilesToForm() {
                 try {
-                    if (selectedItems.length > BATCH_THRESHOLD) {
+                    if (selectedItems.length > BATCH_THRESHOLD || isMobileCameraDevice) {
                         // Safari on iPhone does not consistently support the
                         // DataTransfer constructor. Skip it entirely for large
                         // uploads: files are sent in ten-photo batches instead.
@@ -4252,7 +4252,7 @@
 
                 expectedPhotoCount.value = String(selectedItems.length);
 
-                if (selectedItems.length > BATCH_THRESHOLD && !stagedUploadReady) {
+                if ((selectedItems.length > BATCH_THRESHOLD || isMobileCameraDevice) && !stagedUploadReady) {
                     event.preventDefault();
                     uploadScansInBatches();
                     return;
