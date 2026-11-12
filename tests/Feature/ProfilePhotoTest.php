@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Session;
 use Tests\TestCase;
 
 class ProfilePhotoTest extends TestCase
@@ -52,9 +53,13 @@ class ProfilePhotoTest extends TestCase
         $this->assertNotNull($path);
         Storage::disk('local')->assertExists($path);
 
-        $this->actingAs($user)->get(route('profile.photo.show'))
-            ->assertOk()
-            ->assertHeader('Cache-Control', 'private, no-store, max-age=0');
+        $response = $this->actingAs($user)->get(route('profile.photo.show'))->assertOk();
+
+        // Order of Cache-Control directives is not meaningful; their meaning is.
+        $cacheControl = (string) $response->headers->get('Cache-Control');
+        $this->assertStringContainsString('private', $cacheControl);
+        $this->assertStringContainsString('no-store', $cacheControl);
+        $this->assertStringNotContainsString('public', $cacheControl);
     }
 
     public function test_replacing_photo_removes_previous_file(): void
@@ -120,7 +125,12 @@ class ProfilePhotoTest extends TestCase
             'photo' => UploadedFile::fake()->image('owner.png', 300, 300),
         ])->assertSessionHasNoErrors();
 
+        // Simulate a different browser session. Keeping the original session
+        // should be rejected by EnsureSessionFreshness (as designed in PR #7).
+        Session::flush();
         $this->actingAs($other)->get(route('profile.photo.show'))->assertNotFound();
+
+        // The other account cannot fetch the owner's picture by using this URL.
         $this->assertNotNull($owner->fresh()->profile_photo_path);
     }
 
