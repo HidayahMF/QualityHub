@@ -1623,7 +1623,13 @@
             const zoomRange = document.getElementById('zoomRange');
             const manualCropButton = document.getElementById('manualCropButton');
             const manualCropModal = document.getElementById('manualCropModal');
+            const manualCropPhotoName = document.getElementById('manualCropPhotoName');
             const manualCropStage = document.getElementById('manualCropStage');
+
+            // Portal the dialog OUT of the Scan/Capture form and all overflow-hidden
+            // layout/sidebar containers. A fixed descendant can otherwise be
+            // clipped or stacked below the sticky navigation/header.
+            document.body.appendChild(manualCropModal);
             const manualCropCanvas = document.getElementById('manualCropCanvas');
             const manualCropSelection = document.getElementById('manualCropSelection');
             const manualCropInfo = document.getElementById('manualCropInfo');
@@ -1720,6 +1726,7 @@
             let cropDrag = null;
             let cropSourceIndex = -1;
             let editorBusy = false;
+            let cropReturnFocus = null;
             let objectUrl = null;
 
 
@@ -3016,6 +3023,9 @@
                     cropSourceIndex = activePhotoIndex;
                     cropSelection = { x: 0, y: 0, w: 1, h: 1 };
                     cropDrag = null;
+                    cropReturnFocus = document.activeElement;
+                    manualCropPhotoName.textContent = 'Foto ' + (activePhotoIndex + 1) + ' dari ' + selectedItems.length;
+                    document.body.classList.add('qh-crop-open');
                     manualCropModal.classList.remove('hidden');
                     drawCropSelection();
                     cancelCropButton.focus();
@@ -3029,7 +3039,11 @@
                 cropDrag = null;
                 cropSourceIndex = -1;
                 manualCropModal.classList.add('hidden');
-                manualCropButton.focus();
+                document.body.classList.remove('qh-crop-open');
+                const target = cropReturnFocus && cropReturnFocus.isConnected
+                    ? cropReturnFocus : manualCropButton;
+                cropReturnFocus = null;
+                target.focus();
             }
 
             manualCropStage.addEventListener('pointerdown', event => {
@@ -3107,10 +3121,28 @@
             });
             manualCropButton.addEventListener('click', openManualCrop);
             cancelCropButton.addEventListener('click', closeManualCrop);
+            manualCropModal.addEventListener('click', event => {
+                if (event.target === manualCropModal) closeManualCrop();
+            });
             document.addEventListener('keydown', event => {
-                if (event.key === 'Escape' && !manualCropModal.classList.contains('hidden')) {
+                if (manualCropModal.classList.contains('hidden')) return;
+                if (event.key === 'Escape') {
                     event.preventDefault();
                     closeManualCrop();
+                }
+                // Keep keyboard focus inside the open modal.
+                if (event.key === 'Tab') {
+                    const choices = [cancelCropButton, resetCropButton, confirmCropButton]
+                        .filter(button => !button.disabled);
+                    if (choices.length === 0) return;
+                    const current = choices.indexOf(document.activeElement);
+                    if (event.shiftKey && current <= 0) {
+                        event.preventDefault();
+                        choices[choices.length - 1].focus();
+                    } else if (!event.shiftKey && (current < 0 || current === choices.length - 1)) {
+                        event.preventDefault();
+                        choices[0].focus();
+                    }
                 }
             });
 
