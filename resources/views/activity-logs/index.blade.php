@@ -1268,27 +1268,32 @@
                                     >
 
                                         <div
-                                            class="w-10
-                                                   h-10
+                                            class="w-11
+                                                   h-11
                                                    rounded-xl
+                                                   border border-blue-100
                                                    bg-blue-100
                                                    text-blue-800
                                                    flex
                                                    items-center
                                                    justify-center
+                                                   overflow-hidden
                                                    font-bold
                                                    flex-shrink-0"
                                         >
-
-                                            {{ strtoupper(
-                                                substr(
-                                                    $log->user?->name
-                                                        ?? 'S',
-                                                    0,
-                                                    1
-                                                )
-                                            ) }}
-
+                                            @if($log->user?->profile_photo_path)
+                                                <img
+                                                    src="{{ route('activity-logs.photo.show', $log->user) }}"
+                                                    alt="Foto profil {{ $log->user->name }}"
+                                                    class="h-full w-full object-cover"
+                                                    loading="lazy"
+                                                    decoding="async"
+                                                >
+                                            @else
+                                                <span aria-label="{{ $log->user ? 'Inisial '.$log->user->name : 'Aktivitas sistem' }}">
+                                                    {{ strtoupper(substr($log->user?->name ?? 'S', 0, 1)) }}
+                                                </span>
+                                            @endif
                                         </div>
 
 

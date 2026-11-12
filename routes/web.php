@@ -507,6 +507,13 @@ Route::middleware([
         [ActivityLogController::class, 'index']
     )->name('activity-logs.index');
 
+    // Activity Log is available to Super Admin and Admin Dokumen.
+    // Photos stay private; authorization is repeated at the image endpoint.
+    Route::get(
+        '/activity-logs/users/{user}/photo',
+        [ProfilePhotoController::class, 'showAuditUser']
+    )->whereNumber('user')->name('activity-logs.photo.show');
+
 
     /*
     |--------------------------------------------------------------------------

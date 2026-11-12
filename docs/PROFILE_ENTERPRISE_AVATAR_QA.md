@@ -106,3 +106,13 @@ Updated in PR #11 after reviewing four user-provided profile UI references.
 - A URL with an invalid user ID or an avatar path that does not belong to that account must return 404; there is no public storage link.
 - Run \`php artisan test --filter=UserManagementAvatarTest\` and \`php artisan test --filter=ProfilePhotoTest\` and \`php artisan test --filter=AdminAccountManagementTest\` before merging.
 - Manually test one account with photo and one account without, using desktop and phone. No database migration is added by this account-list change.
+
+
+---
+
+## Activity Log account photos (PR #11)
+- The activity table shows the linked user's actual profile photo. Entries with no photo, system entries, and entries with a removed user display initials/fallback.
+- Endpoint: \`GET /activity-logs/users/{user}/photo\`, guarded by the same \`isAdmin()\` authorization used by ActivityLogController (Super Admin and Admin Dokumen). This is separate from the User Management photo route, which remains Super Admin only.
+- Existing private local storage, path ownership validation, and private/no-store image responses reused. No public image URL, new migration, or audit-record mutation.
+- \`ActivityLog::with('user')\` already eager loads the user, so no additional database relationship query per row.
+- QA: \`php artisan test --filter=ActivityLogAvatarTest\`, \`--filter=UserManagementAvatarTest\`, \`--filter=ProfilePhotoTest\`, \`--filter=AdminAccountManagementTest\`. Verify same user avatar in My Profile, Users, and Activity Log; fallback for blank/system/deleted user; unauthorized account denied.

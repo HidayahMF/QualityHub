@@ -40,6 +40,15 @@ class ProfilePhotoController extends Controller
         return $this->photoResponse($user);
     }
 
+    public function showAuditUser(Request $request, User $user): BinaryFileResponse
+    {
+        // Same role policy as ActivityLogController@index, also enforced when
+        // this URL is requested directly outside the Activity Log page.
+        abort_unless($request->user()?->isAdmin(), 403);
+
+        return $this->photoResponse($user);
+    }
+
     private function photoResponse(User $user): BinaryFileResponse
     {
         $path = $user->profile_photo_path;
