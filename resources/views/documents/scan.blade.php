@@ -191,6 +191,7 @@
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <p class="text-sm font-semibold text-slate-900">Edit Hasil Scan</p>
+                                <p id="activePhotoPosition" class="mt-1 text-xs font-bold text-blue-700">Pilih foto untuk diedit</p>
                                 <p class="mt-1 text-xs text-slate-500">Rapikan foto sebelum disimpan ke QualityHub.</p>
                             </div>
                             <button type="button" id="retakeButton" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700">
@@ -1513,6 +1514,7 @@
             const photoQueue = document.getElementById('photoQueue');
             const photoQueueCount = document.getElementById('photoQueueCount');
             const photoQueueHint = document.getElementById('photoQueueHint');
+            const activePhotoPosition = document.getElementById('activePhotoPosition');
             const editToolbar = document.getElementById('editToolbar');
             const retakeButton = document.getElementById('retakeButton');
             const applyEditButton = document.getElementById('applyEditButton');
@@ -3115,8 +3117,11 @@
                 photoQueueCount.textContent = `${count} foto`;
                 photoQueueWrapper.classList.toggle('hidden', count === 0);
                 photoQueueHint.textContent = count > 1
-                    ? 'Urutan foto di bawah menjadi urutan halaman PDF.'
+                    ? 'Foto 1 menjadi halaman PDF pertama. Gunakan tombol panah untuk mengubah urutan halaman.'
                     : 'Tambahkan foto lain jika berkas QC memiliki lebih dari satu halaman.';
+                activePhotoPosition.textContent = activePhotoIndex >= 0 && selectedItems[activePhotoIndex]
+                    ? 'Sedang edit Foto ' + (activePhotoIndex + 1) + ' dari ' + count
+                    : 'Pilih foto untuk diedit';
 
                 selectedItems.forEach((item, index) => {
                     const card = document.createElement('div');
@@ -3132,20 +3137,32 @@
                     body.className = 'min-w-0 flex-1';
 
                     const title = document.createElement('p');
-                    title.className = 'truncate text-xs font-bold text-slate-800';
-                    title.textContent = `Halaman ${index + 1} · ${item.file.name}`;
+                    title.className = 'text-xs font-extrabold text-slate-900';
+                    title.textContent = 'Foto ' + (index + 1);
+
+                    const order = document.createElement('p');
+                    order.className = 'mt-0.5 text-[11px] font-bold text-blue-700';
+                    const marker = count === 1 ? ' · Satu foto'
+                        : index === 0 ? ' · PERTAMA'
+                        : index === count - 1 ? ' · TERAKHIR' : '';
+                    order.textContent = 'Halaman PDF ' + (index + 1) + ' dari ' + count + marker;
+
+                    const filename = document.createElement('p');
+                    filename.className = 'mt-1 truncate text-[11px] text-slate-600';
+                    filename.textContent = item.file.name;
+                    filename.title = item.file.name;
 
                     const meta = document.createElement('p');
-                    meta.className = 'mt-1 text-[11px] text-slate-500';
-                    meta.textContent = `${(item.file.size / 1024 / 1024).toFixed(2)} MB · ${item.source === 'camera' ? 'Kamera' : 'Galeri'}`;
+                    meta.className = 'text-[11px] text-slate-500';
+                    meta.textContent = (item.file.size / 1024 / 1024).toFixed(2) + ' MB · ' + (item.source === 'camera' ? 'Kamera' : 'Galeri');
 
-                    body.append(title, meta);
+                    body.append(title, order, filename, meta);
 
                     const actions = document.createElement('div');
                     actions.className = 'flex shrink-0 items-center gap-1';
                     actions.append(
-                        createQueueAction('←', 'Geser ke halaman sebelumnya', index === 0, () => movePhoto(index, -1)),
-                        createQueueAction('→', 'Geser ke halaman berikutnya', index === count - 1, () => movePhoto(index, 1)),
+                        createQueueAction('←', 'Pindahkan Foto ' + (index + 1) + ' ke halaman PDF sebelumnya', index === 0, () => movePhoto(index, -1)),
+                        createQueueAction('→', 'Pindahkan Foto ' + (index + 1) + ' ke halaman PDF berikutnya', index === count - 1, () => movePhoto(index, 1)),
                         createQueueAction('×', 'Hapus foto', false, () => removePhoto(index)),
                     );
 
