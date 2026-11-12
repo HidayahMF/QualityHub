@@ -26,6 +26,7 @@
                         <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
                         BMC QUALITYHUB / ACCOUNT CENTER
                     </div>
+                    <p class="mb-1 text-xs font-semibold tracking-wide text-blue-200">My Profile</p>
                     <h1 class="text-3xl font-extrabold tracking-tight sm:text-4xl">Profil Saya</h1>
                     <p class="mt-3 max-w-2xl text-sm leading-6 text-blue-100 sm:text-base">
                         Kelola informasi akun dan keamanan akses BMC QualityHub.
