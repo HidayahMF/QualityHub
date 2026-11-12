@@ -64,12 +64,12 @@ if (root) {
         if (!password || !label) return;
 
         const value = password.value;
-        const score = !value ? 0 : [
+        const score = !value ? 0 : Math.max(1, [
             value.length >= 12,
             value.length >= 16,
             /[a-z]/.test(value) && /[A-Z]/.test(value),
             /\d/.test(value) && /[^a-zA-Z0-9]/.test(value),
-        ].filter(Boolean).length;
+        ].filter(Boolean).length);
 
         const names = ['Belum diisi', 'Rendah', 'Cukup', 'Baik', 'Kuat'];
         const colors = ['bg-slate-200', 'bg-rose-500', 'bg-amber-500', 'bg-blue-500', 'bg-emerald-500'];
