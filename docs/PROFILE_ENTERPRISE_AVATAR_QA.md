@@ -93,3 +93,16 @@ Updated in PR #11 after reviewing four user-provided profile UI references.
 - Preserved photo routes, IDs, preview JS hooks, validation, CSRF, profile form names, PR #7 password gate, and password toggle/strength hooks.
 - Pure Blade/Tailwind UI revision, no backend/database/middleware change in this commit.
 - Test on desktop 1366×768 and 1600×900, mobile 390×844; screenshots of before/after and verify no horizontal overflow, no obvious empty gap.
+
+
+---
+
+## User Management account photos (PR #11)
+
+- User Management's account list shows each account's stored avatar; users without a photo retain their initial.
+- Photo is fetched through \`GET /users/{user}/photo\` and returns private/no-store headers.
+- The photo endpoint enforces the **Super Admin** role itself, matching User Management; guest and ordinary employee access must be denied.
+- Existing owner-only \`/profile/photo\` and avatar upload/delete routes remain unchanged.
+- A URL with an invalid user ID or an avatar path that does not belong to that account must return 404; there is no public storage link.
+- Run \`php artisan test --filter=UserManagementAvatarTest\` and \`php artisan test --filter=ProfilePhotoTest\` and \`php artisan test --filter=AdminAccountManagementTest\` before merging.
+- Manually test one account with photo and one account without, using desktop and phone. No database migration is added by this account-list change.

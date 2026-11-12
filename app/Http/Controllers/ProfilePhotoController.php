@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
@@ -26,15 +27,28 @@ class ProfilePhotoController extends Controller
 
     public function show(Request $request): BinaryFileResponse
     {
-        $user = $request->user();
+        // Personal profile photos remain accessible only to their owners.
+        return $this->photoResponse($request->user());
+    }
+
+    public function showManagedUser(Request $request, User $user): BinaryFileResponse
+    {
+        // User Management is Super Admin only. Protect this URL too; a known
+        // user ID must never turn a private photo into a public resource.
+        abort_unless($request->user()?->isSuperAdmin(), 403);
+
+        return $this->photoResponse($user);
+    }
+
+    private function photoResponse(User $user): BinaryFileResponse
+    {
         $path = $user->profile_photo_path;
 
         abort_unless($this->ownedPhotoPath($path, (int) $user->id), 404);
         $disk = Storage::disk('local');
         abort_unless($disk->exists($path), 404);
 
-        // Symfony BinaryFileResponse defaults to public unless explicitly disabled.
-        // This is a private, owner-only resource: never allow shared-cache storage.
+        // Private, authenticated photo; shared caches must never store it.
         $response = new BinaryFileResponse($disk->path($path), 200, [
             'Content-Type' => $disk->mimeType($path) ?: 'application/octet-stream',
             'Content-Disposition' => 'inline',

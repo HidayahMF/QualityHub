@@ -449,6 +449,12 @@ Route::middleware([
         [UserManagementController::class, 'index']
     )->name('users.index');
 
+    // Photos on User Management are visible only to authenticated Super Admins.
+    // Controller performs the same authorization as UserManagementController@index.
+    Route::get('/users/{user}/photo', [ProfilePhotoController::class, 'showManagedUser'])
+        ->whereNumber('user')
+        ->name('users.photo.show');
+
     Route::get('/users/create', [AdminAccountController::class, 'create'])
         ->name('users.create');
     Route::post('/users', [AdminAccountController::class, 'store'])
