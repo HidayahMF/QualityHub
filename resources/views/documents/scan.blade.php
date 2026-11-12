@@ -2736,30 +2736,26 @@
             // SHOW IMAGE PREVIEW
             // ============================================================
             function resetEditor() {
-                editState = { rotation: 0, brightness: 100, contrast: 100, grayscale: 0, zoom: 100, crop: 0 };
+                editState = { rotation: 0, brightness: 100, contrast: 100, grayscale: 0, zoom: 100 };
                 brightnessRange.value = 100;
                 contrastRange.value = 100;
                 zoomRange.value = 100;
-                cropRange.value = 0;
                 brightnessValue.textContent = '100%';
                 contrastValue.textContent = '100%';
                 zoomValue.textContent = '100%';
-                cropValue.textContent = '0%';
                 preview.style.filter = 'none';
                 preview.style.transform = 'none';
-                preview.style.clipPath = 'inset(0%)';
+                preview.style.clipPath = 'none';
             }
 
 
             function renderEditorPreview() {
                 if (!originalImage) return;
-                preview.style.filter = `brightness(${editState.brightness}%) contrast(${editState.contrast}%) grayscale(${editState.grayscale}%)`;
-                preview.style.transform = `rotate(${editState.rotation}deg) scale(${editState.zoom / 100})`;
-                preview.style.clipPath = `inset(${editState.crop}% ${editState.crop}% ${editState.crop}% ${editState.crop}% round 10px)`;
-                brightnessValue.textContent = `${editState.brightness}%`;
-                contrastValue.textContent = `${editState.contrast}%`;
-                zoomValue.textContent = `${editState.zoom}%`;
-                cropValue.textContent = `${editState.crop}%`;
+                preview.style.filter = 'brightness(' + editState.brightness + '%) contrast(' + editState.contrast + '%) grayscale(' + editState.grayscale + '%)';
+                preview.style.transform = 'rotate(' + editState.rotation + 'deg) scale(' + (editState.zoom / 100) + ')';
+                brightnessValue.textContent = editState.brightness + '%';
+                contrastValue.textContent = editState.contrast + '%';
+                zoomValue.textContent = editState.zoom + '%';
             }
 
 
@@ -2778,7 +2774,6 @@
                 preview.classList.remove('hidden');
                 emptyState.classList.add('hidden');
                 editToolbar.classList.remove('hidden');
-                // Ringkasan jumlah file dikelola oleh updateMultiPhotoState().
 
                 originalImage = new Image();
                 originalImage.onload = () => renderEditorPreview();
@@ -2787,64 +2782,264 @@
             }
 
 
+            // Render ONE canonical image for both "Terapkan Perubahan" and crop.
+            // The manual selection is measured against precisely these pixels.
+            function renderEditedCanvas(canvas = document.createElement('canvas')) {
+                if (!originalImage || !originalImage.complete || !originalImage.naturalWidth) {
+                    throw new Error('Foto belum selesai dimuat. Coba lagi.');
+                }
+
+                const img = originalImage;
+                const width = img.naturalWidth;
+                const height = img.naturalHeight;
+                const radians = (editState.rotation * Math.PI) / 180;
+                const sin = Math.abs(Math.sin(radians));
+                const cos = Math.abs(Math.cos(radians));
+                const rotatedWidth = Math.max(1, Math.round(width * cos + height * sin));
+                const rotatedHeight = Math.max(1, Math.round(width * sin + height * cos));
+
+                if (rotatedWidth * rotatedHeight > 35000000) {
+                    throw new Error('Resolusi foto terlalu besar untuk diedit di perangkat ini. Gunakan foto beresolusi lebih rendah.');
+                }
+
+                canvas.width = rotatedWidth;
+                canvas.height = rotatedHeight;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) throw new Error('Canvas tidak tersedia di browser.');
+
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, rotatedWidth, rotatedHeight);
+                ctx.save();
+                ctx.translate(rotatedWidth / 2, rotatedHeight / 2);
+                ctx.rotate(radians);
+                ctx.filter = 'brightness(' + editState.brightness + '%) contrast(' + editState.contrast + '%) grayscale(' + editState.grayscale + '%)';
+                const zoom = editState.zoom / 100;
+                ctx.drawImage(img, -(width * zoom) / 2, -(height * zoom) / 2, width * zoom, height * zoom);
+                ctx.restore();
+                return canvas;
+            }
+
+
+            async function replaceActivePhotoFromCanvas(canvas) {
+                if (activePhotoIndex < 0 || !selectedItems[activePhotoIndex] || !originalFile) {
+                    throw new Error('Foto aktif tidak ditemukan.');
+                }
+
+                const outputType = ['image/png', 'image/webp', 'image/jpeg'].includes(originalFile.type)
+                    ? originalFile.type : 'image/jpeg';
+                const quality = outputType === 'image/png' ? undefined : 0.94;
+                const blob = await new Promise((resolve, reject) =>
+                    canvas.toBlob(b => b ? resolve(b) : reject(new Error('Gagal membuat file hasil edit.')), outputType, quality)
+                );
+
+                if (blob.size <= 0 || blob.size > 20 * 1024 * 1024) {
+                    throw new Error('Hasil edit melebihi batas 20 MB per foto. Coba area crop lebih kecil.');
+                }
+
+                const projectedTotal = totalSelectedBytes() - selectedItems[activePhotoIndex].file.size + blob.size;
+                if (projectedTotal > MAX_TOTAL_BYTES) {
+                    throw new Error('Total foto hasil edit melebihi 200 MB.');
+                }
+
+                const base = originalFile.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'scan-qc';
+                const ext = outputType === 'image/png' ? 'png' : outputType === 'image/webp' ? 'webp' : 'jpg';
+                const editedFile = new File([blob], base + '-edited.' + ext, {
+                    type: outputType,
+                    lastModified: Date.now(),
+                });
+
+                releaseItemObjectUrl(selectedItems[activePhotoIndex]);
+                selectedItems[activePhotoIndex] = {
+                    ...selectedItems[activePhotoIndex],
+                    file: editedFile,
+                };
+
+                updateMultiPhotoState();
+                showPreview(editedFile);
+            }
+
+
             async function applyEditsToFile() {
-                if (!originalFile || !originalImage) return;
+                if (editorBusy || !originalFile || !originalImage) return;
+                editorBusy = true;
                 applyEditButton.disabled = true;
+                manualCropButton.disabled = true;
                 applyEditButton.textContent = 'Memproses gambar...';
 
                 try {
-                    const img = originalImage;
-                    const radians = (editState.rotation * Math.PI) / 180;
-                    const sin = Math.abs(Math.sin(radians));
-                    const cos = Math.abs(Math.cos(radians));
-                    const rotatedWidth = Math.ceil(img.width * cos + img.height * sin);
-                    const rotatedHeight = Math.ceil(img.width * sin + img.height * cos);
-                    const cropX = Math.floor(rotatedWidth * editState.crop / 100);
-                    const cropY = Math.floor(rotatedHeight * editState.crop / 100);
-                    const outW = Math.max(1, rotatedWidth - cropX * 2);
-                    const outH = Math.max(1, rotatedHeight - cropY * 2);
-
-                    const canvas = document.createElement('canvas');
-                    canvas.width = outW;
-                    canvas.height = outH;
-                    const ctx = canvas.getContext('2d');
-                    if (!ctx) throw new Error('Canvas tidak tersedia.');
-
-                    ctx.save();
-                    ctx.translate(rotatedWidth / 2 - cropX, rotatedHeight / 2 - cropY);
-                    ctx.rotate(radians);
-                    ctx.filter = `brightness(${editState.brightness}%) contrast(${editState.contrast}%) grayscale(${editState.grayscale}%)`;
-                    const zoom = editState.zoom / 100;
-                    ctx.drawImage(img, -(img.width * zoom) / 2, -(img.height * zoom) / 2, img.width * zoom, img.height * zoom);
-                    ctx.restore();
-
-                    const outputType = ['image/png', 'image/webp', 'image/jpeg'].includes(originalFile.type) ? originalFile.type : 'image/jpeg';
-                    const quality = outputType === 'image/png' ? undefined : 0.94;
-                    const blob = await new Promise((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(new Error('Gagal membuat file hasil edit.')), outputType, quality));
-                    const base = originalFile.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'scan-qc';
-                    const ext = outputType === 'image/png' ? 'png' : outputType === 'image/webp' ? 'webp' : 'jpg';
-                    const editedFile = new File([blob], `${base}-edited.${ext}`, { type: outputType, lastModified: Date.now() });
-
-                    if (activePhotoIndex < 0 || !selectedItems[activePhotoIndex]) {
-                        throw new Error('Foto aktif tidak ditemukan.');
-                    }
-
-                    releaseItemObjectUrl(selectedItems[activePhotoIndex]);
-                    selectedItems[activePhotoIndex] = {
-                        ...selectedItems[activePhotoIndex],
-                        file: editedFile,
-                    };
-
-                    updateMultiPhotoState();
-                    showPreview(editedFile);
+                    const canvas = renderEditedCanvas();
+                    await replaceActivePhotoFromCanvas(canvas);
                 } catch (error) {
                     console.error('Image edit error:', error);
                     alert(error.message || 'Gagal memproses gambar.');
                 } finally {
+                    editorBusy = false;
                     applyEditButton.disabled = false;
+                    manualCropButton.disabled = false;
                     applyEditButton.textContent = 'Terapkan Perubahan ke Berkas';
                 }
             }
+
+
+            // ============================================================
+            // MANUAL CROP: pointer drag, move, and 8 resize handles.
+            // Coordinates are normalized to the rotated/filtered canvas.
+            // ============================================================
+            const clampCrop = (value, min, max) => Math.max(min, Math.min(max, value));
+            const MIN_CROP_FRACTION = 0.025;
+
+            function drawCropSelection() {
+                manualCropSelection.style.left = (cropSelection.x * 100) + '%';
+                manualCropSelection.style.top = (cropSelection.y * 100) + '%';
+                manualCropSelection.style.width = (cropSelection.w * 100) + '%';
+                manualCropSelection.style.height = (cropSelection.h * 100) + '%';
+
+                const pixelWidth = Math.max(1, Math.round(cropSelection.w * manualCropCanvas.width));
+                const pixelHeight = Math.max(1, Math.round(cropSelection.h * manualCropCanvas.height));
+                manualCropInfo.textContent = 'Area crop: ' + pixelWidth + ' × ' + pixelHeight + ' piksel. Hanya area dalam kotak biru yang disimpan.';
+            }
+
+            function cropPointerPosition(event) {
+                const box = manualCropCanvas.getBoundingClientRect();
+                return {
+                    x: clampCrop((event.clientX - box.left) / Math.max(1, box.width), 0, 1),
+                    y: clampCrop((event.clientY - box.top) / Math.max(1, box.height), 0, 1),
+                };
+            }
+
+            function openManualCrop() {
+                if (editorBusy || !originalFile || activePhotoIndex < 0) return;
+                try {
+                    renderEditedCanvas(manualCropCanvas);
+                    cropSourceIndex = activePhotoIndex;
+                    cropSelection = { x: 0, y: 0, w: 1, h: 1 };
+                    cropDrag = null;
+                    manualCropModal.classList.remove('hidden');
+                    drawCropSelection();
+                    cancelCropButton.focus();
+                } catch (error) {
+                    alert(error.message || 'Tidak bisa membuka crop manual.');
+                }
+            }
+
+            function closeManualCrop() {
+                cropDrag = null;
+                cropSourceIndex = -1;
+                manualCropModal.classList.add('hidden');
+                manualCropButton.focus();
+            }
+
+            manualCropStage.addEventListener('pointerdown', event => {
+                if (event.pointerType === 'mouse' && event.button !== 0) return;
+                event.preventDefault();
+
+                const handle = event.target.closest('[data-crop-handle]')?.dataset.cropHandle || '';
+                const move = !handle && Boolean(event.target.closest('#manualCropSelection'));
+                cropDrag = {
+                    pointerId: event.pointerId,
+                    mode: handle ? 'resize' : (move ? 'move' : 'new'),
+                    handle,
+                    start: cropPointerPosition(event),
+                    initial: { ...cropSelection },
+                };
+                manualCropStage.setPointerCapture(event.pointerId);
+            });
+
+            manualCropStage.addEventListener('pointermove', event => {
+                if (!cropDrag || cropDrag.pointerId !== event.pointerId) return;
+                event.preventDefault();
+
+                const point = cropPointerPosition(event);
+                const start = cropDrag.start;
+                const initial = cropDrag.initial;
+                const minSize = MIN_CROP_FRACTION;
+
+                if (cropDrag.mode === 'move') {
+                    cropSelection = {
+                        ...initial,
+                        x: clampCrop(initial.x + point.x - start.x, 0, 1 - initial.w),
+                        y: clampCrop(initial.y + point.y - start.y, 0, 1 - initial.h),
+                    };
+                } else if (cropDrag.mode === 'resize') {
+                    let left = initial.x;
+                    let right = initial.x + initial.w;
+                    let top = initial.y;
+                    let bottom = initial.y + initial.h;
+                    const handle = cropDrag.handle;
+
+                    if (handle.includes('w')) left = clampCrop(point.x, 0, right - minSize);
+                    if (handle.includes('e')) right = clampCrop(point.x, left + minSize, 1);
+                    if (handle.includes('n')) top = clampCrop(point.y, 0, bottom - minSize);
+                    if (handle.includes('s')) bottom = clampCrop(point.y, top + minSize, 1);
+                    cropSelection = { x: left, y: top, w: right - left, h: bottom - top };
+                } else {
+                    const left = Math.min(start.x, point.x);
+                    const top = Math.min(start.y, point.y);
+                    const right = Math.max(start.x, point.x);
+                    const bottom = Math.max(start.y, point.y);
+                    cropSelection = {
+                        x: clampCrop(left, 0, 1 - minSize),
+                        y: clampCrop(top, 0, 1 - minSize),
+                        w: clampCrop(right - left, minSize, 1 - left),
+                        h: clampCrop(bottom - top, minSize, 1 - top),
+                    };
+                }
+                drawCropSelection();
+            });
+
+            function endCropDrag(event) {
+                if (!cropDrag || cropDrag.pointerId !== event.pointerId) return;
+                cropDrag = null;
+                if (manualCropStage.hasPointerCapture(event.pointerId)) {
+                    manualCropStage.releasePointerCapture(event.pointerId);
+                }
+            }
+
+            manualCropStage.addEventListener('pointerup', endCropDrag);
+            manualCropStage.addEventListener('pointercancel', endCropDrag);
+            resetCropButton.addEventListener('click', () => {
+                cropSelection = { x: 0, y: 0, w: 1, h: 1 };
+                drawCropSelection();
+            });
+            manualCropButton.addEventListener('click', openManualCrop);
+            cancelCropButton.addEventListener('click', closeManualCrop);
+            document.addEventListener('keydown', event => {
+                if (event.key === 'Escape' && !manualCropModal.classList.contains('hidden')) {
+                    event.preventDefault();
+                    closeManualCrop();
+                }
+            });
+
+            confirmCropButton.addEventListener('click', async () => {
+                if (editorBusy || cropSourceIndex !== activePhotoIndex || activePhotoIndex < 0) return;
+                editorBusy = true;
+                confirmCropButton.disabled = true;
+                try {
+                    const sourceWidth = manualCropCanvas.width;
+                    const sourceHeight = manualCropCanvas.height;
+                    const sx = Math.max(0, Math.floor(cropSelection.x * sourceWidth));
+                    const sy = Math.max(0, Math.floor(cropSelection.y * sourceHeight));
+                    const right = Math.min(sourceWidth, Math.ceil((cropSelection.x + cropSelection.w) * sourceWidth));
+                    const bottom = Math.min(sourceHeight, Math.ceil((cropSelection.y + cropSelection.h) * sourceHeight));
+                    const width = Math.max(1, right - sx);
+                    const height = Math.max(1, bottom - sy);
+
+                    const result = document.createElement('canvas');
+                    result.width = width;
+                    result.height = height;
+                    const ctx = result.getContext('2d');
+                    if (!ctx) throw new Error('Canvas tidak tersedia di browser.');
+                    ctx.drawImage(manualCropCanvas, sx, sy, width, height, 0, 0, width, height);
+                    await replaceActivePhotoFromCanvas(result);
+                    closeManualCrop();
+                } catch (error) {
+                    console.error('Manual crop error:', error);
+                    alert(error.message || 'Gagal memotong foto.');
+                } finally {
+                    editorBusy = false;
+                    confirmCropButton.disabled = false;
+                }
+            });
 
 
             // ============================================================
@@ -3094,7 +3289,6 @@
             brightnessRange.addEventListener('input', e => { editState.brightness = Number(e.target.value); renderEditorPreview(); });
             contrastRange.addEventListener('input', e => { editState.contrast = Number(e.target.value); renderEditorPreview(); });
             zoomRange.addEventListener('input', e => { editState.zoom = Number(e.target.value); renderEditorPreview(); });
-            cropRange.addEventListener('input', e => { editState.crop = Number(e.target.value); renderEditorPreview(); });
             applyEditButton.addEventListener('click', applyEditsToFile);
             retakeButton.addEventListener('click', () => {
                 resetEditor();
