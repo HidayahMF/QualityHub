@@ -3327,6 +3327,13 @@
             function syncFilesToForm() {
                 try {
                     const transfer = new DataTransfer();
+                    if (selectedItems.length > BATCH_THRESHOLD) {
+                        // Large uploads are staged in groups of ten, not
+                        // sent through one multipart POST (PHP max_file_uploads).
+                        scanFilesInput.files = transfer.files;
+                        return true;
+                    }
+
                     selectedItems.forEach(item => transfer.items.add(item.file));
                     scanFilesInput.files = transfer.files;
                     return scanFilesInput.files.length === selectedItems.length;
@@ -3379,7 +3386,26 @@
                     ? 'Sedang edit Foto ' + (activePhotoIndex + 1) + ' dari ' + count
                     : 'Pilih foto untuk diedit';
 
-                selectedItems.forEach((item, index) => {
+                const totalQueuePages = Math.max(1, Math.ceil(count / QUEUE_PAGE_SIZE));
+                queuePage = Math.max(0, Math.min(queuePage, totalQueuePages - 1));
+                const startIndex = queuePage * QUEUE_PAGE_SIZE;
+                photoQueueNavigation.classList.toggle('hidden', totalQueuePages <= 1);
+                photoQueueNavigation.classList.toggle('flex', totalQueuePages > 1);
+                photoQueuePrevious.disabled = queuePage <= 0;
+                photoQueueNext.disabled = queuePage >= totalQueuePages - 1;
+                photoQueuePageInfo.textContent = 'Daftar ' + (queuePage + 1) + ' dari ' + totalQueuePages
+                    + ' · Foto ' + (startIndex + 1) + '–' + Math.min(count, startIndex + QUEUE_PAGE_SIZE);
+
+                // Keep only 25 thumbnails in DOM; revoke stale image URLs
+                // as the user navigates through up to 1,000 pages.
+                selectedItems.forEach((entry, index) => {
+                    if (index < startIndex || index >= startIndex + QUEUE_PAGE_SIZE) {
+                        releaseItemObjectUrl(entry);
+                    }
+                });
+
+                selectedItems.slice(startIndex, startIndex + QUEUE_PAGE_SIZE).forEach((item, relativeIndex) => {
+                    const index = startIndex + relativeIndex;
                     // One full-width card per photo. Keeping the move/remove actions
                     // on their own row prevents text collapsing into 1-word lines
                     // when the Scan/Capture column is narrow on a laptop.
@@ -3474,20 +3500,21 @@
                     ? `1 foto dipilih · ${selectedItems[0].file.name} · ${totalMb.toFixed(2)} MB`
                     : `${count} foto dipilih · ${totalMb.toFixed(2)} MB · akan digabung menjadi 1 PDF`;
 
-                saveButton.disabled = !synced;
+                saveButton.disabled = !synced || cameraPhotoProcessing || galleryPhotoProcessing || stagedUploadBusy;
             }
 
 
             function setActivePhoto(index) {
-                if (editorBusy || !selectedItems[index]) return;
+                if (editorBusy || stagedUploadBusy || galleryPhotoProcessing || !selectedItems[index]) return;
                 activePhotoIndex = index;
+                queuePage = Math.floor(index / QUEUE_PAGE_SIZE);
                 showPreview(selectedItems[index].file);
                 renderPhotoQueue();
             }
 
 
             function addPhotos(files, source, replaceActive = false) {
-                if (editorBusy) {
+                if (editorBusy || stagedUploadBusy) {
                     alert('Selesaikan proses edit foto yang sedang berjalan terlebih dahulu.');
                     return false;
                 }
@@ -3535,7 +3562,7 @@
 
 
             function removePhoto(index) {
-                if (editorBusy || !selectedItems[index]) return;
+                if (editorBusy || stagedUploadBusy || galleryPhotoProcessing || !selectedItems[index]) return;
                 releaseItemObjectUrl(selectedItems[index]);
                 selectedItems.splice(index, 1);
 
@@ -3562,7 +3589,7 @@
 
 
             function movePhoto(index, direction) {
-                if (editorBusy) return;
+                if (editorBusy || stagedUploadBusy || galleryPhotoProcessing) return;
                 const target = index + direction;
                 if (!selectedItems[index] || target < 0 || target >= selectedItems.length) return;
 
@@ -3575,6 +3602,19 @@
                 if (activePhotoIndex >= 0) setActivePhoto(activePhotoIndex);
             }
 
+
+            photoQueuePrevious.addEventListener('click', () => {
+                if (queuePage > 0) {
+                    queuePage--;
+                    renderPhotoQueue();
+                }
+            });
+            photoQueueNext.addEventListener('click', () => {
+                if ((queuePage + 1) * QUEUE_PAGE_SIZE < selectedItems.length) {
+                    queuePage++;
+                    renderPhotoQueue();
+                }
+            });
 
             // ============================================================
             // EDIT CONTROLS
