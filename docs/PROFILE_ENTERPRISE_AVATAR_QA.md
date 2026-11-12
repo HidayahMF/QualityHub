@@ -60,3 +60,25 @@ Avoid changing PHP vendor or composer.lock until local version compatibility is 
 ## Outstanding
 - Need actual local Laravel/PHPUnit, Vite asset build, image upload, mobile browser and integration QA. Connected GitHub editing cannot execute the user's Windows localhost.
 - Need staging validation of secure deployment, persistent Docker volume, and the 2026-11-12 migration before production.
+
+
+---
+
+## UI revision · compact BMC blue-white (12 Nov 2026)
+
+Updated in PR #11 after reviewing four user-provided profile UI references.
+
+- Removed the full-height blue hero, duplicated identity display, long descriptions, extra account-summary card, and oversized success banner.
+- Desktop: slim title/header, one compact profile card on the left, two clean forms on the right; responsive stacking for mobile.
+- Photo upload/preview/replace/delete, private authenticated storage, profile update, password update, CSP-safe show/hide and inline password strength remain available.
+- Role/status and employee ID/department are informational only; Super Admin permissions and temporary-password gate are unchanged.
+- No new migrations, backend routes, controller changes, CDN, or new JavaScript libraries added by this UI revision.
+- Updated legacy ProfileTest to assert actual succinct section labels rather than an obsolete explanatory paragraph.
+
+### Targeted QA
+1. Desktop width 1366×768 and 1600×900: no huge hero or repeated name/email, minimal scrolling, readable inputs and focused buttons.
+2. Mobile ~390×844: one-column cards, accessible photo controls and inline password toggle, no overflow.
+3. Upload, replace, delete and preview avatar using local dummy image. Verify sidebar/topbar reflect saved image.
+4. Editing email/name, server validation and resetting temporary password retain original PR #7 behavior.
+5. Run ProfilePhotoTest, ProfileTest, AdminAccountManagementTest and regression tests for PR #8 and #9 on separate local integration branch.
+6. Only local/test DB/storage. Never migrate or deploy without IT approval.
