@@ -33,12 +33,18 @@ class ProfilePhotoController extends Controller
         $disk = Storage::disk('local');
         abort_unless($disk->exists($path), 404);
 
-        return response()->file($disk->path($path), [
+        // Symfony BinaryFileResponse defaults to public unless explicitly disabled.
+        // This is a private, owner-only resource: never allow shared-cache storage.
+        $response = new BinaryFileResponse($disk->path($path), 200, [
             'Content-Type' => $disk->mimeType($path) ?: 'application/octet-stream',
             'Content-Disposition' => 'inline',
             'Cache-Control' => 'private, no-store, max-age=0',
             'X-Content-Type-Options' => 'nosniff',
-        ]);
+        ], false);
+
+        $response->setPrivate();
+
+        return $response;
     }
 
     public function store(Request $request): RedirectResponse
