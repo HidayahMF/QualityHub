@@ -648,7 +648,7 @@
                         </div>
 
                         <p class="mt-1 text-sm text-slate-500">
-                            Pergerakan data harian selama {{ $periodLabel }}.
+                            Tren selama {{ $periodLabel }}.
                         </p>
 
                     </div>
@@ -683,8 +683,9 @@
             </article>
         </section>
 
-        {{-- Four analytical visualizations in balanced two-column layout --}}
+                {{-- Balanced independent columns keep short analytics from leaving empty grid rows. --}}
         <section class="grid grid-cols-1 items-start gap-4 lg:grid-cols-2" data-qh-dashboard-distributions>
+            <div class="flex min-w-0 flex-col gap-4">
             <article
                 class="analytics-enter
                        rounded-2xl
@@ -705,7 +706,7 @@
 
                 </div>
 
-                <div class="p-4 sm:p-5">
+                <div class="grid grid-cols-1 items-center gap-4 p-4 sm:grid-cols-[0.9fr_1.1fr] sm:p-5">
 
                     <div
                         id="category-donut-chart"
@@ -715,47 +716,7 @@
 
                     <div
                         id="category-donut-legend"
-                        class="mt-2 space-y-1.5"
-                    ></div>
-
-                </div>
-
-            </article>
-            <article
-                class="analytics-enter
-                       rounded-2xl
-                       border border-slate-200/70
-                       bg-white
-                       shadow-sm"
-            >
-
-                <div
-                    class="p-4 sm:p-5
-                           border-b border-slate-100"
-                >
-                    <h2 class="font-bold text-slate-900">
-                        Distribusi Jenis File
-                    </h2>
-
-
-                </div>
-
-                <div
-                    class="p-4 sm:p-5
-                           grid gap-5
-                           md:grid-cols-[0.9fr_1.1fr]
-                           items-center"
-                >
-
-                    <div
-                        id="filetype-donut-chart"
-                        class="chart-stage min-h-[200px]"
-                        aria-label="Diagram distribusi jenis file"
-                    ></div>
-
-                    <div
-                        id="filetype-donut-legend"
-                        class="space-y-2"
+                        class="min-w-0 space-y-1.5"
                     ></div>
 
                 </div>
@@ -796,44 +757,15 @@
                 <div class="p-4 sm:p-5">
                     <div
                         id="department-bar-chart"
-                        class="space-y-4"
+                        class="space-y-3"
                     ></div>
                 </div>
 
             </article>
+                {{-- Document access ranking, aligned beneath the shorter department panel. --}}
+                <div class="min-w-0" data-qh-dashboard-documents>
             <article
-                class="analytics-enter
-                       rounded-2xl
-                       border border-slate-200/70
-                       bg-white
-                       shadow-sm"
-            >
-
-                <div
-                    class="p-4 sm:p-5
-                           border-b border-slate-100"
-                >
-                    <h2 class="font-bold text-slate-900">
-                        Komposisi Aktivitas
-                    </h2>
-
-
-                </div>
-
-                <div class="p-4 sm:p-5">
-                    <div
-                        id="activity-bar-chart"
-                        class="space-y-4"
-                    ></div>
-                </div>
-
-            </article>
-        </section>
-
-        {{-- Document access and fresh document information --}}
-        <section class="grid grid-cols-1 items-start gap-4 xl:grid-cols-2" data-qh-dashboard-documents>
-            <article
-                class="analytics-enter
+                class="analytics-enter min-w-0
                        rounded-2xl
                        border border-slate-200/70
                        bg-white
@@ -858,7 +790,7 @@
                         <a
                             href="{{ route('documents.show', $document->id) }}"
                             class="group
-                                   flex items-center gap-4
+                                   flex items-center gap-3
                                    rounded-2xl
                                    px-3 py-3
                                    hover:bg-slate-50
@@ -968,9 +900,80 @@
                 </div>
 
             </article>
+                </div>
+            </div>
+            <div class="flex min-w-0 flex-col gap-4">
             <article
                 class="analytics-enter
-                       xl:col-span-2
+                       rounded-2xl
+                       border border-slate-200/70
+                       bg-white
+                       shadow-sm"
+            >
+
+                <div
+                    class="p-4 sm:p-5
+                           border-b border-slate-100"
+                >
+                    <h2 class="font-bold text-slate-900">
+                        Distribusi Jenis File
+                    </h2>
+
+
+                </div>
+
+                <div
+                    class="p-4 sm:p-5
+                           grid gap-5
+                           sm:grid-cols-[0.9fr_1.1fr]
+                           items-center"
+                >
+
+                    <div
+                        id="filetype-donut-chart"
+                        class="chart-stage min-h-[200px]"
+                        aria-label="Diagram distribusi jenis file"
+                    ></div>
+
+                    <div
+                        id="filetype-donut-legend"
+                        class="space-y-2"
+                    ></div>
+
+                </div>
+
+            </article>
+            <article
+                class="analytics-enter
+                       rounded-2xl
+                       border border-slate-200/70
+                       bg-white
+                       shadow-sm"
+            >
+
+                <div
+                    class="p-4 sm:p-5
+                           border-b border-slate-100"
+                >
+                    <h2 class="font-bold text-slate-900">
+                        Komposisi Aktivitas
+                    </h2>
+
+
+                </div>
+
+                <div class="p-4 sm:p-5">
+                    <div
+                        id="activity-bar-chart"
+                        class="space-y-3"
+                    ></div>
+                </div>
+
+            </article>
+                {{-- Recently indexed documents, aligned beneath activity distribution. --}}
+                <div class="min-w-0" data-qh-dashboard-documents>
+            <article
+                class="analytics-enter min-w-0
                        rounded-2xl
                        border border-slate-200/70
                        bg-white
@@ -1011,7 +1014,7 @@
                         <a
                             href="{{ route('documents.show', $document) }}"
                             class="group
-                                   flex items-center gap-4
+                                   flex items-center gap-3
                                    rounded-2xl
                                    px-3 py-3
                                    hover:bg-slate-50
@@ -1126,6 +1129,8 @@
                 </div>
 
             </article>
+                </div>
+            </div>
         </section>
 
         {{-- Recent audit activity --}}
@@ -1151,11 +1156,11 @@
                 </div>
 
 
-                <div class="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2">
+                <div class="divide-y divide-slate-100 p-3 sm:p-4">
 
                     @forelse($recentActivities as $activity)
 
-                        <div class="flex gap-3">
+                        <div class="flex min-w-0 gap-3 rounded-lg px-2 py-2.5 transition hover:bg-slate-50">
 
                             <div
                                 class="mt-1
@@ -1175,9 +1180,7 @@
                             <div class="min-w-0">
 
                                 <p
-                                    class="text-sm
-                                           leading-relaxed
-                                           text-slate-700"
+                                    class="line-clamp-2 text-sm leading-5 text-slate-700"
                                 >
                                     {{ $activityDescription($activity) }}
                                 </p>
