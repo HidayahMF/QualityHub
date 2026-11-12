@@ -1,0 +1,115 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+
+class ProfilePhotoController extends Controller
+{
+    /**
+     * Photos are served only to their owner through authenticated routes.
+     * Never trust user input or database data as an arbitrary filesystem path.
+     */
+    private function ownedPhotoPath(?string $path, int $userId): bool
+    {
+        return is_string($path)
+            && preg_match(
+                '~\Aprofile-photos/'.preg_quote((string) $userId, '~').'/[0-9a-f-]{36}\.(jpg|png|webp)\z~D',
+                $path
+            ) === 1;
+    }
+
+    public function show(Request $request): BinaryFileResponse
+    {
+        $user = $request->user();
+        $path = $user->profile_photo_path;
+
+        abort_unless($this->ownedPhotoPath($path, (int) $user->id), 404);
+        $disk = Storage::disk('local');
+        abort_unless($disk->exists($path), 404);
+
+        return response()->file($disk->path($path), [
+            'Content-Type' => $disk->mimeType($path) ?: 'application/octet-stream',
+            'Content-Disposition' => 'inline',
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $request->validateWithBag('profilePhoto', [
+            'photo' => [
+                'required',
+                'file',
+                'mimetypes:image/jpeg,image/png,image/webp',
+                'max:2048',
+                'dimensions:min_width=64,min_height=64,max_width=4096,max_height=4096',
+            ],
+        ]);
+
+        $user = $request->user();
+        $file = $request->file('photo');
+        $extension = match ($file->getMimeType()) {
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+            default => null,
+        };
+
+        if ($extension === null) {
+            return Redirect::route('profile.edit')->withErrors([
+                'photo' => 'Format foto tidak didukung.',
+            ], 'profilePhoto');
+        }
+
+        $disk = Storage::disk('local');
+        $path = $file->storeAs(
+            'profile-photos/'.$user->id,
+            Str::uuid().'.'.$extension,
+            'local'
+        );
+
+        if (! is_string($path) || $path === '') {
+            return Redirect::route('profile.edit')->withErrors([
+                'photo' => 'Foto gagal disimpan. Silakan coba lagi.',
+            ], 'profilePhoto');
+        }
+
+        $oldPath = $user->profile_photo_path;
+
+        try {
+            // Do not mass-assign avatar paths from client-submitted data.
+            $user->forceFill(['profile_photo_path' => $path])->save();
+        } catch (\Throwable $exception) {
+            $disk->delete($path);
+            throw $exception;
+        }
+
+        if ($oldPath !== $path && $this->ownedPhotoPath($oldPath, (int) $user->id)) {
+            $disk->delete($oldPath);
+        }
+
+        return Redirect::route('profile.edit')->with('status', 'profile-photo-updated');
+    }
+
+    public function destroy(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        $oldPath = $user->profile_photo_path;
+
+        // Clear database state before deleting the old file.
+        $user->forceFill(['profile_photo_path' => null])->save();
+
+        if ($this->ownedPhotoPath($oldPath, (int) $user->id)) {
+            Storage::disk('local')->delete($oldPath);
+        }
+
+        return Redirect::route('profile.edit')->with('status', 'profile-photo-removed');
+    }
+}

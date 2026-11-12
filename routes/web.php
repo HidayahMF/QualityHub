@@ -9,6 +9,7 @@ use App\Http\Controllers\DocumentVersionController;
 use App\Http\Controllers\DepartmentManagementController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProfilePhotoController;
 use App\Http\Controllers\ScanDocumentController;
 use App\Http\Controllers\RetoolingMasterDataController;
 use App\Http\Controllers\UserManagementController;
@@ -511,6 +512,16 @@ Route::middleware([
         '/profile',
         [ProfileController::class, 'edit']
     )->name('profile.edit');
+
+    // Own-avatar requests only: no arbitrary user ID or file path is accepted.
+    Route::get('/profile/photo', [ProfilePhotoController::class, 'show'])
+        ->name('profile.photo.show');
+    Route::post('/profile/photo', [ProfilePhotoController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('profile.photo.store');
+    Route::delete('/profile/photo', [ProfilePhotoController::class, 'destroy'])
+        ->middleware('throttle:10,1')
+        ->name('profile.photo.destroy');
 
     Route::patch(
         '/profile',
