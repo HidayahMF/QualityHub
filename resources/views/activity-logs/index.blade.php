@@ -609,7 +609,7 @@
                 </label>
 
 
-                <select
+                <select data-qh-searchable-select
                     id="user_id"
                     name="user_id"
 
@@ -714,7 +714,7 @@
                 @endphp
 
 
-                <select
+                <select data-qh-searchable-select
                     id="action"
                     name="action"
 
@@ -772,7 +772,7 @@
                 </label>
 
 
-                <select
+                <select data-qh-searchable-select
                     id="document_id"
                     name="document_id"
 
