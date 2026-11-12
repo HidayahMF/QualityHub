@@ -98,11 +98,11 @@ class ProfilePhotoTest extends TestCase
 
         $this->actingAs($user)->post(route('profile.photo.store'), [
             'photo' => UploadedFile::fake()->create('attack.svg', 1, 'image/svg+xml'),
-        ])->assertSessionHasErrors('photo');
+        ])->assertSessionHasErrors('photo', null, 'profilePhoto');
 
         $this->actingAs($user)->post(route('profile.photo.store'), [
             'photo' => UploadedFile::fake()->image('too-big.png', 300, 300)->size(2050),
-        ])->assertSessionHasErrors('photo');
+        ])->assertSessionHasErrors('photo', null, 'profilePhoto');
 
         $this->assertNull($user->fresh()->profile_photo_path);
     }
