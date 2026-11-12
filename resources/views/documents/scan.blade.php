@@ -234,38 +234,62 @@
                         </button>
                     </div>
 
-                    {{-- Manual crop, per photo. The entire source is preserved until the user confirms. --}}
-                    <div id="manualCropModal" role="dialog" aria-modal="true" aria-labelledby="manualCropTitle" class="fixed inset-0 z-[80] hidden overflow-y-auto bg-slate-950/85 p-3 sm:p-6">
-                        <div class="mx-auto flex min-h-full w-full max-w-5xl flex-col justify-center gap-4">
-                            <div class="flex flex-wrap items-center justify-between gap-3 text-white">
-                                <div>
-                                    <h3 id="manualCropTitle" class="text-lg font-bold">Crop Manual — Foto Aktif</h3>
-                                    <p class="mt-1 text-sm text-slate-200">Geser kotak biru untuk memilih area. Tarik sisi atau sudut untuk memotong atas, bawah, kiri, atau kanan.</p>
+                    {{-- Crop dialog is moved to <body> by JavaScript so sidebar/header stacking contexts cannot clip it. --}}
+                    <div id="manualCropModal" role="dialog" aria-modal="true" aria-labelledby="manualCropTitle" aria-describedby="manualCropHelp" class="qh-crop-overlay hidden" tabindex="-1">
+                        <div id="manualCropPanel" class="qh-crop-panel">
+                            <header class="qh-crop-header">
+                                <div class="qh-crop-heading">
+                                    <span class="qh-crop-kicker">
+                                        <span class="qh-crop-kicker-dot"></span>
+                                        BMC QUALITYHUB · EDITOR FOTO
+                                    </span>
+                                    <h3 id="manualCropTitle" class="qh-crop-title">Crop Foto Manual</h3>
+                                    <p class="qh-crop-subtitle">Pilih bagian foto yang ingin disimpan. Area di luar kotak biru akan dipotong.</p>
                                 </div>
-                                <button type="button" id="cancelCropButton" class="rounded-xl border border-slate-500 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Batal</button>
-                            </div>
-                            <div class="flex min-h-0 items-center justify-center rounded-2xl bg-slate-900 p-2 sm:p-4">
-                                <div id="manualCropStage">
-                                    <canvas id="manualCropCanvas" aria-label="Pratinjau gambar untuk crop manual"></canvas>
-                                    <div id="manualCropSelection" aria-label="Area crop manual yang dipilih">
-                                        <span data-crop-handle="nw"></span>
-                                        <span data-crop-handle="n"></span>
-                                        <span data-crop-handle="ne"></span>
-                                        <span data-crop-handle="e"></span>
-                                        <span data-crop-handle="se"></span>
-                                        <span data-crop-handle="s"></span>
-                                        <span data-crop-handle="sw"></span>
-                                        <span data-crop-handle="w"></span>
+                                <div class="qh-crop-header-actions">
+                                    <span id="manualCropPhotoName" class="qh-crop-photo-badge">Foto aktif</span>
+                                    <button type="button" id="cancelCropButton" class="qh-crop-close" aria-label="Tutup crop manual tanpa menyimpan perubahan" title="Batal crop">✕</button>
+                                </div>
+                            </header>
+
+                            <div class="qh-crop-body">
+                                <div id="manualCropHelp" class="qh-crop-help">
+                                    <span class="qh-crop-step">1</span>
+                                    <span><strong>Geser kotak</strong> untuk pindah posisi.</span>
+                                    <span class="qh-crop-step">2</span>
+                                    <span><strong>Tarik sisi atau sudut</strong> untuk crop atas, bawah, kiri, dan kanan.</span>
+                                </div>
+                                <div class="qh-crop-preview">
+                                    <div id="manualCropStage">
+                                        <canvas id="manualCropCanvas" aria-label="Foto untuk pemilihan crop manual"></canvas>
+                                        <div id="manualCropSelection" aria-label="Area crop manual yang dipilih">
+                                            <span data-crop-handle="nw"></span>
+                                            <span data-crop-handle="n"></span>
+                                            <span data-crop-handle="ne"></span>
+                                            <span data-crop-handle="e"></span>
+                                            <span data-crop-handle="se"></span>
+                                            <span data-crop-handle="s"></span>
+                                            <span data-crop-handle="sw"></span>
+                                            <span data-crop-handle="w"></span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white p-3">
-                                <p id="manualCropInfo" class="text-xs font-semibold text-slate-600">Area terpilih: 100% × 100%</p>
-                                <div class="flex flex-wrap gap-2">
-                                    <button type="button" id="resetCropButton" class="rounded-lg border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Pilih Seluruh Foto</button>
-                                    <button type="button" id="confirmCropButton" class="rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50">Terapkan Crop</button>
+                                <div class="qh-crop-caption">
+                                    <span>8 titik kontrol • Bisa digeser dengan mouse atau sentuhan</span>
+                                    <span>Crop hanya berlaku untuk foto yang sedang dipilih</span>
                                 </div>
                             </div>
+
+                            <footer class="qh-crop-footer">
+                                <div class="qh-crop-footer-status">
+                                    <span class="qh-crop-status-label">UKURAN HASIL</span>
+                                    <p id="manualCropInfo" aria-live="polite" class="qh-crop-info">Area crop belum dipilih</p>
+                                </div>
+                                <div class="qh-crop-footer-actions">
+                                    <button type="button" id="resetCropButton" class="qh-crop-reset">Pilih Seluruh Foto</button>
+                                    <button type="button" id="confirmCropButton" class="qh-crop-apply">Terapkan Crop</button>
+                                </div>
+                            </footer>
                         </div>
                     </div>
 
@@ -1460,10 +1484,52 @@
 <style nonce="{{ $cspNonce }}">
     .edit-action { display:inline-flex; align-items:center; justify-content:center; gap:.4rem; border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:.75rem; padding:.65rem .75rem; font-size:.75rem; font-weight:700; transition:.2s; }
     .edit-action:hover { border-color:#93c5fd; background:#eff6ff; color:#1d4ed8; }
-    #manualCropStage { position: relative; display: inline-block; max-width: 100%; overflow: hidden; line-height: 0; touch-action: none; }
-    #manualCropCanvas { display: block; width: auto; height: auto; max-width: min(90vw, 940px); max-height: 62vh; cursor: crosshair; }
-    #manualCropSelection { position: absolute; box-sizing: border-box; border: 2px solid #3b82f6; box-shadow: 0 0 0 9999px rgba(2, 6, 23, .52); cursor: move; touch-action: none; }
-    #manualCropSelection [data-crop-handle] { position: absolute; display: block; width: 14px; height: 14px; border: 2px solid #2563eb; border-radius: 4px; background: #fff; touch-action: none; }
+    /* Modal crop uses its own top-level portal, independent of page/sidebar overflow. */
+    body.qh-crop-open { overflow: hidden !important; }
+    .qh-crop-overlay { position: fixed !important; inset: 0 !important; z-index: 2147483000 !important;
+        padding: clamp(10px, 2.3vw, 24px); align-items: center; justify-content: center;
+        background: rgba(10, 27, 62, .74); backdrop-filter: blur(5px); overscroll-behavior: contain; }
+    .qh-crop-overlay.hidden { display: none !important; }
+    .qh-crop-overlay:not(.hidden) { display: flex !important; }
+    .qh-crop-panel { position: relative; display: flex; flex-direction: column; width: min(100%, 1080px);
+        max-height: calc(100dvh - 24px); min-height: 0; overflow: hidden; border-radius: 24px;
+        border: 1px solid #c7dcfb; background: #fff; box-shadow: 0 28px 95px rgba(3, 20, 52, .43); }
+    .qh-crop-panel::before { content: ''; position: absolute; inset: 0 0 auto; height: 5px;
+        background: linear-gradient(90deg, #0f285d, #2563eb, #60a5fa); z-index: 1; }
+    .qh-crop-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+        padding: 25px 27px 19px; border-bottom: 1px solid #d9e6f6; flex-shrink: 0; background: #fff; }
+    .qh-crop-heading { min-width: 0; }
+    .qh-crop-kicker { display: inline-flex; align-items: center; gap: 8px; color: #1d4ed8;
+        font-size: 10px; font-weight: 800; letter-spacing: .13em; }
+    .qh-crop-kicker-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #2563eb; }
+    .qh-crop-title { margin: 7px 0 4px; color: #112756; font-size: clamp(18px, 2vw, 23px); font-weight: 800; line-height: 1.2; }
+    .qh-crop-subtitle { color: #60718d; font-size: 12px; line-height: 1.55; }
+    .qh-crop-header-actions { display: flex; flex-shrink: 0; align-items: center; gap: 10px; }
+    .qh-crop-photo-badge { border: 1px solid #cde1ff; border-radius: 999px; padding: 7px 12px;
+        background: #eef5ff; color: #1d4ed8; font-size: 11px; font-weight: 800; white-space: nowrap; }
+    .qh-crop-close { display: grid; place-items: center; width: 36px; height: 36px;
+        border: 1px solid #dbe5f2; border-radius: 11px; color: #475569; background: #fff; font-size: 16px; cursor: pointer; }
+    .qh-crop-close:hover { color: #b91c1c; border-color: #fecaca; background: #fff1f2; }
+    .qh-crop-body { display: flex; flex: 1; flex-direction: column; min-height: 0; gap: 11px;
+        overflow-y: auto; padding: 15px 24px 13px; background: #f6f9ff; }
+    .qh-crop-help { display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+        padding: 10px 13px; border: 1px solid #d9e8fe; border-radius: 12px;
+        background: #fff; color: #526581; font-size: 11px; line-height: 1.5; }
+    .qh-crop-help strong { color: #163970; }
+    .qh-crop-step { display: inline-grid; flex-shrink: 0; place-items: center;
+        width: 20px; height: 20px; border-radius: 7px; background: #dbeafe; color: #1d4ed8; font-weight: 800; }
+    .qh-crop-preview { display: flex; flex: 1; min-height: 145px; align-items: center; justify-content: center;
+        overflow: hidden; border: 1px solid #cbdcf5; border-radius: 15px; padding: 14px;
+        background: radial-gradient(circle at 50% 45%, #ffffff 0%, #e8f0fc 70%, #dfeafa 100%); }
+    #manualCropStage { position: relative; display: inline-block; max-width: 100%; line-height: 0;
+        overflow: hidden; touch-action: none; border: 1px solid #b5c9e9;
+        background: #fff; box-shadow: 0 8px 35px rgba(17, 45, 90, .22); }
+    #manualCropCanvas { display: block; width: auto; height: auto; max-width: 100%; max-height: min(49dvh, 500px);
+        cursor: crosshair; }
+    #manualCropSelection { position: absolute; box-sizing: border-box; border: 2px solid #2563eb;
+        box-shadow: 0 0 0 9999px rgba(5, 21, 52, .45); cursor: move; touch-action: none; }
+    #manualCropSelection [data-crop-handle] { position: absolute; display: block; width: 15px; height: 15px;
+        border: 2px solid #2563eb; border-radius: 4px; background: #fff; touch-action: none; }
     #manualCropSelection [data-crop-handle="nw"] { top: -7px; left: -7px; cursor: nwse-resize; }
     #manualCropSelection [data-crop-handle="n"] { top: -7px; left: calc(50% - 7px); cursor: ns-resize; }
     #manualCropSelection [data-crop-handle="ne"] { top: -7px; right: -7px; cursor: nesw-resize; }
@@ -1472,6 +1538,40 @@
     #manualCropSelection [data-crop-handle="s"] { bottom: -7px; left: calc(50% - 7px); cursor: ns-resize; }
     #manualCropSelection [data-crop-handle="sw"] { bottom: -7px; left: -7px; cursor: nesw-resize; }
     #manualCropSelection [data-crop-handle="w"] { top: calc(50% - 7px); left: -7px; cursor: ew-resize; }
+    .qh-crop-caption { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 5px 12px;
+        color: #64748b; font-size: 10px; }
+    .qh-crop-footer { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between;
+        flex-wrap: wrap; gap: 12px; padding: 15px 24px; border-top: 1px solid #d9e6f6; background: #fff; }
+    .qh-crop-footer-status { min-width: 0; }
+    .qh-crop-status-label { color: #94a3b8; font-size: 9px; font-weight: 800; letter-spacing: .1em; }
+    .qh-crop-info { margin-top: 4px; color: #163970; font-size: 12px; font-weight: 750; }
+    .qh-crop-footer-actions { display: flex; flex-wrap: wrap; gap: 9px; }
+    .qh-crop-reset, .qh-crop-apply { border-radius: 11px; padding: 11px 17px; font-size: 12px;
+        font-weight: 800; transition: background .15s, border-color .15s; cursor: pointer; }
+    .qh-crop-reset { border: 1px solid #cbd5e1; color: #334155; background: #fff; }
+    .qh-crop-reset:hover { border-color: #93c5fd; background: #eff6ff; }
+    .qh-crop-apply { border: 1px solid #1d4ed8; color: #fff; background: #2563eb;
+        box-shadow: 0 5px 14px rgba(37, 99, 235, .18); }
+    .qh-crop-apply:hover { background: #1d4ed8; }
+    .qh-crop-apply:disabled { opacity: .5; cursor: not-allowed; }
+    .qh-crop-overlay :is(button, [data-crop-handle]):focus-visible { outline: 3px solid #60a5fa; outline-offset: 2px; }
+    @media (max-width: 640px) {
+        .qh-crop-panel { border-radius: 17px; max-height: calc(100dvh - 16px); }
+        .qh-crop-header { padding: 21px 15px 13px; gap: 8px; }
+        .qh-crop-header-actions { gap: 6px; }
+        .qh-crop-photo-badge { padding: 5px 8px; font-size: 10px; }
+        .qh-crop-title { font-size: 18px; }
+        .qh-crop-subtitle { font-size: 11px; }
+        .qh-crop-body { padding: 11px; gap: 9px; }
+        .qh-crop-help { font-size: 10px; padding: 8px; }
+        .qh-crop-preview { padding: 9px; min-height: 130px; }
+        #manualCropCanvas { max-height: min(42dvh, 400px); }
+        .qh-crop-caption { font-size: 9px; }
+        .qh-crop-footer { padding: 12px; }
+        .qh-crop-footer-status { width: 100%; }
+        .qh-crop-footer-actions { width: 100%; }
+        .qh-crop-footer-actions button { flex: 1; padding: 11px 8px; }
+    }
 </style>
 
     {{-- ================================================================ --}}
