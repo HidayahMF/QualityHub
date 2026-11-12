@@ -62,7 +62,7 @@ class DashboardMinimalUiTest extends TestCase
         $this->assertStringContainsString('@forelse($topAccessedDocuments as $index => $document)', $view);
         $this->assertStringContainsString('@forelse($recentDocuments as $document)', $view);
         $this->assertStringContainsString('@forelse($recentActivities as $activity)', $view);
-        $this->assertStringContainsString("route('documents.show', $document", $view);
+        $this->assertStringContainsString("route('documents.show', \$document", $view);
         $this->assertStringContainsString('data-qh-dashboard-documents', $view);
         $this->assertStringContainsString('data-qh-dashboard-activities', $view);
     }
