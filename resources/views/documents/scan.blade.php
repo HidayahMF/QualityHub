@@ -1652,6 +1652,11 @@
             const cameraSelect = document.getElementById('cameraSelect');
             const cameraStatus = document.getElementById('cameraStatus');
 
+            // Camera modal is a direct child of <body>, not trapped inside
+            // sidebar/Scan panel overflow or stacking contexts.
+            document.body.appendChild(cameraModal);
+            let cameraReturnFocus = null;
+
             const cameraInput = document.getElementById('cameraInput');
             const cameraProcessingStatus = document.getElementById('cameraProcessingStatus');
             const uploadInput = document.getElementById('uploadInput');
@@ -2524,8 +2529,7 @@
 
                 cameraStatus.textContent = message;
 
-                cameraStatus.classList.toggle('text-red-500', isError);
-                cameraStatus.classList.toggle('text-slate-400', !isError);
+                cameraStatus.classList.toggle('qh-camera-status-error', isError);
 
             }
 
@@ -2688,7 +2692,14 @@
                 stopCamera();
 
                 cameraLoading.classList.remove('hidden');
-                cameraModal.classList.remove('hidden');
+
+                if (cameraModal.classList.contains('hidden')) {
+                    cameraReturnFocus = document.activeElement instanceof HTMLElement
+                        ? document.activeElement : openCameraButton;
+                    cameraModal.classList.remove('hidden');
+                    document.body.classList.add('qh-camera-open');
+                    closeCameraButton.focus();
+                }
 
                 captureButton.disabled = true;
                 cameraSelect.disabled = true;
@@ -2778,9 +2789,18 @@
                     }
 
 
+                    if (cameraModal.classList.contains('hidden')) {
+                        stopCamera();
+                        return;
+                    }
+
                     cameraVideo.srcObject = cameraStream;
 
                     await cameraVideo.play();
+                    if (cameraModal.classList.contains('hidden')) {
+                        stopCamera();
+                        return;
+                    }
 
 
                     /*
@@ -2788,6 +2808,10 @@
                      * mengembalikan label kamera yang sebenarnya.
                      */
                     await getCameraDevices();
+                    if (cameraModal.classList.contains('hidden')) {
+                        stopCamera();
+                        return;
+                    }
 
 
                     /*
@@ -2889,6 +2913,11 @@
                 stopCamera();
 
                 cameraModal.classList.add('hidden');
+                document.body.classList.remove('qh-camera-open');
+                const returnFocus = cameraReturnFocus?.isConnected
+                    ? cameraReturnFocus : openCameraButton;
+                cameraReturnFocus = null;
+                returnFocus.focus();
 
                 cameraLoading.classList.add('hidden');
 
@@ -3748,19 +3777,32 @@
 
 
             // ============================================================
-            // ESC TO CLOSE
+            // ESC / FOCUS CONTAINMENT
             // ============================================================
             document.addEventListener('keydown', (event) => {
+                if (cameraModal.classList.contains('hidden')) return;
 
-                if (
-                    event.key === 'Escape' &&
-                    !cameraModal.classList.contains('hidden')
-                ) {
-
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    replaceOnNextCapture = false;
                     closeCamera();
-
+                    return;
                 }
 
+                if (event.key === 'Tab') {
+                    const focusables = [
+                        closeCameraButton, cameraSelect, switchCameraButton, captureButton,
+                    ].filter(el => !el.disabled && el.getClientRects().length > 0);
+                    if (!focusables.length) return;
+                    const idx = focusables.indexOf(document.activeElement);
+                    if (event.shiftKey && idx <= 0) {
+                        event.preventDefault();
+                        focusables[focusables.length - 1].focus();
+                    } else if (!event.shiftKey && (idx === focusables.length - 1 || idx < 0)) {
+                        event.preventDefault();
+                        focusables[0].focus();
+                    }
+                }
             });
 
 
