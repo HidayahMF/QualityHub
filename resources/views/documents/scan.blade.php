@@ -3120,7 +3120,7 @@
                 drawCropSelection();
             });
             manualCropButton.addEventListener('click', openManualCrop);
-            cancelCropButton.addEventListener('click', closeManualCrop);
+            cancelCropButton.addEventListener('click', () => closeManualCrop());
             manualCropModal.addEventListener('click', event => {
                 if (event.target === manualCropModal) closeManualCrop();
             });
