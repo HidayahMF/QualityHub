@@ -71,6 +71,37 @@ class MultiPageScanPdfServiceTest extends TestCase
         }
     }
 
+    public function test_one_thousand_verified_photo_pages_can_be_combined_in_order(): void
+    {
+        config([
+            'smartfind_scan_security.max_files' => 1000,
+            'smartfind_scan_security.max_combined_pdf_size_bytes' => 200 * 1024 * 1024,
+        ]);
+
+        // The same valid 2x2 fixture is reused 1000 times to keep the test
+        // quick and memory-efficient. Actual large mobile photos still require
+        // a separate performance and device acceptance test.
+        $photo = $this->uploadedPng('repeat.png');
+        $security = $this->securityResult('repeat.png');
+        $service = app(MultiPageScanPdfService::class);
+        $result = $service->build(
+            array_fill(0, 1000, $photo),
+            array_fill(0, 1000, $security),
+            'QC 1000 halaman'
+        );
+
+        try {
+            $this->assertSame(1000, $result['page_count']);
+            $this->assertFileExists($result['path']);
+            $this->assertGreaterThan(0, $result['file_size']);
+            $source = file_get_contents($result['path']);
+            $this->assertIsString($source);
+            $this->assertSame(1000, preg_match_all('/\\/Type \\/Page\\b/', $source));
+        } finally {
+            $service->cleanup($result['path'] ?? null);
+        }
+    }
+
     private function uploadedPng(string $name): UploadedFile
     {
         $path = $this->testDirectory . DIRECTORY_SEPARATOR . $name;
