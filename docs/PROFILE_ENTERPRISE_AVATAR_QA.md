@@ -82,3 +82,14 @@ Updated in PR #11 after reviewing four user-provided profile UI references.
 4. Editing email/name, server validation and resetting temporary password retain original PR #7 behavior.
 5. Run ProfilePhotoTest, ProfileTest, AdminAccountManagementTest and regression tests for PR #8 and #9 on separate local integration branch.
 6. Only local/test DB/storage. Never migrate or deploy without IT approval.
+
+
+---
+
+## UI balancing pass — 12 November 2026
+- Screenshot QA revealed a large unused area below the left identity card while the security form occupied only the right column.
+- Replaced column-split standalone cards with **one unified account/photo panel** (photo left, profile form right) and a **full-width password panel below**. Desktop form has three horizontal password fields; mobile remains stacked.
+- Moved read-only employee ID/department into the account form area; removed repeated metadata/unused whitespace from photo panel.
+- Preserved photo routes, IDs, preview JS hooks, validation, CSRF, profile form names, PR #7 password gate, and password toggle/strength hooks.
+- Pure Blade/Tailwind UI revision, no backend/database/middleware change in this commit.
+- Test on desktop 1366×768 and 1600×900, mobile 390×844; screenshots of before/after and verify no horizontal overflow, no obvious empty gap.

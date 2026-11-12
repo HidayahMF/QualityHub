@@ -32,6 +32,8 @@ class ProfileTest extends TestCase
             ->assertSee('Informasi Akun')
             ->assertSee('Keamanan Kata Sandi')
             ->assertSee('Foto Profil')
+            ->assertSee('data-qh-compact-profile', false)
+            ->assertSee('data-qh-security-panel', false)
             ->assertSee('BMC Administrator')
             ->assertSee('admin@bmc.local')
             ->assertSee('Super Admin')
