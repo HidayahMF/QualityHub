@@ -614,7 +614,6 @@
         <section class="grid grid-cols-1 gap-4" data-qh-dashboard-trend>
             <article
                 class="analytics-enter
-                       2xl:col-span-2
                        rounded-2xl
                        border border-slate-200/70
                        bg-white
