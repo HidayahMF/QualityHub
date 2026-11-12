@@ -105,6 +105,38 @@ class ScanManualPhotoEditorTest extends TestCase
         $this->assertStringContainsString('Pilih Seluruh Foto', $html);
     }
 
+    public function test_camera_modal_uses_responsive_qualityhub_theme_without_sidebar_clipping(): void
+    {
+        $admin = User::factory()->create([
+            'role' => 'super_admin',
+            'account_status' => 'active',
+        ]);
+
+        $html = $this->actingAs($admin)
+            ->get(route('documents.scan.create'))
+            ->assertOk()
+            ->baseResponse
+            ->getContent();
+
+        $this->assertStringContainsString('id="cameraModal" role="dialog" aria-modal="true"', $html);
+        $this->assertStringContainsString('id="cameraDialogPanel" class="qh-camera-panel"', $html);
+        $this->assertStringContainsString('BMC QUALITYHUB · SCAN / CAPTURE', $html);
+        $this->assertStringContainsString('id="cameraVideo"', $html);
+        $this->assertStringContainsString('id="cameraSelect"', $html);
+        $this->assertStringContainsString('id="switchCameraButton"', $html);
+        $this->assertStringContainsString('id="captureButton"', $html);
+        $this->assertStringContainsString('object-fit: contain', $html);
+        $this->assertStringContainsString('body.qh-camera-open', $html);
+        $this->assertStringContainsString('.qh-camera-overlay:not(.hidden)', $html);
+        $this->assertStringContainsString('max-height: calc(100dvh - 20px)', $html);
+        $this->assertStringContainsString('document.body.appendChild(cameraModal)', $html);
+        $this->assertStringContainsString("document.body.classList.add('qh-camera-open')", $html);
+        $this->assertStringContainsString("document.body.classList.remove('qh-camera-open')", $html);
+        $this->assertStringContainsString("cameraModal.classList.add('hidden')", $html);
+        $this->assertStringContainsString('returnFocus.focus()', $html);
+        $this->assertStringContainsString("cameraStatus.classList.toggle('qh-camera-status-error', isError)", $html);
+    }
+
     public function test_employee_cannot_access_scan_editor(): void
     {
         $employee = User::factory()->create([
