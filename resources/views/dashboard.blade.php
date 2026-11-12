@@ -121,17 +121,20 @@
         {{-- MINIMAL DASHBOARD HEADER --}}
         {{-- ========================================================= --}}
 
-        <section class="analytics-enter rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5" data-qh-dashboard-header>
-            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div class="min-w-0">
-                    <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-blue-700">BMC QualityHub</p>
-                    <h1 class="mt-1 !text-[21px] font-extrabold leading-tight tracking-tight text-slate-900">Selamat datang, {{ Auth::user()->name }}</h1>
-                </div>
-                <div class="flex flex-wrap items-center gap-2">
-                    <span class="rounded-lg bg-blue-50 px-3 py-2 text-xs font-bold text-blue-800">{{ $periodLabel }}</span>
-                    <form method="GET" action="{{ route('dashboard') }}">
+        {{-- BMC signature navy/blue welcome banner --}}
+        <section class="analytics-enter relative overflow-hidden rounded-2xl border border-blue-800/60 bg-gradient-to-r from-blue-950 via-blue-900 to-blue-700 p-4 text-white shadow-sm sm:p-5" data-qh-dashboard-header>
+            <div class="pointer-events-none absolute -right-16 -top-28 h-64 w-64 rounded-full bg-white/5" aria-hidden="true"></div>
+            <div class="relative z-10">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div class="min-w-0">
+                        <p class="text-[11px] font-extrabold uppercase tracking-[0.14em] text-blue-100">BMC QUALITYHUB</p>
+                        <h1 class="mt-1 !text-[21px] font-extrabold leading-tight tracking-tight text-white">Selamat datang, {{ Auth::user()->name }}</h1>
+                        <p class="mt-1.5 text-xs font-medium text-blue-100">{{ $periodDateLabel }}</p>
+                    </div>
+                    <form method="GET" action="{{ route('dashboard') }}" class="shrink-0">
                         <label for="dashboard-period" class="sr-only">Pilih periode analitik</label>
-                        <select id="dashboard-period" name="period" data-auto-submit class="min-h-[42px] rounded-xl border-slate-200 bg-white text-sm font-semibold text-slate-700 focus:border-blue-600 focus:ring-blue-600">
+                        <select id="dashboard-period" name="period" data-auto-submit
+                            class="min-h-[42px] w-full rounded-xl border-white/30 bg-white px-3 pr-9 text-sm font-semibold text-blue-900 shadow-sm focus:border-blue-300 focus:ring-blue-300 sm:w-auto">
                             @foreach([
                                 7 => '7 Hari Terakhir',
                                 30 => '30 Hari Terakhir',
@@ -143,22 +146,17 @@
                         </select>
                     </form>
                 </div>
+                <form method="GET" action="{{ route('documents.index') }}" role="search" aria-label="Pencarian dokumen" class="mt-4 flex flex-col gap-2 sm:flex-row">
+                    <div class="relative min-w-0 flex-1">
+                        <svg class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                        <label for="dashboard-global-search" class="sr-only">Cari dokumen</label>
+                        <input id="dashboard-global-search" name="search" type="search" autocomplete="off"
+                            placeholder="Cari dokumen, kode, nomor part..."
+                            class="block min-h-[42px] w-full rounded-xl border border-white/80 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-500 shadow-sm focus:border-blue-300 focus:ring-blue-300">
+                    </div>
+                    <button type="submit" class="min-h-[42px] rounded-xl border border-white bg-white px-5 text-sm font-bold text-blue-900 shadow-sm transition hover:bg-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Cari Dokumen</button>
+                </form>
             </div>
-            <div class="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
-                <span>{{ $periodDateLabel }}</span>
-                <span>Analitik BMC QualityHub</span>
-            </div>
-            <form method="GET" action="{{ route('documents.index') }}" role="search" aria-label="Pencarian dokumen" class="mt-3 flex flex-col gap-2 sm:flex-row">
-                <div class="relative min-w-0 flex-1">
-                    <svg class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
-                    </svg>
-                    <label for="dashboard-global-search" class="sr-only">Cari dokumen</label>
-                    <input id="dashboard-global-search" name="search" type="search" autocomplete="off" placeholder="Cari dokumen, kode, nomor part..."
-                           class="block min-h-[42px] w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm text-slate-900 focus:border-blue-600 focus:ring-blue-600">
-                </div>
-                <button type="submit" class="min-h-[42px] rounded-xl bg-blue-700 px-5 text-sm font-bold text-white transition hover:bg-blue-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700">Cari Dokumen</button>
-            </form>
         </section>
 
 
@@ -174,7 +172,7 @@
 
             <article
                 class="analytics-enter analytics-card
-                       group
+                       group flex min-h-[132px] flex-col justify-between
                        rounded-2xl
                        border border-slate-200/70
                        bg-white
@@ -251,7 +249,7 @@
 
             <article
                 class="analytics-enter analytics-card
-                       group
+                       group flex min-h-[132px] flex-col justify-between
                        rounded-2xl
                        border border-slate-200/70
                        bg-white
@@ -317,7 +315,7 @@
 
             <article
                 class="analytics-enter analytics-card
-                       group
+                       group flex min-h-[132px] flex-col justify-between
                        rounded-2xl
                        border border-slate-200/70
                        bg-white
@@ -382,7 +380,7 @@
 
             <article
                 class="analytics-enter analytics-card
-                       group
+                       group flex min-h-[132px] flex-col justify-between
                        rounded-2xl
                        border border-slate-200/70
                        bg-white
@@ -450,7 +448,7 @@
 
             <article
                 class="analytics-enter analytics-card
-                       group
+                       group flex min-h-[132px] flex-col justify-between
                        rounded-2xl
                        border border-slate-200/70
                        bg-white
@@ -516,7 +514,7 @@
 
             <article
                 class="analytics-enter analytics-card
-                       group
+                       group flex min-h-[132px] flex-col justify-between
                        rounded-2xl
                        border border-slate-200/70
                        bg-white
@@ -575,163 +573,36 @@
                 </p>
 
             </article>
-
+            {{-- Supporting metrics use the same layout as the other six KPIs. --}}
+            <article class="analytics-enter analytics-card group flex min-h-[132px] flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-2">
+                    <div class="min-w-0"><p class="text-xs font-semibold text-slate-500">Spreadsheet Aktif</p><p class="mt-2 text-[26px] font-bold tracking-tight text-slate-900">{{ number_format($spreadsheetDocuments) }}</p></div>
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700" aria-hidden="true"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3h10M7 7h10M5 11h14v10H5z"/></svg></span>
+                </div>
+                <p class="mt-2 text-xs text-slate-500">XLSX, XLS, CSV</p>
+            </article>
+            <article class="analytics-enter analytics-card group flex min-h-[132px] flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-2">
+                    <div class="min-w-0"><p class="text-xs font-semibold text-slate-500">Ukuran Dokumen Aktif</p><p class="mt-2 text-[26px] font-bold tracking-tight text-slate-900">{{ $formatBytes($totalStorageBytes) }}</p></div>
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700" aria-hidden="true"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg></span>
+                </div>
+                <p class="mt-2 text-xs text-slate-500">Berdasarkan metadata file</p>
+            </article>
+            <article class="analytics-enter analytics-card group flex min-h-[132px] flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-2">
+                    <div class="min-w-0"><p class="text-xs font-semibold text-slate-500">Dokumen Baru</p><p class="mt-2 text-[26px] font-bold tracking-tight text-slate-900">{{ number_format($newDocumentsInPeriod) }}</p></div>
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-700" aria-hidden="true"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M12 3v18"/></svg></span>
+                </div>
+                <p class="mt-2 break-words text-xs text-slate-500">{{ $growthLabel }}</p>
+            </article>
         </section>
 
 
         {{-- ========================================================= --}}
-        {{-- SECONDARY SUMMARY --}}
+        {{-- SUPPORTING KPIS INTEGRATED INTO MAIN GRID --}}
         {{-- ========================================================= --}}
 
-        <section
-            class="analytics-enter
-                   grid gap-3
-                   md:grid-cols-3"
-        >
 
-            <div
-                class="rounded-2xl
-                       border border-slate-200/70
-                       bg-white
-                       p-4
-                       shadow-sm
-                       flex items-center gap-3"
-            >
-
-                <div
-                    class="h-9 w-9
-                           rounded-2xl
-                           bg-emerald-50
-                           text-emerald-700
-                           flex items-center justify-center"
-                >
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="21"
-                        height="21"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                    >
-                        <path d="M7 3h10"/>
-                        <path d="M7 7h10"/>
-                        <path d="M5 11h14v10H5z"/>
-                    </svg>
-                </div>
-
-                <div>
-                    <p class="text-xs font-medium text-slate-400">
-                        Spreadsheet Aktif
-                    </p>
-
-                    <p class="mt-1 text-xl font-bold text-slate-900">
-                        {{ number_format($spreadsheetDocuments) }}
-                    </p>
-
-                    <p class="mt-1 text-xs text-slate-400">
-                        XLSX, XLS, dan CSV
-                    </p>
-                </div>
-
-            </div>
-
-
-            <div
-                class="rounded-2xl
-                       border border-slate-200/70
-                       bg-white
-                       p-4
-                       shadow-sm
-                       flex items-center gap-3"
-            >
-
-                <div
-                    class="h-9 w-9
-                           rounded-2xl
-                           bg-blue-50
-                           text-blue-700
-                           flex items-center justify-center"
-                >
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="21"
-                        height="21"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                    >
-                        <ellipse cx="12" cy="5" rx="8" ry="3"/>
-                        <path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/>
-                        <path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>
-                    </svg>
-                </div>
-
-                <div>
-                    <p class="text-xs font-medium text-slate-400">
-                        Ukuran Dokumen Aktif
-                    </p>
-
-                    <p class="mt-1 text-xl font-bold text-slate-900">
-                        {{ $formatBytes($totalStorageBytes) }}
-                    </p>
-
-                    <p class="mt-1 text-xs text-slate-400">
-                        Berdasarkan metadata file
-                    </p>
-                </div>
-
-            </div>
-
-
-            <div
-                class="rounded-2xl
-                       border border-slate-200/70
-                       bg-white
-                       p-4
-                       shadow-sm
-                       flex items-center gap-3"
-            >
-
-                <div
-                    class="h-9 w-9
-                           rounded-2xl
-                           bg-violet-50
-                           text-violet-700
-                           flex items-center justify-center"
-                >
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="21"
-                        height="21"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                    >
-                        <path d="M3 12h18"/>
-                        <path d="M12 3v18"/>
-                    </svg>
-                </div>
-
-                <div>
-                    <p class="text-xs font-medium text-slate-400">
-                        Dokumen Baru
-                    </p>
-
-                    <p class="mt-1 text-xl font-bold text-slate-900">
-                        {{ number_format($newDocumentsInPeriod) }}
-                    </p>
-
-                    <p class="mt-1 text-xs text-slate-400">
-                        {{ $growthLabel }}
-                    </p>
-                </div>
-
-            </div>
-
-        </section>
 
 
         {{-- ========================================================= --}}
