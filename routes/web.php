@@ -437,6 +437,13 @@ Route::middleware([
         ->whereNumber('department')
         ->name('departments.toggle-status');
 
+    Route::delete(
+        '/departments/{department}',
+        [DepartmentManagementController::class, 'destroy']
+    )
+        ->whereNumber('department')
+        ->name('departments.destroy');
+
 
     /*
     |--------------------------------------------------------------------------

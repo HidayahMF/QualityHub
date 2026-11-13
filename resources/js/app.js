@@ -212,6 +212,8 @@ Alpine.data('departmentStatusAction', () => ({
                 title: form.dataset.confirmTitle,
                 message: form.dataset.confirmMessage,
                 confirmText: form.dataset.confirmButton,
+                confirmationCode: form.dataset.confirmCode || null,
+                destructive: form.dataset.confirmDestructive === 'true',
             },
         }));
     },
@@ -223,7 +225,25 @@ Alpine.data('departmentStatusConfirm', () => ({
     title: 'Konfirmasi Tindakan',
     message: 'Pastikan tindakan ini memang ingin dilanjutkan.',
     confirmText: 'Lanjutkan',
+    confirmationCode: null,
+    typedCode: '',
+    destructive: false,
     submitting: false,
+
+    get needsCode() {
+        return this.confirmationCode !== null;
+    },
+
+    get cannotConfirm() {
+        return this.submitting
+            || (this.needsCode && this.typedCode !== this.confirmationCode);
+    },
+
+    get confirmButtonClass() {
+        return this.destructive
+            ? 'bg-rose-700 hover:bg-rose-800 focus:ring-rose-500'
+            : 'bg-blue-800 hover:bg-blue-900 focus:ring-blue-500';
+    },
 
     showConfirmation(event) {
         if (this.submitting) {
@@ -240,6 +260,11 @@ Alpine.data('departmentStatusConfirm', () => ({
         this.title = detail.title || 'Konfirmasi Tindakan';
         this.message = detail.message || 'Pastikan tindakan ini memang ingin dilanjutkan.';
         this.confirmText = detail.confirmText || 'Lanjutkan';
+        this.confirmationCode = typeof detail.confirmationCode === 'string'
+            ? detail.confirmationCode
+            : null;
+        this.typedCode = '';
+        this.destructive = detail.destructive === true;
         this.open = true;
     },
 
@@ -250,14 +275,27 @@ Alpine.data('departmentStatusConfirm', () => ({
 
         this.open = false;
         this.form = null;
+        this.confirmationCode = null;
+        this.typedCode = '';
+        this.destructive = false;
     },
 
     confirm() {
-        if (this.submitting || !(this.form instanceof HTMLFormElement)) {
+        if (this.cannotConfirm || !(this.form instanceof HTMLFormElement)) {
             return;
         }
 
         const target = this.form;
+        if (this.needsCode) {
+            const input = target.querySelector('[data-department-confirmation-code]');
+
+            if (!(input instanceof HTMLInputElement)) {
+                return;
+            }
+
+            input.value = this.typedCode;
+        }
+
         this.submitting = true;
         this.open = false;
         this.form = null;

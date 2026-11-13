@@ -749,6 +749,37 @@
 
                                         </form>
 
+                                        {{-- Hapus hanya departemen nonaktif yang sama sekali tidak dipakai. --}}
+                                        @if(! $department->is_active && $department->categories_count === 0 && $department->users_count === 0)
+                                            <form
+                                                method="POST"
+                                                action="{{ route('departments.destroy', $department) }}"
+                                                data-confirm-title="Hapus Departemen Permanen?"
+                                                data-confirm-message="Departemen {{ $department->name }} ({{ $department->code }}) akan dihapus selamanya. Tindakan ini tidak bisa dibatalkan."
+                                                data-confirm-button="Hapus Permanen"
+                                                data-confirm-code="{{ $department->code }}"
+                                                data-confirm-destructive="true"
+                                                x-data="departmentStatusAction"
+                                                x-on:submit.prevent="requestConfirmation"
+                                            >
+                                                @csrf
+                                                @method('DELETE')
+                                                <input type="hidden" name="confirmation_code" value="" data-department-confirmation-code>
+                                                <button type="submit"
+                                                    class="rounded-lg bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-rose-600"
+                                                    aria-label="Hapus permanen departemen {{ $department->name }}">
+                                                    Hapus
+                                                </button>
+                                            </form>
+                                        @else
+                                            <button type="button" disabled
+                                                title="Hapus permanen hanya untuk departemen nonaktif tanpa kategori dan tanpa pengguna."
+                                                class="cursor-not-allowed rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-400"
+                                                aria-label="Hapus permanen tidak tersedia untuk departemen {{ $department->name }}">
+                                                Hapus
+                                            </button>
+                                        @endif
+
                                     </div>
 
                                 </td>
@@ -894,6 +925,19 @@
                             class="mt-2 text-sm leading-6 text-slate-600"
                             x-text="message"
                         ></p>
+
+                        <div x-show="needsCode" class="mt-5 rounded-xl border border-rose-200 bg-rose-50 p-3">
+                            <p class="text-xs font-semibold text-rose-900">
+                                Penghapusan permanen tidak dapat dibatalkan.
+                            </p>
+                            <label for="qh-department-delete-code" class="mt-2 block text-xs font-semibold text-rose-900">
+                                Ketik kode departemen: <span class="font-extrabold" x-text="confirmationCode"></span>
+                            </label>
+                            <input id="qh-department-delete-code" type="text" x-model="typedCode"
+                                autocomplete="off" autocapitalize="off" spellcheck="false"
+                                class="mt-2 block w-full rounded-lg border-rose-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-rose-600 focus:ring-rose-600"
+                                placeholder="Ketik kode persis seperti di atas">
+                        </div>
                     </div>
                 </div>
 
@@ -908,7 +952,9 @@
 
                     <button
                         type="button"
-                        class="inline-flex items-center justify-center rounded-xl bg-blue-800 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-900/15 transition hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                        class="inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-900/15 transition focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        x-bind:class="confirmButtonClass"
+                        x-bind:disabled="cannotConfirm"
                         x-text="confirmText"
                         x-on:click="confirm"
                     ></button>

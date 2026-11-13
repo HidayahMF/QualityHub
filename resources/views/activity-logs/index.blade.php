@@ -15,6 +15,7 @@
                         'deactivate_department' => 'Nonaktifkan Departemen',
                         'deactivate_user' => 'Nonaktifkan Pengguna',
                         'delete_category' => 'Hapus Kategori',
+                        'delete_department' => 'Hapus Permanen Departemen',
                         'download_document' => 'Unduh Dokumen',
                         'download_document_revision' => 'Unduh Revisi Dokumen',
                         'open_document' => 'Buka Dokumen',
@@ -181,7 +182,7 @@
 
                             $actionStyle = match (true) {
                                 in_array($log->action, [
-                                    'permanent_delete_document', 'delete_category', 'reject_user',
+                                    'permanent_delete_document', 'delete_category', 'delete_department', 'reject_user',
                                 ], true) => 'bg-rose-50 text-rose-800 border-rose-100',
                                 in_array($log->action, [
                                     'archive_document', 'deactivate_user', 'deactivate_department', 'deactivate_category',
