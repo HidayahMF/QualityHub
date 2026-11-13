@@ -359,8 +359,10 @@ class DocumentController extends Controller
                     'mimes:pdf,xls,xlsx,doc,docx,csv,txt'
                 ),
             ],
+        ], [
+            'file.uploaded' => 'Upload file gagal diterima PHP. Periksa pengaturan upload_max_filesize dan post_max_size pada server.',
+            'file.max' => 'Ukuran file melebihi batas aplikasi 20 MB.',
         ]);
-        
         // Do not rely on Referer / session previous URL: the authenticated
         // avatar endpoint may become the last visited URL.
         if ($validator->fails()) {
