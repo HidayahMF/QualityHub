@@ -249,6 +249,87 @@ class PptxUploadTest extends TestCase
         $this->assertSame([], Storage::disk('bmc_documents')->allFiles());
     }
 
+    public function test_missing_file_redirects_to_add_document_not_avatar_and_preserves_errors(): void
+    {
+        $payload = $this->payload($this->pptx());
+        unset($payload['file']);
+
+        $this->actingAs($this->admin)
+            ->withSession(['_previous.url' => route('profile.photo.show')])
+            ->post(route('documents.store'), $payload)
+            ->assertRedirect(route('documents.create'))
+            ->assertSessionHasErrors('file');
+
+        $this->assertDatabaseCount('documents', 0);
+    }
+
+    public function test_invalid_document_metadata_redirects_to_form_not_avatar(): void
+    {
+        $payload = $this->payload($this->pptx());
+        $payload['title'] = '';
+
+        $this->actingAs($this->admin)
+            ->withSession(['_previous.url' => route('profile.photo.show')])
+            ->post(route('documents.store'), $payload)
+            ->assertRedirect(route('documents.create'))
+            ->assertSessionHasErrors('title');
+
+        $this->assertDatabaseCount('documents', 0);
+    }
+
+    public function test_macro_pptx_upload_redirects_back_to_add_document_with_security_error(): void
+    {
+        $this->actingAs($this->admin)
+            ->withSession(['_previous.url' => route('profile.photo.show')])
+            ->post(route('documents.store'), $this->payload($this->pptx(macro: true)))
+            ->assertRedirect(route('documents.create'))
+            ->assertSessionHasErrors('file');
+
+        $this->assertDatabaseCount('documents', 0);
+    }
+
+    public function test_invalid_revision_redirects_to_revision_form_not_avatar(): void
+    {
+        $this->actingAs($this->admin)
+            ->post(route('documents.store'), $this->payload($this->pptx()))
+            ->assertSessionHasNoErrors();
+
+        $document = Document::query()->sole();
+
+        $this->withSession(['_previous.url' => route('profile.photo.show')])
+            ->post(route('documents.revisions.store', $document), [
+                'file' => $this->pptx('revisi-gagal.pptx'),
+                'revision_file_name' => '',
+                'document_date' => '2026-11-13',
+                'revision_note' => 'Revisi QC',
+            ])
+            ->assertRedirect(route('documents.revisions.create', $document))
+            ->assertSessionHasErrors('revision_file_name');
+
+        $this->assertDatabaseCount('document_versions', 1);
+    }
+
+    public function test_security_rejected_revision_returns_to_revision_form_not_avatar(): void
+    {
+        $this->actingAs($this->admin)
+            ->post(route('documents.store'), $this->payload($this->pptx()))
+            ->assertSessionHasNoErrors();
+
+        $document = Document::query()->sole();
+
+        $this->withSession(['_previous.url' => route('profile.photo.show')])
+            ->post(route('documents.revisions.store', $document), [
+                'file' => $this->pptx('revisi-berbahaya.pptx', macro: true),
+                'revision_file_name' => 'revisi-berbahaya',
+                'document_date' => '2026-11-13',
+                'revision_note' => 'Revisi QC',
+            ])
+            ->assertRedirect(route('documents.revisions.create', $document))
+            ->assertSessionHasErrors('file');
+
+        $this->assertDatabaseCount('document_versions', 1);
+    }
+
     public function test_upload_and_revision_forms_advertise_pptx_without_inline_preview(): void
     {
         $this->actingAs($this->admin)
