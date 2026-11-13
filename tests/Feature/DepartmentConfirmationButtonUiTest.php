@@ -55,7 +55,7 @@ class DepartmentConfirmationButtonUiTest extends TestCase
     public function test_code_validation_stays_enforced_in_client_and_server(): void
     {
         $view = $this->viewSource();
-        $js = file_get_contents(resource_path('../resources/js/app.js'));
+        $js = file_get_contents(resource_path('js/app.js'));
         $controller = file_get_contents(app_path('Http/Controllers/DepartmentManagementController.php'));
 
         $this->assertIsString($js);
