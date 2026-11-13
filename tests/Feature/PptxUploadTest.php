@@ -151,6 +151,7 @@ class PptxUploadTest extends TestCase
                 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
                 'application/zip',
                 'application/x-zip-compressed',
+                'application/octet-stream',
             ]
         );
     }
