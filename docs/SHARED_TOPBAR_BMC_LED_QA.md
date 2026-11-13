@@ -21,3 +21,27 @@ php artisan view:clear
 ```
 
 Check browser at desktop width 1536px, tablet 768px, mobile 390px; inspect title readability, profile dropdown white text contrast, avatar, mobile sidebar button, left-right LED on dark blue, reduced-motion behavior, and scrolling/sticky topbar. Do not merge to main until QA and Mas IT approval.
+
+
+## Global header premium polish / subtitle contrast (13 Nov 2026)
+
+Bug reproduced visually on All Documents: dark-gray subtitle `Pengelolaan dokumen internal BMC` blended into the navy header. The old content styling retained `.qualityhub-topbar h2 + p { color: #5b6b7f }` from the white-header design.
+
+**Fix**
+- Removed the obsolete dark subtitle selector rather than using `!important` as a patch.
+- Added explicit `.qualityhub-topbar .qh-topbar-subtitle` color `#edf4ff`, medium weight and 14 px sizing. White title and avatar account text remain unchanged.
+- Profile role / chevron use light blue with full opacity. High-contrast mode forces white text.
+- Compact header uses `min-w-0` and `truncate` for long page titles/subtitles, keeping the account controls visible.
+- Existing 2-edge BMC LED effect, responsive mobile menu, photo/avatar links and profile dropdown remain intact.
+- All page descriptions are centralized in `resources/views/layouts/app.blade.php`; fix applies to every authenticated page.
+
+**QA**
+```powershell
+php artisan test --filter=SharedTopbarBrandingTest
+npm run build
+php artisan view:cache
+php artisan view:clear
+```
+Check All Documents, Dashboard, Department Management, Activity Log, User Management and Profile in desktop browser after Ctrl+F5. Verify subtitle visibly light, even near the royal-blue right edge; account dropdown still displays dark text on white. Mobile sidebar and keyboard navigation must remain accessible.
+
+No controller, route, database or production change. PR #12 remains Draft until local QA.
