@@ -239,10 +239,8 @@ Alpine.data('departmentStatusConfirm', () => ({
             || (this.needsCode && this.typedCode !== this.confirmationCode);
     },
 
-    get confirmButtonClass() {
-        return this.destructive
-            ? 'bg-rose-700 hover:bg-rose-800 focus:ring-rose-500'
-            : 'bg-blue-800 hover:bg-blue-900 focus:ring-blue-500';
+    get normalAction() {
+        return !this.destructive;
     },
 
     showConfirmation(event) {
