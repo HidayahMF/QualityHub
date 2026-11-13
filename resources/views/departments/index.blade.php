@@ -468,7 +468,7 @@
                                 Status
                             </th>
 
-                            <th class="px-6 py-4 font-semibold text-right">
+                            <th class="sticky right-0 z-20 border-l border-slate-200 bg-slate-50 px-3 py-4 text-right font-semibold">
                                 Aksi
                             </th>
                         </tr>
@@ -664,8 +664,8 @@
                                 </td>
 
 
-                                {{-- ACTION --}}
-                                <td class="px-6 py-4">
+                                {{-- ACTION: tetap terlihat saat tabel digeser horizontal --}}
+                                <td class="sticky right-0 z-10 min-w-[155px] border-l border-slate-100 bg-white px-3 py-4">
 
                                     <div
                                         class="flex
