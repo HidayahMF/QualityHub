@@ -24,6 +24,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -304,7 +305,7 @@ class DocumentController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             ...$categoryAssignment->validationRules($request),
 
             'title' => [
@@ -352,6 +353,18 @@ class DocumentController extends Controller
                 'mimes:pdf,xls,xlsx,doc,docx,pptx,csv,txt',
             ],
         ]);
+        
+        // Do not rely on Referer / session previous URL: the authenticated
+        // avatar endpoint may become the last visited URL.
+        if ($validator->fails()) {
+            return redirect()
+                ->route('documents.create')
+                ->withErrors($validator)
+                ->withInput($request->except('file'));
+        }
+
+        $validated = $validator->validated();
+
 
         /*
         |--------------------------------------------------------------------------
@@ -359,7 +372,14 @@ class DocumentController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $categorySelection = $categoryAssignment->prepare($validated);
+        try {
+            $categorySelection = $categoryAssignment->prepare($validated);
+        } catch (ValidationException $exception) {
+            return redirect()
+                ->route('documents.create')
+                ->withErrors($exception->errors())
+                ->withInput($request->except('file'));
+        }
 
         /*
         |--------------------------------------------------------------------------
@@ -373,7 +393,7 @@ class DocumentController extends Controller
             $file === null
             || ! $file->isValid()
         ) {
-            return back()
+            return redirect()->route('documents.create')
                 ->withInput()
                 ->withErrors([
                     'file' =>
@@ -392,10 +412,14 @@ class DocumentController extends Controller
         |
         */
 
-        $security =
-            $uploadSecurity->validate(
-                $file
-            );
+        try {
+            $security = $uploadSecurity->validate($file);
+        } catch (ValidationException $exception) {
+            return redirect()
+                ->route('documents.create')
+                ->withErrors($exception->errors())
+                ->withInput($request->except('file'));
+        }
 
         $extension =
             $security['extension'];
@@ -478,7 +502,7 @@ class DocumentController extends Controller
         );
 
         if (! $storedPath) {
-            return back()
+            return redirect()->route('documents.create')
                 ->withInput()
                 ->withErrors([
                     'file' =>
@@ -505,7 +529,7 @@ class DocumentController extends Controller
                 $storedPath
             );
 
-            return back()
+            return redirect()->route('documents.create')
                 ->withInput()
                 ->withErrors([
                     'file' =>
@@ -788,7 +812,10 @@ class DocumentController extends Controller
                 $storedPath
             );
 
-            throw $exception;
+            return redirect()
+                ->route('documents.create')
+                ->withErrors($exception->errors())
+                ->withInput($request->except('file'));
 
         } catch (Throwable $exception) {
 
@@ -806,7 +833,7 @@ class DocumentController extends Controller
 
             report($exception);
 
-            return back()
+            return redirect()->route('documents.create')
                 ->withInput()
                 ->withErrors([
                     'file' =>

@@ -14,6 +14,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -142,7 +144,7 @@ class DocumentVersionController extends Controller
         );
 
 
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'file' => [
                 'nullable',
                 'file',
@@ -169,6 +171,18 @@ class DocumentVersionController extends Controller
                 'max:1000',
             ],
         ]);
+        
+        // Do not rely on Referer / session previous URL: the authenticated
+        // avatar endpoint may become the last visited URL.
+        if ($validator->fails()) {
+            return redirect()
+                ->route('documents.revisions.create', $document)
+                ->withErrors($validator)
+                ->withInput($request->except('file'));
+        }
+
+        $validated = $validator->validated();
+
 
 
         $file = $request->file('file');
@@ -182,7 +196,7 @@ class DocumentVersionController extends Controller
             && ! $file->isValid()
         ) {
 
-            return back()
+            return redirect()->route('documents.revisions.create', $document)
                 ->withInput()
                 ->withErrors([
                     'file' =>
@@ -198,10 +212,14 @@ class DocumentVersionController extends Controller
         */
 
         if ($hasNewFile) {
-            $security =
-                $uploadSecurity->validate(
-                    $file
-                );
+            try {
+                $security = $uploadSecurity->validate($file);
+            } catch (ValidationException $exception) {
+                return redirect()
+                    ->route('documents.revisions.create', $document)
+                    ->withErrors($exception->errors())
+                    ->withInput($request->except('file'));
+            }
 
             $extension =
                 $security['extension'];
@@ -293,7 +311,7 @@ class DocumentVersionController extends Controller
 
         if ($safeRevisionBaseName === '') {
 
-            return back()
+            return redirect()->route('documents.revisions.create', $document)
                 ->withInput()
                 ->withErrors([
                     'revision_file_name' =>
@@ -318,7 +336,7 @@ class DocumentVersionController extends Controller
 
         if (! $hasNewFile && ! $hasMetadataChange) {
 
-            return back()
+            return redirect()->route('documents.revisions.create', $document)
                 ->withInput()
                 ->withErrors([
                     'file' =>
@@ -751,7 +769,7 @@ class DocumentVersionController extends Controller
             report($exception);
 
 
-            return back()
+            return redirect()->route('documents.revisions.create', $document)
                 ->withInput()
                 ->withErrors([
                     'file' =>
