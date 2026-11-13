@@ -2403,7 +2403,7 @@ class DocumentController extends Controller
         | Non-previewable File
         |--------------------------------------------------------------------------
         |
-        | Word / Excel akan dikirim sebagai download.
+        | Word / Excel / PowerPoint dikirim sebagai download.
         |
         */
 

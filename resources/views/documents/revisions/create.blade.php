@@ -245,7 +245,7 @@
                         name="file"
 
 
-                        accept=".pdf,.xls,.xlsx,.doc,.docx,.csv,.txt"
+                        accept=".pdf,.xls,.xlsx,.doc,.docx,.pptx,.csv,.txt"
 
                         class="block
                                w-full
@@ -269,7 +269,7 @@
                                text-slate-400"
                     >
                         Opsional. Kosongkan jika hanya mengubah nama file atau tanggal dokumen.
-                        PDF, Excel, Word, CSV, atau TXT · Maksimal 20 MB
+                        PDF, Excel, Word, PowerPoint (PPTX), CSV, atau TXT · Maksimal 20 MB
                     </p>
 
                 </div>

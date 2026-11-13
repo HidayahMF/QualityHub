@@ -854,7 +854,7 @@
                                    border
                                    border-slate-200"
                         >
-                            PDF · Excel · Word · CSV · TXT
+                            PDF · Excel · Word · PowerPoint (PPTX) · CSV · TXT
                         </div>
 
 
@@ -876,7 +876,7 @@
 
                             required
 
-                            accept=".pdf,.xls,.xlsx,.doc,.docx,.csv,.txt"
+                            accept=".pdf,.xls,.xlsx,.doc,.docx,.pptx,.csv,.txt"
 
                             class="hidden"
 
