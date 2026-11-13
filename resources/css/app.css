@@ -336,10 +336,8 @@
         letter-spacing: -0.015em;
     }
 
-    .qualityhub-topbar h2 + p {
-        color: #5b6b7f;
-        font-size: 0.8rem;
-    }
+    /* Subtitle readability is defined by the navy topbar rules below;
+       do not reintroduce legacy dark text for a white header here. */
 
 
     /* ----------------------------------------------------------------------
@@ -3024,10 +3022,21 @@
     color: #fff;
 }
 
-.qh-topbar-subtitle,
-.qh-topbar-profile-role,
-.qh-topbar-profile-chevron {
-    color: #cedfff;
+/* Explicit specificity prevents legacy topbar typography from fading
+   page descriptions such as "Pengelolaan dokumen internal BMC". */
+.qualityhub-topbar .qh-topbar-subtitle {
+    color: #edf4ff;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.4;
+    opacity: 1;
+    text-shadow: 0 1px 1px rgba(11, 30, 76, 0.18);
+}
+
+.qualityhub-topbar .qh-topbar-profile-role,
+.qualityhub-topbar .qh-topbar-profile-chevron {
+    color: #dbeafe;
+    opacity: 1;
 }
 
 .qh-topbar-profile-toggle:hover,
@@ -3064,9 +3073,10 @@
         border-bottom-color: #f8fbff;
     }
 
-    .qh-topbar-subtitle,
-    .qh-topbar-profile-role,
-    .qh-topbar-profile-chevron {
+    .qualityhub-topbar .qh-topbar-subtitle,
+    .qualityhub-topbar .qh-topbar-profile-role,
+    .qualityhub-topbar .qh-topbar-profile-chevron {
         color: #fff;
+        text-shadow: none;
     }
 }
