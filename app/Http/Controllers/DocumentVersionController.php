@@ -147,7 +147,7 @@ class DocumentVersionController extends Controller
                 'nullable',
                 'file',
                 'max:20480',
-                'mimes:pdf,xls,xlsx,doc,docx,csv,txt',
+                'mimes:pdf,xls,xlsx,doc,docx,pptx,csv,txt',
             ],
 
             'revision_file_name' => [

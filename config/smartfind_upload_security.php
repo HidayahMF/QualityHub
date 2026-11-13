@@ -14,6 +14,7 @@ return [
         'xlsx',
         'doc',
         'docx',
+        'pptx',
         'csv',
         'txt',
     ],
@@ -81,6 +82,12 @@ return [
 
         'docx' => [
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/zip',
+            'application/x-zip-compressed',
+        ],
+
+        'pptx' => [
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
             'application/zip',
             'application/x-zip-compressed',
         ],

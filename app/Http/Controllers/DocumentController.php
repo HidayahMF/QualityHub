@@ -154,6 +154,7 @@ class DocumentController extends Controller
             'xls',
             'doc',
             'docx',
+            'pptx',
             'csv',
             'txt',
         ])
@@ -348,7 +349,7 @@ class DocumentController extends Controller
                 // Maksimum 20 MB
                 'max:20480',
 
-                'mimes:pdf,xls,xlsx,doc,docx,csv,txt',
+                'mimes:pdf,xls,xlsx,doc,docx,pptx,csv,txt',
             ],
         ]);
 
@@ -2846,6 +2847,7 @@ class DocumentController extends Controller
                     'xls',
                     'doc',
                     'docx',
+                    'pptx',
                     'csv',
                     'txt',
                 ]),
