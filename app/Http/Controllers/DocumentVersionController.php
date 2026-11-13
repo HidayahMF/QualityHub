@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -149,7 +150,14 @@ class DocumentVersionController extends Controller
                 'nullable',
                 'file',
                 'max:20480',
-                'mimes:pdf,xls,xlsx,doc,docx,pptx,csv,txt',
+                // PowerPoint is an OOXML ZIP container. fileinfo may return
+                // a PowerPoint-specific MIME or a generic ZIP/octet-stream.
+                // Deep signature + PPTX structure validation is mandatory.
+                Rule::when(
+                    strtolower((string) $request->file('file')?->getClientOriginalExtension()) === 'pptx',
+                    'mimetypes:application/vnd.openxmlformats-officedocument.presentationml.presentation,application/zip,application/x-zip-compressed,application/octet-stream',
+                    'mimes:pdf,xls,xlsx,doc,docx,csv,txt'
+                ),
             ],
 
             'revision_file_name' => [

@@ -350,7 +350,14 @@ class DocumentController extends Controller
                 // Maksimum 20 MB
                 'max:20480',
 
-                'mimes:pdf,xls,xlsx,doc,docx,pptx,csv,txt',
+                // PowerPoint is an OOXML ZIP container. fileinfo may return
+                // a PowerPoint-specific MIME or a generic ZIP/octet-stream.
+                // Deep signature + PPTX structure validation is mandatory.
+                Rule::when(
+                    strtolower((string) $request->file('file')?->getClientOriginalExtension()) === 'pptx',
+                    'mimetypes:application/vnd.openxmlformats-officedocument.presentationml.presentation,application/zip,application/x-zip-compressed,application/octet-stream',
+                    'mimes:pdf,xls,xlsx,doc,docx,csv,txt'
+                ),
             ],
         ]);
         
