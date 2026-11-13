@@ -9,6 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -387,7 +388,7 @@ class DepartmentManagementController extends Controller
                     ->exists();
 
             if ($hasActiveCategories) {
-                return back()->withErrors([
+                return redirect()->route('departments.index')->withErrors([
                     'department' =>
                         'Departemen tidak dapat dinonaktifkan karena masih memiliki kategori aktif. Nonaktifkan kategori terkait terlebih dahulu.',
                 ]);
@@ -403,7 +404,7 @@ class DepartmentManagementController extends Controller
                     ->exists();
 
             if ($hasActiveUsers) {
-                return back()->withErrors([
+                return redirect()->route('departments.index')->withErrors([
                     'department' =>
                         'Departemen tidak dapat dinonaktifkan karena masih memiliki pengguna aktif.',
                 ]);
@@ -440,7 +441,7 @@ class DepartmentManagementController extends Controller
             department: $department
         );
 
-        return back()->with(
+        return redirect()->route('departments.index')->with(
             'success',
             $department->is_active
                 ? 'Departemen berhasil diaktifkan.'
@@ -460,12 +461,22 @@ class DepartmentManagementController extends Controller
     ): RedirectResponse {
         $this->ensureSuperAdmin();
 
-        $validated = $request->validate([
+        // Jangan memakai redirect otomatis dari validate(): dengan
+        // Referrer-Policy: no-referrer, URL sebelumnya dapat berupa /profile/photo.
+        $validator = Validator::make($request->all(), [
             'confirmation_code' => ['required', 'string', 'max:20'],
         ], [
             'confirmation_code.required' => 'Ketik kode departemen untuk mengonfirmasi penghapusan.',
             'confirmation_code.max' => 'Kode konfirmasi tidak valid.',
         ]);
+
+        if ($validator->fails()) {
+            return redirect()
+                ->route('departments.index')
+                ->withErrors($validator);
+        }
+
+        $validated = $validator->validated();
 
         try {
             $result = DB::transaction(function () use ($request, $department, $validated): string {
@@ -518,7 +529,7 @@ class DepartmentManagementController extends Controller
         } catch (QueryException $exception) {
             // Jika ada perubahan relasi bersamaan, biarkan FK mencegah penghapusan.
             if (in_array((string) $exception->getCode(), ['23000', '23503', '19'], true)) {
-                return back()->withErrors([
+                return redirect()->route('departments.index')->withErrors([
                     'department' => 'Departemen tidak dapat dihapus karena masih digunakan data lain.',
                 ]);
             }
@@ -535,7 +546,7 @@ class DepartmentManagementController extends Controller
                 default => 'Departemen tidak dapat dihapus.',
             };
 
-            return back()->withErrors(['department' => $message]);
+            return redirect()->route('departments.index')->withErrors(['department' => $message]);
         }
 
         return redirect()
