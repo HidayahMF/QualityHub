@@ -29,7 +29,7 @@ class SharedTopbarBrandingTest extends TestCase
 
         $this->assertStringContainsString('data-qh-brand-topbar', $view);
         $this->assertStringContainsString('class="qualityhub-topbar sticky top-0 z-30 h-20"', $view);
-        $this->assertStringContainsString('qh-topbar-title font-bold text-white', $view);
+        $this->assertStringContainsString('qh-topbar-title truncate font-bold text-white', $view);
         $this->assertStringContainsString('qh-topbar-subtitle hidden truncate sm:block text-xs font-medium text-blue-100', $view);
         $this->assertStringContainsString("request()->routeIs('dashboard')", $view);
         $this->assertStringContainsString("request()->routeIs('departments.*')", $view);
