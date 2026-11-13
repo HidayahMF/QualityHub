@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
 use App\Models\Department;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -385,7 +388,7 @@ class DepartmentManagementController extends Controller
                     ->exists();
 
             if ($hasActiveCategories) {
-                return back()->withErrors([
+                return redirect()->route('departments.index')->withErrors([
                     'department' =>
                         'Departemen tidak dapat dinonaktifkan karena masih memiliki kategori aktif. Nonaktifkan kategori terkait terlebih dahulu.',
                 ]);
@@ -401,7 +404,7 @@ class DepartmentManagementController extends Controller
                     ->exists();
 
             if ($hasActiveUsers) {
-                return back()->withErrors([
+                return redirect()->route('departments.index')->withErrors([
                     'department' =>
                         'Departemen tidak dapat dinonaktifkan karena masih memiliki pengguna aktif.',
                 ]);
@@ -438,12 +441,117 @@ class DepartmentManagementController extends Controller
             department: $department
         );
 
-        return back()->with(
+        return redirect()->route('departments.index')->with(
             'success',
             $department->is_active
                 ? 'Departemen berhasil diaktifkan.'
                 : 'Departemen berhasil dinonaktifkan.'
         );
+    }
+
+    /**
+     * Hapus permanen hanya departemen nonaktif tanpa relasi kategori/pengguna.
+     *
+     * Validasi diulangi di dalam transaction untuk menghindari perubahan data
+     * sejak halaman indeks ditampilkan. Audit tetap disimpan setelah penghapusan.
+     */
+    public function destroy(
+        Request $request,
+        Department $department
+    ): RedirectResponse {
+        $this->ensureSuperAdmin();
+
+        // Jangan memakai redirect otomatis dari validate(): dengan
+        // Referrer-Policy: no-referrer, URL sebelumnya dapat berupa /profile/photo.
+        $validator = Validator::make($request->all(), [
+            'confirmation_code' => ['required', 'string', 'max:20'],
+        ], [
+            'confirmation_code.required' => 'Ketik kode departemen untuk mengonfirmasi penghapusan.',
+            'confirmation_code.max' => 'Kode konfirmasi tidak valid.',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()
+                ->route('departments.index')
+                ->withErrors($validator);
+        }
+
+        $validated = $validator->validated();
+
+        try {
+            $result = DB::transaction(function () use ($request, $department, $validated): string {
+                $locked = Department::query()
+                    ->whereKey($department->getKey())
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                if (! hash_equals((string) $locked->code, $validated['confirmation_code'])) {
+                    return 'wrong_code';
+                }
+
+                if ($locked->is_active) {
+                    return 'active';
+                }
+
+                // Seluruh relasi dihitung, termasuk kategori dan akun nonaktif.
+                // users.department_id memakai SET NULL: wajib cegah orphaned users.
+                if ($locked->categories()->exists()) {
+                    return 'categories';
+                }
+
+                if ($locked->users()->exists()) {
+                    return 'users';
+                }
+
+                $this->logActivity(
+                    request: $request,
+                    action: 'delete_department',
+                    description: Auth::user()->name
+                        . ' menghapus permanen departemen "'
+                        . $locked->name . '".',
+                    department: $locked,
+                    additionalMetadata: [
+                        'deleted_permanently' => true,
+                        'deleted_department' => [
+                            'id' => $locked->id,
+                            'name' => $locked->name,
+                            'code' => $locked->code,
+                            'description' => $locked->description,
+                            'is_active' => false,
+                        ],
+                    ]
+                );
+
+                $locked->delete();
+
+                return 'deleted';
+            });
+        } catch (QueryException $exception) {
+            // Jika ada perubahan relasi bersamaan, biarkan FK mencegah penghapusan.
+            if (in_array((string) $exception->getCode(), ['23000', '23503', '19'], true)) {
+                return redirect()->route('departments.index')->withErrors([
+                    'department' => 'Departemen tidak dapat dihapus karena masih digunakan data lain.',
+                ]);
+            }
+
+            throw $exception;
+        }
+
+        if ($result !== 'deleted') {
+            $message = match ($result) {
+                'wrong_code' => 'Kode konfirmasi tidak sesuai dengan kode departemen.',
+                'active' => 'Nonaktifkan departemen terlebih dahulu sebelum menghapus permanen.',
+                'categories' => 'Departemen tidak dapat dihapus karena masih memiliki kategori, termasuk kategori nonaktif.',
+                'users' => 'Departemen tidak dapat dihapus karena masih memiliki pengguna, termasuk akun nonaktif.',
+                default => 'Departemen tidak dapat dihapus.',
+            };
+
+            return redirect()->route('departments.index')->withErrors(['department' => $message]);
+        }
+
+        return redirect()
+            ->route('departments.index')
+            ->with('success', 'Departemen berhasil dihapus permanen.');
     }
 
     /**

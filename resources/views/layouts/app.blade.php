@@ -1338,23 +1338,12 @@
         {{-- TOPBAR --}}
         {{-- ===================================================== --}}
 
-        <header
-            class="qualityhub-topbar
-                   sticky
-                   top-0
-                   z-30
-
-                   h-20
-
-                   bg-white/90
-                   backdrop-blur-xl
-
-                   border-b
-                   border-slate-200/70"
-        >
+        <header class="qualityhub-topbar sticky top-0 z-30 h-20" data-qh-brand-topbar>
+            <span class="qh-topbar-led qh-topbar-led--left" aria-hidden="true"></span>
+            <span class="qh-topbar-led qh-topbar-led--right" aria-hidden="true"></span>
 
             <div
-                class="h-full
+                class="qh-topbar-content h-full
 
                        px-5
                        sm:px-8
@@ -1367,7 +1356,7 @@
 
                 {{-- LEFT --}}
 
-                <div class="flex items-center gap-4">
+                <div class="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
 
 
                     {{-- MOBILE MENU BUTTON --}}
@@ -1377,27 +1366,7 @@
 
                         @click="sidebarOpen = true"
 
-                        class="lg:hidden
-
-                               w-10
-                               h-10
-
-                               rounded-xl
-
-                               border
-                               border-slate-200
-
-                               bg-white
-
-                               flex
-                               items-center
-                               justify-center
-
-                               text-slate-700
-
-                               hover:bg-slate-50
-
-                               transition"
+                        class="qh-topbar-menu-toggle lg:hidden flex h-10 w-10 items-center justify-center rounded-xl border border-white/25 bg-white/10 text-white transition hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
 
                         aria-label="Open sidebar"
                     >
@@ -1441,11 +1410,10 @@
                     {{-- DYNAMIC PAGE TITLE --}}
                     {{-- ================================================= --}}
 
-                    <div>
+                    <div class="min-w-0">
 
                         <h2
-                            class="font-bold
-                                   text-slate-900"
+                            class="qh-topbar-title truncate font-bold text-white"
                         >
 
                             @if(request()->routeIs('dashboard'))
@@ -1551,11 +1519,7 @@
                         {{-- DYNAMIC SUBTITLE --}}
 
                         <p
-                            class="hidden
-                                   sm:block
-
-                                   text-xs
-                                   text-slate-500"
+                            class="qh-topbar-subtitle hidden truncate sm:block text-xs font-medium text-blue-100"
                         >
 
                             @if(request()->routeIs('documents.revisions.create'))
@@ -1651,30 +1615,13 @@
                 {{-- RIGHT --}}
                 {{-- ================================================= --}}
 
-                <div class="flex items-center gap-2">
+                <div class="flex shrink-0 items-center gap-2">
 
 
                     {{-- AUTHENTICATED SESSION INDICATOR --}}
 
                     <div
-                        class="hidden
-                               xl:flex
-
-                               items-center
-                               gap-2
-
-                               mr-2
-
-                               px-3
-                               py-2
-
-                               rounded-xl
-
-                               bg-emerald-50
-
-                               text-xs
-                               font-medium
-                               text-emerald-700"
+                        class="qh-topbar-session-chip hidden xl:flex items-center gap-2 mr-2 rounded-xl px-3 py-2 text-xs font-semibold"
                     >
 
                         <span
@@ -1707,19 +1654,7 @@
 
                             :aria-expanded="profileOpen.toString()"
 
-                            class="flex
-                                   items-center
-                                   gap-3
-
-                                   px-2
-                                   sm:px-3
-                                   py-2
-
-                                   rounded-xl
-
-                                   hover:bg-slate-100
-
-                                   transition"
+                            class="qh-topbar-profile-toggle flex items-center gap-3 rounded-xl px-2 py-2 transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:px-3"
 
                             aria-haspopup="true"
                         >
@@ -1731,21 +1666,14 @@
                             >
 
                                 <p
-                                    class="text-sm
-                                           font-semibold
-                                           text-slate-800
-
-                                           max-w-[180px]
-                                           truncate"
+                                    class="qh-topbar-profile-name max-w-[180px] truncate text-sm font-semibold text-white"
                                 >
                                     {{ Auth::user()->name }}
                                 </p>
 
 
                                 <p
-                                    class="text-xs
-                                           text-slate-500
-                                           capitalize"
+                                    class="qh-topbar-profile-role text-xs capitalize text-blue-100"
                                 >
                                     {{ str_replace('_', ' ', Auth::user()->role) }}
                                 </p>
@@ -1786,13 +1714,7 @@
                                 stroke="currentColor"
                                 stroke-width="2"
 
-                                class="hidden
-                                       sm:block
-
-                                       text-slate-500
-
-                                       transition-transform
-                                       duration-200"
+                                class="qh-topbar-profile-chevron hidden text-blue-100 transition-transform duration-200 sm:block"
 
                                 :class="
                                     profileOpen

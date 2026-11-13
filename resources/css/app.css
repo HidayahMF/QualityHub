@@ -336,10 +336,8 @@
         letter-spacing: -0.015em;
     }
 
-    .qualityhub-topbar h2 + p {
-        color: #5b6b7f;
-        font-size: 0.8rem;
-    }
+    /* Subtitle readability is defined by the navy topbar rules below;
+       do not reintroduce legacy dark text for a white header here. */
 
 
     /* ----------------------------------------------------------------------
@@ -2946,4 +2944,139 @@
     .qh-searchable-trigger { min-height: 47px; padding: 10px 12px; }
     .qh-searchable-popup { border-radius: 12px; }
     .qh-searchable-option { padding: 12px; }
+}
+
+
+/* ==========================================================================
+   BMC QUALITYHUB · NAVY TOPBAR LED ACCENT
+   Scoped to the authenticated header; dropdown surfaces stay white.
+   ========================================================================== */
+
+.qualityhub-topbar {
+    isolation: isolate;
+    background: linear-gradient(108deg, #152757 0%, #1a3473 48%, #2355b5 100%);
+    border-bottom: 1px solid rgba(205, 225, 255, 0.28);
+    box-shadow: 0 5px 20px rgba(20, 42, 91, 0.14);
+    color: #f8fbff;
+}
+
+/* Slow blue-white sweep on the lower edge. Decorative, never interactive. */
+.qualityhub-topbar::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    pointer-events: none;
+    opacity: 0.68;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(120, 188, 255, 0.50) 27%,
+        rgba(244, 250, 255, 0.98) 50%,
+        rgba(120, 188, 255, 0.50) 73%,
+        transparent 100%
+    );
+    background-size: 220% 100%;
+    animation: qh-topbar-edge-light 12s linear infinite;
+}
+
+.qh-topbar-content {
+    position: relative;
+    z-index: 1;
+}
+
+.qh-topbar-led {
+    position: absolute;
+    top: 9px;
+    bottom: 9px;
+    width: 3px;
+    z-index: 0;
+    pointer-events: none;
+    border-radius: 999px;
+    opacity: 0.78;
+    background: linear-gradient(
+        180deg,
+        transparent 0%,
+        rgba(126, 197, 255, 0.24) 33%,
+        rgba(243, 251, 255, 0.98) 50%,
+        rgba(126, 197, 255, 0.70) 67%,
+        transparent 100%
+    );
+    background-size: 100% 260%;
+    animation: qh-topbar-rail-light 7.5s ease-in-out infinite;
+}
+
+.qh-topbar-led--left {
+    left: 0;
+}
+
+.qh-topbar-led--right {
+    right: 0;
+    animation-delay: -3.75s;
+}
+
+.qh-topbar-title,
+.qh-topbar-profile-name {
+    color: #fff;
+}
+
+/* Explicit specificity prevents legacy topbar typography from fading
+   page descriptions such as "Pengelolaan dokumen internal BMC". */
+.qualityhub-topbar .qh-topbar-subtitle {
+    color: #edf4ff;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.4;
+    opacity: 1;
+    text-shadow: 0 1px 1px rgba(11, 30, 76, 0.18);
+}
+
+.qualityhub-topbar .qh-topbar-profile-role,
+.qualityhub-topbar .qh-topbar-profile-chevron {
+    color: #dbeafe;
+    opacity: 1;
+}
+
+.qh-topbar-profile-toggle:hover,
+.qh-topbar-menu-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+.qh-topbar-session-chip {
+    color: #e7fdf4;
+    background: rgba(255, 255, 255, 0.085);
+    border: 1px solid rgba(255, 255, 255, 0.13);
+}
+
+@keyframes qh-topbar-edge-light {
+    from { background-position: 130% 0; }
+    to { background-position: -130% 0; }
+}
+
+@keyframes qh-topbar-rail-light {
+    from { background-position: 0 135%; }
+    to { background-position: 0 -135%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .qualityhub-topbar::after,
+    .qh-topbar-led {
+        animation: none !important;
+    }
+}
+
+@media (prefers-contrast: more) {
+    .qualityhub-topbar {
+        background: #112b60;
+        border-bottom-color: #f8fbff;
+    }
+
+    .qualityhub-topbar .qh-topbar-subtitle,
+    .qualityhub-topbar .qh-topbar-profile-role,
+    .qualityhub-topbar .qh-topbar-profile-chevron {
+        color: #fff;
+        text-shadow: none;
+    }
 }
