@@ -36,3 +36,26 @@ Uji manual:
 6. Audit seluruh file \`composer.lock\` yang modified dan \`code\` yang untracked secara terpisah; jangan reset atau clean.
 
 **Release gate:** setelah pengujian dan persetujuan Mas IT, baru merge ke main sehingga workflow Docker otomatis berjalan. Hindari operasi penghapusan riil tanpa backup.
+
+
+## Fix navigasi setelah Aktivasi/Nonaktivasi — 13 Nov 2026
+
+**Laporan lokal:** setelah modal **Aktifkan** dikonfirmasi, browser justru membuka `/profile/photo` (gambar asli).
+
+**Akar masalah:** controller sebelumnya menggunakan `back()` untuk sukses/gagal perubahan status. Header keamanan `Referrer-Policy: no-referrer` membuat HTTP Referer tidak tersedia, sedangkan foto profil yang dimuat melalui GET autentikasi dapat tercatat sebagai URL terakhir pada sesi. Karena itu, pengembalian berdasarkan riwayat bisa menuju URL gambar. Ini bukan bug penyimpanan foto, dan kebijakan keamanan tidak perlu diturunkan.
+
+**Perbaikan:** redirect aksi departemen kini **secara eksplisit** ke route `departments.index` untuk aktivasi, nonaktivasi, penolakan relasi, dan penolakan hapus permanen. Validasi kode penghapusan juga tidak lagi menggunakan redirect otomatis Laravel yang bergantung pada URL sebelumnya. Tidak ada perubahan database atau file foto.
+
+**Tes tambahan:** `tests/Feature/DepartmentActionRedirectRegressionTest.php` (5 kasus), menanamkan URL terakhir sesi `/profile/photo` dan memeriksa respons selalu redirect ke `/departments` beserta perubahan status yang benar.
+
+**Tambahkan saat testing lokal:**
+```powershell
+php artisan test --filter=DepartmentActionRedirectRegressionTest
+php artisan test --filter=DepartmentPermanentDeleteTest
+php artisan test --filter=DepartmentManagementTest
+npm run build
+php artisan view:cache
+php artisan view:clear
+```
+
+Sebelum mengetes lagi, cek apakah perubahan status kemarin **sudah berhasil** meskipun browser salah navigasi: mungkin database sudah diperbarui. Jangan mengulang tombol Aktivkan/Nonaktifkan secara buta karena tombol tersebut men-toggle status.
