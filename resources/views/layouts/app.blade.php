@@ -1356,7 +1356,7 @@
 
                 {{-- LEFT --}}
 
-                <div class="flex items-center gap-4">
+                <div class="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
 
 
                     {{-- MOBILE MENU BUTTON --}}
@@ -1410,10 +1410,10 @@
                     {{-- DYNAMIC PAGE TITLE --}}
                     {{-- ================================================= --}}
 
-                    <div>
+                    <div class="min-w-0">
 
                         <h2
-                            class="qh-topbar-title font-bold text-white"
+                            class="qh-topbar-title truncate font-bold text-white"
                         >
 
                             @if(request()->routeIs('dashboard'))
@@ -1519,7 +1519,7 @@
                         {{-- DYNAMIC SUBTITLE --}}
 
                         <p
-                            class="qh-topbar-subtitle hidden sm:block text-xs text-blue-100"
+                            class="qh-topbar-subtitle hidden truncate sm:block text-xs font-medium text-blue-100"
                         >
 
                             @if(request()->routeIs('documents.revisions.create'))
@@ -1615,7 +1615,7 @@
                 {{-- RIGHT --}}
                 {{-- ================================================= --}}
 
-                <div class="flex items-center gap-2">
+                <div class="flex shrink-0 items-center gap-2">
 
 
                     {{-- AUTHENTICATED SESSION INDICATOR --}}
