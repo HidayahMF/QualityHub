@@ -950,14 +950,26 @@
                         Batal
                     </button>
 
+                    {{-- Latar tombol dipasang secara statis agar selalu terlihat,
+                         termasuk sebelum Alpine menambahkan state interaktif. --}}
                     <button
                         type="button"
-                        class="inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-900/15 transition focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        x-bind:class="confirmButtonClass"
+                        x-show="normalAction"
+                        x-cloak
+                        class="inline-flex min-h-[43px] items-center justify-center rounded-xl bg-blue-800 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-blue-100 disabled:text-blue-800 disabled:opacity-100"
                         x-bind:disabled="cannotConfirm"
                         x-text="confirmText"
                         x-on:click="confirm"
                     ></button>
+
+                    <button
+                        type="button"
+                        x-show="destructive"
+                        x-cloak
+                        class="inline-flex min-h-[43px] items-center justify-center rounded-xl border border-rose-700 bg-rose-700 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-rose-800 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:border-rose-200 disabled:bg-rose-100 disabled:text-rose-800 disabled:opacity-100"
+                        x-bind:disabled="cannotConfirm"
+                        x-on:click="confirm"
+                    >Hapus Permanen</button>
                 </div>
             </div>
         </section>
