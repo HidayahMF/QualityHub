@@ -116,22 +116,37 @@ class DepartmentPermanentDeleteTest extends TestCase
         $this->assertDatabaseMissing('activity_logs', ['action' => 'delete_department']);
     }
 
-    public function test_regular_admin_and_employee_are_forbidden(): void
+    /**
+     * Each role needs a distinct test session: EnsureSessionFreshness binds
+     * the session to the first authenticated user and correctly revokes it
+     * when another user is swapped into that same session.
+     */
+    private function assertNonSuperAdminCannotDelete(string $role): void
     {
         $department = $this->department('SEC');
-        foreach (['admin', 'user'] as $role) {
-            $actor = User::factory()->create([
-                'role' => $role,
-                'account_status' => 'active',
-            ]);
+        $actor = User::factory()->create([
+            'role' => $role,
+            'account_status' => 'active',
+        ]);
 
-            $this->actingAs($actor)->delete(route('departments.destroy', $department), [
+        $this->actingAs($actor)
+            ->delete(route('departments.destroy', $department), [
                 'confirmation_code' => 'SEC',
-            ])->assertForbidden();
-        }
+            ])
+            ->assertForbidden();
 
         $this->assertDatabaseHas('departments', ['id' => $department->id]);
         $this->assertDatabaseMissing('activity_logs', ['action' => 'delete_department']);
+    }
+
+    public function test_regular_admin_is_forbidden(): void
+    {
+        $this->assertNonSuperAdminCannotDelete('admin');
+    }
+
+    public function test_employee_is_forbidden(): void
+    {
+        $this->assertNonSuperAdminCannotDelete('user');
     }
 
     public function test_guest_cannot_delete_department(): void
