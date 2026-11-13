@@ -54,6 +54,7 @@ class DocumentUploadSecurityService
                         'xlsx',
                         'doc',
                         'docx',
+                        'pptx',
                         'csv',
                         'txt',
                     ]
@@ -142,6 +143,11 @@ class DocumentUploadSecurityService
 
                 'docx' =>
                     $this->validateDocx(
+                        $realPath
+                    ),
+
+                'pptx' =>
+                    $this->validatePptx(
                         $realPath
                     ),
 
@@ -268,6 +274,7 @@ class DocumentUploadSecurityService
                     'xlsx',
                     'doc',
                     'docx',
+                    'pptx',
                 ],
                 true
             )
@@ -460,6 +467,100 @@ class DocumentUploadSecurityService
 
             'macro_check' =>
                 'passed',
+        ];
+    }
+
+
+
+    /**
+     * PowerPoint OOXML: accept real macro-free .pptx packages, not renamed
+     * ZIP/DOCX/XLSX/PPTM files. Never extract, parse active objects, or execute.
+     */
+    private function validatePptx(string $path): array
+    {
+        $zip = $this->openZip($path);
+
+        try {
+            $requiredEntries = [
+                '[Content_Types].xml',
+                '_rels/.rels',
+                'ppt/presentation.xml',
+            ];
+
+            foreach ($requiredEntries as $entry) {
+                if ($zip->locateName($entry, ZipArchive::FL_NOCASE) === false) {
+                    $this->reject('Struktur PPTX tidak valid.');
+                }
+            }
+
+            $typesIndex = $zip->locateName(
+                '[Content_Types].xml',
+                ZipArchive::FL_NOCASE
+            );
+
+            $typesStat = $zip->statIndex($typesIndex);
+
+            if (! is_array($typesStat)
+                || (int) ($typesStat['size'] ?? 0) > 1024 * 1024) {
+                $this->reject('Metadata format PPTX tidak valid.');
+            }
+
+            // Only inspect bounded content-types metadata, not decompressed
+            // slides/media. This prevents accidental processing of ZIP bombs.
+            $types = $zip->getFromIndex($typesIndex, 1024 * 1024 + 1);
+
+            if (! is_string($types)
+                || ! str_contains(
+                    $types,
+                    'application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml'
+                )) {
+                $this->reject('File tidak sesuai dengan format PPTX.');
+            }
+
+            if (preg_match('/macroEnabled|vbaProject|activeX/i', $types) === 1) {
+                $this->reject('PPTX dengan macro atau ActiveX tidak diizinkan.');
+            }
+
+            if ($zip->numFiles > 5000) {
+                $this->reject('PPTX memiliki terlalu banyak komponen.');
+            }
+
+            $totalExpanded = 0;
+
+            for ($i = 0; $i < $zip->numFiles; $i++) {
+                $entryName = $zip->getNameIndex($i);
+
+                if (! is_string($entryName)) {
+                    $this->reject('Komponen PPTX tidak valid.');
+                }
+
+                if (preg_match(
+                    '~(?:^|/)(?:vbaProject\.bin|vbaData\.xml)$|(?:^|/)activeX/~i',
+                    $entryName
+                ) === 1) {
+                    $this->reject('PPTX mengandung VBA/ActiveX dan tidak diizinkan.');
+                }
+
+                $entryStat = $zip->statIndex($i);
+
+                if (! is_array($entryStat)) {
+                    $this->reject('Metadata komponen PPTX tidak valid.');
+                }
+
+                $totalExpanded += (int) ($entryStat['size'] ?? 0);
+
+                if ($totalExpanded > 250 * 1024 * 1024) {
+                    $this->reject('Ukuran konten PPTX yang diekstrak terlalu besar.');
+                }
+            }
+        } finally {
+            $zip->close();
+        }
+
+        return [
+            'signature' => 'zip_ooxml',
+            'structure' => 'pptx',
+            'macro_check' => 'passed',
         ];
     }
 

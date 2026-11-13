@@ -24,6 +24,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -154,6 +155,7 @@ class DocumentController extends Controller
             'xls',
             'doc',
             'docx',
+            'pptx',
             'csv',
             'txt',
         ])
@@ -303,7 +305,7 @@ class DocumentController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             ...$categoryAssignment->validationRules($request),
 
             'title' => [
@@ -348,9 +350,30 @@ class DocumentController extends Controller
                 // Maksimum 20 MB
                 'max:20480',
 
-                'mimes:pdf,xls,xlsx,doc,docx,csv,txt',
+                // PowerPoint is an OOXML ZIP container. fileinfo may return
+                // a PowerPoint-specific MIME or a generic ZIP/octet-stream.
+                // Deep signature + PPTX structure validation is mandatory.
+                Rule::when(
+                    strtolower((string) $request->file('file')?->getClientOriginalExtension()) === 'pptx',
+                    'mimetypes:application/vnd.openxmlformats-officedocument.presentationml.presentation,application/zip,application/x-zip-compressed,application/octet-stream',
+                    'mimes:pdf,xls,xlsx,doc,docx,csv,txt'
+                ),
             ],
+        ], [
+            'file.uploaded' => 'Upload file gagal diterima PHP. Periksa pengaturan upload_max_filesize dan post_max_size pada server.',
+            'file.max' => 'Ukuran file melebihi batas aplikasi 20 MB.',
         ]);
+        // Do not rely on Referer / session previous URL: the authenticated
+        // avatar endpoint may become the last visited URL.
+        if ($validator->fails()) {
+            return redirect()
+                ->route('documents.create')
+                ->withErrors($validator)
+                ->withInput($request->except('file'));
+        }
+
+        $validated = $validator->validated();
+
 
         /*
         |--------------------------------------------------------------------------
@@ -358,7 +381,14 @@ class DocumentController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $categorySelection = $categoryAssignment->prepare($validated);
+        try {
+            $categorySelection = $categoryAssignment->prepare($validated);
+        } catch (ValidationException $exception) {
+            return redirect()
+                ->route('documents.create')
+                ->withErrors($exception->errors())
+                ->withInput($request->except('file'));
+        }
 
         /*
         |--------------------------------------------------------------------------
@@ -372,7 +402,7 @@ class DocumentController extends Controller
             $file === null
             || ! $file->isValid()
         ) {
-            return back()
+            return redirect()->route('documents.create')
                 ->withInput()
                 ->withErrors([
                     'file' =>
@@ -391,10 +421,14 @@ class DocumentController extends Controller
         |
         */
 
-        $security =
-            $uploadSecurity->validate(
-                $file
-            );
+        try {
+            $security = $uploadSecurity->validate($file);
+        } catch (ValidationException $exception) {
+            return redirect()
+                ->route('documents.create')
+                ->withErrors($exception->errors())
+                ->withInput($request->except('file'));
+        }
 
         $extension =
             $security['extension'];
@@ -477,7 +511,7 @@ class DocumentController extends Controller
         );
 
         if (! $storedPath) {
-            return back()
+            return redirect()->route('documents.create')
                 ->withInput()
                 ->withErrors([
                     'file' =>
@@ -504,7 +538,7 @@ class DocumentController extends Controller
                 $storedPath
             );
 
-            return back()
+            return redirect()->route('documents.create')
                 ->withInput()
                 ->withErrors([
                     'file' =>
@@ -787,7 +821,10 @@ class DocumentController extends Controller
                 $storedPath
             );
 
-            throw $exception;
+            return redirect()
+                ->route('documents.create')
+                ->withErrors($exception->errors())
+                ->withInput($request->except('file'));
 
         } catch (Throwable $exception) {
 
@@ -805,7 +842,7 @@ class DocumentController extends Controller
 
             report($exception);
 
-            return back()
+            return redirect()->route('documents.create')
                 ->withInput()
                 ->withErrors([
                     'file' =>
@@ -2402,7 +2439,7 @@ class DocumentController extends Controller
         | Non-previewable File
         |--------------------------------------------------------------------------
         |
-        | Word / Excel akan dikirim sebagai download.
+        | Word / Excel / PowerPoint dikirim sebagai download.
         |
         */
 
@@ -2846,6 +2883,7 @@ class DocumentController extends Controller
                     'xls',
                     'doc',
                     'docx',
+                    'pptx',
                     'csv',
                     'txt',
                 ]),

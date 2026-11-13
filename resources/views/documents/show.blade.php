@@ -37,6 +37,9 @@
             'docx' =>
                 'bg-blue-50 text-blue-700',
 
+            'pptx' =>
+                'bg-orange-50 text-orange-700',
+
             'txt' =>
                 'bg-slate-100 text-slate-600',
 
