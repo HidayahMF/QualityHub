@@ -44,13 +44,6 @@ jobs:
           cp .env.example .env
           php artisan key:generate --no-interaction
           php artisan config:clear
-      - name: Feature regression tests (isolated SQLite)
-        run: |
-          php artisan test --filter=LegacyPptUploadTest
-          php artisan test --filter=PptxUploadTest
-          php artisan test --filter=CategoryAssignmentTest
-          php artisan test --filter=DocxPreviewTest
-          php artisan test --filter=SearchableFilterSelectTest
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -60,6 +53,13 @@ jobs:
         run: |
           npm ci
           npm run build
+      - name: Feature regression tests (isolated SQLite)
+        run: |
+          php artisan test --filter=LegacyPptUploadTest
+          php artisan test --filter=PptxUploadTest
+          php artisan test --filter=CategoryAssignmentTest
+          php artisan test --filter=DocxPreviewTest
+          php artisan test --filter=SearchableFilterSelectTest
       - name: Compile Blade views
         run: |
           php artisan view:cache
