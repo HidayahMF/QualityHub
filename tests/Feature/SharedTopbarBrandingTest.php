@@ -48,7 +48,7 @@ class SharedTopbarBrandingTest extends TestCase
         foreach ([
             'Pengelolaan dokumen internal BMC',
             'Ringkasan ruang kerja BMC QualityHub',
-            'Kelola data departemen dan struktur organisasi BMC',
+            'Kelola data divisi dan struktur organisasi BMC',
             'Kelola akun pengguna dan hak akses QualityHub',
             'Tinjau aktivitas audit aplikasi QualityHub',
         ] as $subtitle) {

@@ -30,10 +30,10 @@ class DepartmentManagementTest extends TestCase
         )
             ->assertOk()
             ->assertSee(
-                'Department Management'
+                'Divisi'
             )
             ->assertSee(
-                'Tambah Departemen'
+                'Tambah Divisi'
             );
 
         $this->get(
@@ -43,10 +43,10 @@ class DepartmentManagementTest extends TestCase
         )
             ->assertOk()
             ->assertSee(
-                'Add Department'
+                'Tambah Divisi'
             )
             ->assertSee(
-                'Nama Departemen'
+                'Nama Divisi'
             );
     }
 
@@ -103,7 +103,7 @@ class DepartmentManagementTest extends TestCase
                             'pe',
 
                         'description' =>
-                            'Departemen engineering produksi.',
+                            'Divisi engineering produksi.',
                     ]
                 );
 
@@ -115,7 +115,7 @@ class DepartmentManagementTest extends TestCase
             )
             ->assertSessionHas(
                 'success',
-                'Departemen berhasil ditambahkan.'
+                'Divisi berhasil ditambahkan.'
             );
 
         $department =
@@ -255,7 +255,7 @@ class DepartmentManagementTest extends TestCase
             )
             ->assertSessionHas(
                 'success',
-                'Departemen berhasil diperbarui.'
+                'Divisi berhasil diperbarui.'
             );
 
         $this->assertDatabaseHas(
@@ -345,7 +345,7 @@ class DepartmentManagementTest extends TestCase
             ->assertRedirect()
             ->assertSessionHas(
                 'success',
-                'Departemen berhasil dinonaktifkan.'
+                'Divisi berhasil dinonaktifkan.'
             );
 
         $this->assertDatabaseHas(
@@ -385,7 +385,7 @@ class DepartmentManagementTest extends TestCase
             ->assertRedirect()
             ->assertSessionHas(
                 'success',
-                'Departemen berhasil diaktifkan.'
+                'Divisi berhasil diaktifkan.'
             );
 
         $this->assertDatabaseHas(

@@ -52,7 +52,7 @@ class DepartmentActionRedirectRegressionTest extends TestCase
             ->previousUrlWasAvatar()
             ->patch(route('departments.toggle-status', $department))
             ->assertRedirect(route('departments.index'))
-            ->assertSessionHas('success', 'Departemen berhasil diaktifkan.');
+            ->assertSessionHas('success', 'Divisi berhasil diaktifkan.');
 
         $this->assertDatabaseHas('departments', [
             'id' => $department->id,
@@ -68,7 +68,7 @@ class DepartmentActionRedirectRegressionTest extends TestCase
             ->previousUrlWasAvatar()
             ->patch(route('departments.toggle-status', $department))
             ->assertRedirect(route('departments.index'))
-            ->assertSessionHas('success', 'Departemen berhasil dinonaktifkan.');
+            ->assertSessionHas('success', 'Divisi berhasil dinonaktifkan.');
 
         $this->assertDatabaseHas('departments', [
             'id' => $department->id,
