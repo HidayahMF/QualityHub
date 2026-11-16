@@ -152,15 +152,18 @@ class DocumentVersionController extends Controller
                 'max:20480',
                 // Legacy PPT is OLE/CFB; PPTX is ZIP/OOXML.
                 // Both still require independent deep structure checks.
-                Rule::when(
-                    in_array(
-                        strtolower((string) $request->file('file')?->getClientOriginalExtension()),
-                        ['ppt', 'pptx'],
-                        true
-                    ),
-                    'mimetypes:application/vnd.ms-powerpoint,application/vnd.ms-office,application/x-ole-storage,application/cdfv2,application/x-cdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/zip,application/x-zip-compressed,application/octet-stream',
-                    'mimes:pdf,xls,xlsx,doc,docx,csv,txt'
-                ),
+                // Windows fileinfo may classify legacy OLE as an
+                // unexpected MIME. Defer PPT to the strict CFB parser in
+                // DocumentUploadSecurityService; do not skip validation.
+                ...match (strtolower((string) $request->file('file')?->getClientOriginalExtension())) {
+                    'ppt' => [],
+                    'pptx' => [
+                        'mimetypes:application/vnd.openxmlformats-officedocument.presentationml.presentation,application/zip,application/x-zip-compressed,application/octet-stream',
+                    ],
+                    default => [
+                        'mimes:pdf,xls,xlsx,doc,docx,csv,txt',
+                    ],
+                },
             ],
 
             'revision_file_name' => [
