@@ -146,14 +146,16 @@ Alpine.data('qualityHubModal', () => ({
     },
 }));
 
-// Explicit, per-page selection for Super Admin dummy-document cleanup.
-// Metadata is collected from server-rendered rows; never infer dummy status.
+// Per-page selection shared by Admin/Super Admin bulk archive, and Super Admin bulk delete.
+// Metadata comes only from server-rendered rows; authorization is rechecked by each endpoint.
 Alpine.data('qualityHubBulkDelete', () => ({
     available: [],
     selectedIds: [],
     confirmation: '',
     acknowledged: false,
     submitting: false,
+    archiveReason: '',
+    archiveSubmitting: false,
 
     init() {
         const seen = new Set();
@@ -208,6 +210,35 @@ Alpine.data('qualityHubBulkDelete', () => ({
         this.confirmation = '';
         this.acknowledged = false;
         this.submitting = false;
+    },
+
+    resetArchiveOnOpen(event) {
+        const name = typeof event.detail === 'string'
+            ? event.detail
+            : event.detail?.name;
+        if (name !== 'bulk-document-archive') {
+            return;
+        }
+        this.archiveReason = '';
+        this.archiveSubmitting = false;
+    },
+
+    get cannotArchiveSubmit() {
+        const reasonLength = this.archiveReason.trim().length;
+        return this.noSelection
+            || this.selectedCount > 15
+            || this.selectedDocuments.length !== this.selectedCount
+            || reasonLength < 3
+            || reasonLength > 1000
+            || this.archiveSubmitting;
+    },
+
+    submitArchive(event) {
+        if (this.cannotArchiveSubmit) {
+            event.preventDefault();
+            return;
+        }
+        this.archiveSubmitting = true;
     },
 
     get cannotBulkSubmit() {

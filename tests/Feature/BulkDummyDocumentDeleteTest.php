@@ -346,8 +346,9 @@ class BulkDummyDocumentDeleteTest extends TestCase
         $this->actingAs($admin)
             ->get(route('documents.index'))
             ->assertOk()
-            ->assertDontSee('data-qh-bulk-toolbar', false)
-            ->assertDontSee('data-qh-bulk-document', false)
+            ->assertSee('data-qh-bulk-toolbar', false)
+            ->assertSee('data-qh-bulk-document', false)
+            ->assertSee('bulk-document-archive', false)
             ->assertDontSee('bulk-document-delete', false);
 
         $this->assertNotNull($document->fresh());

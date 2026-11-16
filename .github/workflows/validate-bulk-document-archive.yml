@@ -1,0 +1,57 @@
+name: Validate bulk document archive
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/validate-bulk-document-archive.yml'
+      - 'app/Http/Controllers/BulkDocumentArchiveController.php'
+      - 'routes/web.php'
+      - 'resources/views/documents/index.blade.php'
+      - 'resources/js/app.js'
+      - 'tests/Feature/BulkDocumentArchiveTest.php'
+      - 'tests/Feature/BulkDummyDocumentDeleteTest.php'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bulk-archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, fileinfo, zip, intl, gd, pdo_sqlite, sqlite3
+          coverage: none
+      - name: PHP syntax checks
+        run: |
+          php -l app/Http/Controllers/BulkDocumentArchiveController.php
+          php -l tests/Feature/BulkDocumentArchiveTest.php
+          php -l routes/web.php
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Build frontend
+        run: |
+          npm ci
+          npm run build
+      - name: Prepare isolated test environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+      - name: Run archive and deletion regression tests
+        run: |
+          php artisan test --filter=BulkDocumentArchiveTest
+          php artisan test --filter=BulkDummyDocumentDeleteTest
+          php artisan test --filter=DocumentPermanentDeleteTest
+      - name: Compile Blade and validate routes
+        run: |
+          php artisan view:cache
+          php artisan route:list --name=documents.bulk-archive
+          php artisan view:clear

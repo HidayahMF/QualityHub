@@ -1679,7 +1679,7 @@ id="smartfind-document-type"
     {{-- ========================================================= --}}
 
     <section
-        @if(auth()->user()?->isSuperAdmin()) x-data="qualityHubBulkDelete" @endif
+        @if(auth()->user()?->isAdmin()) x-data="qualityHubBulkDelete" @endif
         class="bg-white
 
                rounded-2xl
@@ -1831,7 +1831,7 @@ id="smartfind-document-type"
         {{-- DOCUMENT TABLE --}}
         {{-- ===================================================== --}}
 
-        @if($documents->count() && auth()->user()?->isSuperAdmin())
+        @if($documents->count() && auth()->user()?->isAdmin())
             <div data-qh-bulk-toolbar class="flex flex-wrap items-center justify-between gap-3 border-b border-blue-100 bg-blue-50/40 px-5 py-3">
                 <label class="inline-flex cursor-pointer items-center gap-2 text-xs font-semibold text-blue-900">
                     <input type="checkbox"
@@ -1850,11 +1850,18 @@ id="smartfind-document-type"
                             class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">
                         Batalkan Pilihan
                     </button>
+                    <button type="button" x-on:click="$dispatch('open-modal', 'bulk-document-archive')"
+                            x-bind:disabled="noSelection"
+                            class="rounded-lg bg-blue-800 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40">
+                        Arsipkan (<span x-text="selectedCount">0</span>)
+                    </button>
+                    @if(auth()->user()?->isSuperAdmin())
                     <button type="button" x-on:click="$dispatch('open-modal', 'bulk-document-delete')"
                             x-bind:disabled="noSelection"
                             class="rounded-lg bg-red-700 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40">
                         Hapus Permanen (<span x-text="selectedCount">0</span>)
                     </button>
+                    @endif
                 </div>
             </div>
         @endif
@@ -1926,8 +1933,8 @@ id="smartfind-document-type"
 
                     <article class="p-4 sm:p-5 hover:bg-blue-50/30 transition">
                         <div class="flex items-start gap-3">
-                            @if(auth()->user()?->isSuperAdmin())
-                                <label class="mt-1 inline-flex flex-shrink-0 cursor-pointer items-center" title="Pilih dokumen untuk penghapusan massal">
+                            @if(auth()->user()?->isAdmin())
+                                <label class="mt-1 inline-flex flex-shrink-0 cursor-pointer items-center" title="Pilih dokumen untuk aksi massal">
                                     <input type="checkbox" value="{{ $document->id }}" x-model="selectedIds"
                                            data-qh-bulk-document data-qh-document-title="{{ $document->title }}"
                                            data-qh-document-code="{{ $document->document_code ?? '' }}"
@@ -2268,8 +2275,8 @@ id="smartfind-document-type"
                                                gap-3"
                                     >
 
-                                        @if(auth()->user()?->isSuperAdmin())
-                                            <label class="inline-flex flex-shrink-0 cursor-pointer items-center" title="Pilih dokumen untuk penghapusan massal">
+                                        @if(auth()->user()?->isAdmin())
+                                            <label class="inline-flex flex-shrink-0 cursor-pointer items-center" title="Pilih dokumen untuk aksi massal">
                                                 <input type="checkbox" value="{{ $document->id }}" x-model="selectedIds"
                                                        data-qh-bulk-document data-qh-document-title="{{ $document->title }}"
                                                        data-qh-document-code="{{ $document->document_code ?? '' }}"
@@ -2991,6 +2998,94 @@ id="smartfind-document-type"
 
             </div>
 
+        @endif
+
+        @if($documents->count() && auth()->user()?->isAdmin())
+            {{-- Teleport above the sticky BMC topbar while preserving Alpine selection state. --}}
+            <template x-teleport="body">
+                <x-modal name="bulk-document-archive" maxWidth="lg"
+                         containerClass="qh-bulk-modal-overlay flex items-center justify-center"
+                         panelClass="qh-bulk-modal-panel relative w-full rounded-2xl border border-blue-100 bg-white shadow-2xl"
+                         backdropClass="bg-slate-950/65 backdrop-blur-[2px]"
+                         labelledBy="bulk-document-archive-title"
+                         describedBy="bulk-document-archive-description" focusable>
+                    <div class="h-1.5 flex-shrink-0 bg-blue-800"></div>
+                    <form method="POST" action="{{ route('documents.bulk-archive') }}"
+                          x-on:open-modal.window="resetArchiveOnOpen"
+                          x-on:submit="submitArchive" class="qh-bulk-modal-form">
+                        @csrf
+                        @method('PATCH')
+                        <input type="hidden" name="selected_count" x-bind:value="selectedCount">
+                        <template x-for="item in selectedDocuments" :key="item.id">
+                            <input type="hidden" name="document_ids[]" x-bind:value="item.id">
+                        </template>
+
+                        <div class="qh-bulk-modal-header border-b border-blue-100 px-5 py-4 sm:px-6">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="inline-flex rounded-lg bg-blue-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-blue-800">
+                                    Pengelolaan Dokumen
+                                </span>
+                                <button type="button" x-on:click="$dispatch('close')"
+                                        aria-label="Tutup konfirmasi arsip massal"
+                                        class="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                         stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                                        <path d="M18 6 6 18M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <h2 id="bulk-document-archive-title" class="mt-2 text-xl font-extrabold tracking-tight text-slate-900">
+                                Arsipkan Dokumen Terpilih?
+                            </h2>
+                            <p id="bulk-document-archive-description" class="mt-1 text-sm leading-5 text-slate-600">
+                                Dokumen dipindah ke Arsip dan dapat dipulihkan. File asli serta revisi tetap tersimpan.
+                            </p>
+                        </div>
+
+                        <div class="qh-bulk-modal-body space-y-3 px-5 py-4 sm:px-6">
+                            <div class="flex items-center justify-between gap-3">
+                                <h3 class="text-xs font-bold uppercase tracking-wide text-slate-600">Daftar dokumen yang akan diarsipkan</h3>
+                                <span class="inline-flex flex-shrink-0 rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-800">
+                                    <span x-text="selectedCount">0</span>&nbsp;dokumen
+                                </span>
+                            </div>
+                            <ul class="qh-bulk-selected-list divide-y divide-slate-200 rounded-xl border border-slate-200 bg-slate-50 px-3"
+                                aria-label="Daftar dokumen arsip massal">
+                                <template x-for="item in selectedDocuments" :key="item.id">
+                                    <li class="py-2.5">
+                                        <span class="block break-words text-sm font-semibold text-slate-800" x-text="item.title"></span>
+                                        <span class="mt-0.5 block break-words text-xs text-slate-500" x-text="item.code"></span>
+                                    </li>
+                                </template>
+                            </ul>
+                            <div>
+                                <label for="bulk-document-archive-reason" class="block text-xs font-bold text-slate-800">
+                                    Alasan arsip <span class="text-red-600">*</span>
+                                </label>
+                                <textarea id="bulk-document-archive-reason" name="archive_reason"
+                                          x-model="archiveReason" required minlength="3" maxlength="1000"
+                                          rows="3" placeholder="Contoh: Dokumen uji sudah selesai digunakan"
+                                          data-qh-modal-initial-focus
+                                          class="mt-2 block w-full resize-y rounded-xl border-slate-300 bg-white text-sm focus:border-blue-600 focus:ring-blue-600"></textarea>
+                                <p class="mt-1 text-xs text-slate-500">
+                                    Alasan yang sama dicatat untuk semua dokumen, minimal 3 karakter.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="qh-bulk-modal-footer flex flex-col-reverse gap-2 border-t border-slate-200 bg-white px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
+                            <button type="button" x-on:click="$dispatch('close')"
+                                    class="inline-flex min-h-[42px] items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                                Batal
+                            </button>
+                            <button type="submit" x-bind:disabled="cannotArchiveSubmit"
+                                    class="inline-flex min-h-[42px] items-center justify-center rounded-xl bg-blue-800 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-blue-900 disabled:cursor-not-allowed disabled:opacity-40">
+                                Arsipkan (<span x-text="selectedCount">0</span>)
+                            </button>
+                        </div>
+                    </form>
+                </x-modal>
+            </template>
         @endif
 
         @if($documents->count() && auth()->user()?->isSuperAdmin())
