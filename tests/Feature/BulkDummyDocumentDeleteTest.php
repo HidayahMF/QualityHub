@@ -292,6 +292,26 @@ class BulkDummyDocumentDeleteTest extends TestCase
             ->assertSee('Pilih semua di halaman ini');
     }
 
+    public function test_bulk_selection_has_explicit_checkmark_style_on_windows_edge(): void
+    {
+        $css = file_get_contents(resource_path('css/app.css'));
+
+        $this->assertIsString($css);
+        $this->assertStringContainsString(
+            'input:is([data-qh-bulk-document], [data-qh-bulk-select-all]):checked',
+            $css
+        );
+        $this->assertStringContainsString('background-image: url("data:image/svg+xml,', $css);
+        $this->assertStringContainsString('background-color: #1d4ed8 !important;', $css);
+
+        $this->createDocument('Selected dummy');
+        $this->actingAs($this->superAdmin)
+            ->get(route('documents.index'))
+            ->assertOk()
+            ->assertSee('data-qh-bulk-select-all', false)
+            ->assertSee('data-qh-bulk-document', false);
+    }
+
     public function test_regular_admin_does_not_see_bulk_deletion_interface(): void
     {
         $document = $this->createDocument('Sample test record');
