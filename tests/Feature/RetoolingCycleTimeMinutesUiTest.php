@@ -26,11 +26,11 @@ class RetoolingCycleTimeMinutesUiTest extends TestCase
         $this->assertStringContainsString("'value' => \$cycleTimeMinutes(\$fromCycle)", $view);
         $this->assertStringContainsString("'value' => \$cycleTimeMinutes(\$toCycle)", $view);
         $this->assertStringContainsString(
-            '\$fromCycleSnapshot ?? \$productCycle(\$scanMetadata?->from_type)',
+            '$fromCycleSnapshot ?? $productCycle($scanMetadata?->from_type)',
             $view
         );
         $this->assertStringContainsString(
-            '\$toCycleSnapshot ?? \$productCycle(\$scanMetadata?->to_type)',
+            '$toCycleSnapshot ?? $productCycle($scanMetadata?->to_type)',
             $view
         );
     }
