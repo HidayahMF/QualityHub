@@ -35,3 +35,17 @@ Manual di staging (bukan production data): pilih 2 data dummy, periksa judul/kod
 
 ## Batas rilis
 PR Draft sampai CI, review kode keamanan, dan QA staging selesai. Tidak merge atau deploy server BMC secara otomatis. Lakukan backup dan persetujuan PIC BMC sebelum mengaktifkan penghapusan massal pada server produksi.
+
+## QA UI — Edge: modal terpotong dan checkbox tak terlihat (16 Nov 2026)
+Laporan screenshot localhost: dialog bulk delete menempel/tertutup topbar sticky ketika dibuka; checkbox pernyataan data dummy bisa dicentang tetapi glyph centangnya tidak terlihat.
+
+Perbaikan branch ini:
+- Teleport modal saja ke `body` agar tidak terkunci dalam stacking context `main.z-10` di bawah `header.z-30`; gunakan overlay z-index di atas topbar.
+- Panel dialog dibatasi `100dvh`; header dan footer tetap terlihat, area utama punya scroll sendiri; daftar dokumen dibatasi tinggi dan dapat di-scroll.
+- Modal dirapikan: badge Super Admin, judul dan penjelasan ringkas, jumlah terpilih, nama/kode setiap dokumen, pengakuan dummy, input HAPUS, dan aksi yang mudah dipahami.
+- Checkbox `acknowledge_dummy` menggunakan styling centang putih pada latar biru yang sama seperti checkbox tabel; input native dan `x-model` tetap dipertahankan untuk formulir dan keyboard.
+- Tidak mengubah controller, service purge, DB, ACL, payload `document_ids[]`, atau Activity Log dalam perbaikan UI ini.
+
+Regression: `BulkDummyDocumentDeleteTest` mencakup marker teleport, scroll/viewport CSS, dan checked-state; juga jalankan ulang `DocumentPermanentDeleteTest` dan npm build.
+
+Uji manual di Windows Edge: pilih 5 dokumen dummy, buka modal; topbar harus tertutupi backdrop, judul modal tidak terpotong, daftar dapat scroll, checkbox pengakuan tampak tanda centangnya, tombol baru aktif setelah checkbox + teks HAPUS benar. Tes juga resolusi pendek dan mobile. Jangan hapus dokumen perusahaan saat QA visual.
