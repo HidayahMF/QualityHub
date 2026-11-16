@@ -123,11 +123,12 @@ class DocumentUploadSecurityService
                 )
             );
 
-        $mimeStatus =
-            $this->validateMime(
-                $extension,
-                $serverMime
-            );
+        // Legacy PowerPoint CFB files are inconsistently classified by
+        // Windows and Linux fileinfo. For PPT only, inspect the actual
+        // compound-file structure before any unknown MIME fallback.
+        $mimeStatus = $extension === 'ppt'
+            ? null
+            : $this->validateMime($extension, $serverMime);
 
         $signatureResult =
             match ($extension) {
@@ -179,6 +180,17 @@ class DocumentUploadSecurityService
                         'Extension security validator tidak dikenali.'
                     ),
             };
+
+        if ($extension === 'ppt') {
+            // The strict OLE magic, FAT/directory, PowerPoint streams,
+            // and macro checks above must succeed first. MIME alone is
+            // not reliable for legacy CFB on Windows.
+            try {
+                $mimeStatus = $this->validateMime($extension, $serverMime);
+            } catch (ValidationException) {
+                $mimeStatus = 'ole_structure_verified_mime_fallback';
+            }
+        }
 
         return [
             'extension' =>
