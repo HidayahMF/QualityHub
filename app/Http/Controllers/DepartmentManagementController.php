@@ -567,7 +567,7 @@ class DepartmentManagementController extends Controller
     }
 
     /**
-     * Mencatat aktivitas Department Management.
+     * Mencatat aktivitas pengelolaan Divisi.
      */
     private function logActivity(
         Request $request,
