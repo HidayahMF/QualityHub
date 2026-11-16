@@ -1826,6 +1826,16 @@
                     return (string) $value;
                 };
 
+                // PPIC CT is measured in minutes. Keep stored snapshot
+                // values untouched; append the unit only when displaying.
+                $cycleTimeMinutes = static function ($value): ?string {
+                    if ($value === null || trim((string) $value) === '') {
+                        return null;
+                    }
+
+                    return number_format((float) $value, 2, '.', '').' menit';
+                };
+
                 $productionTime = static function ($value) use ($productionValue): ?string {
                     $value = $productionValue($value);
 
@@ -1957,9 +1967,9 @@
                             ['label' => 'Tanggal Proses', 'value' => $productionDate($retoolingProcessDate)],
                             ['label' => 'Tanggal Retooling', 'value' => $productionDate($retoolingDate)],
                             ['label' => 'Dari Type', 'value' => $fromName],
-                            ['label' => 'Cycle Time Dari', 'value' => $fromCycle === null ? null : number_format((float) $fromCycle, 2, '.', '')],
+                            ['label' => 'Cycle Time Dari', 'value' => $cycleTimeMinutes($fromCycle)],
                             ['label' => 'Ke Type', 'value' => $toName],
-                            ['label' => 'Cycle Time Ke', 'value' => $toCycle === null ? null : number_format((float) $toCycle, 2, '.', '')],
+                            ['label' => 'Cycle Time Ke', 'value' => $cycleTimeMinutes($toCycle)],
                             ['label' => 'Jam', 'value' => $productionTime($scanMetadata?->scan_time)],
                         ];
                     } else {
@@ -1972,16 +1982,16 @@
                             ['label' => 'Dari Type', 'value' => $productName($scanMetadata?->from_type)],
                             [
                                 'label' => 'Cycle Time Dari',
-                                'value' => $fromCycleSnapshot !== null
-                                    ? number_format((float) $fromCycleSnapshot, 2, '.', '')
-                                    : $productCycle($scanMetadata?->from_type),
+                                'value' => $cycleTimeMinutes(
+                                    $fromCycleSnapshot ?? $productCycle($scanMetadata?->from_type)
+                                ),
                             ],
                             ['label' => 'Ke Type', 'value' => $productName($scanMetadata?->to_type)],
                             [
                                 'label' => 'Cycle Time Ke',
-                                'value' => $toCycleSnapshot !== null
-                                    ? number_format((float) $toCycleSnapshot, 2, '.', '')
-                                    : $productCycle($scanMetadata?->to_type),
+                                'value' => $cycleTimeMinutes(
+                                    $toCycleSnapshot ?? $productCycle($scanMetadata?->to_type)
+                                ),
                             ],
                             ['label' => 'Jam', 'value' => $productionTime($scanMetadata?->scan_time)],
                         ];
