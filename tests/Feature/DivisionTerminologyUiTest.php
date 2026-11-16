@@ -90,10 +90,9 @@ class DivisionTerminologyUiTest extends TestCase
             );
         }
 
-        $this->assertSame(
-            'divisi',
-            require base_path('lang/id/validation.php')['attributes']['department_id']
-        );
+        $validation = require base_path('lang/id/validation.php');
+
+        $this->assertSame('divisi', $validation['attributes']['department_id']);
     }
 
     public function test_existing_routes_database_keys_and_delete_confirmation_remain_compatible(): void
