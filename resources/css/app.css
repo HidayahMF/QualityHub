@@ -3080,3 +3080,46 @@
         text-shadow: none;
     }
 }
+
+/* ==========================================================================
+   QUALITYHUB BULK DELETE — VISIBLE CHECKMARK
+   Keep native checkbox semantics for Alpine x-model and keyboard controls.
+   An explicit tick avoids missing system check glyph on Windows/Edge.
+   Scoped ONLY to Super Admin's bulk selection in All Documents.
+   ========================================================================== */
+input:is([data-qh-bulk-document], [data-qh-bulk-select-all]) {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    display: inline-block;
+    flex: 0 0 1.2rem;
+    width: 1.2rem;
+    height: 1.2rem;
+    padding: 0;
+    margin: 0;
+    vertical-align: middle;
+    border: 1.5px solid #93c5fd !important;
+    border-radius: 0.3rem;
+    background-color: #fff !important;
+    background-image: none !important;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 0.95rem 0.95rem;
+    cursor: pointer;
+    transition: background-color 130ms ease, border-color 130ms ease;
+}
+
+input:is([data-qh-bulk-document], [data-qh-bulk-select-all]):checked {
+    border-color: #1d4ed8 !important;
+    background-color: #1d4ed8 !important;
+    background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M5%2012.5%2010%2017l9-10%22%20fill%3D%22none%22%20stroke%3D%22white%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%223%22%2F%3E%3C%2Fsvg%3E") !important;
+}
+
+input:is([data-qh-bulk-document], [data-qh-bulk-select-all]):focus-visible {
+    outline: 3px solid #93c5fd;
+    outline-offset: 2px;
+}
+
+input:is([data-qh-bulk-document], [data-qh-bulk-select-all]):disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
