@@ -6,6 +6,7 @@ use App\Http\Controllers\CategoryManagementController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\BulkDocumentDeletionController;
+use App\Http\Controllers\BulkDocumentArchiveController;
 use App\Http\Controllers\DocumentVersionController;
 use App\Http\Controllers\DepartmentManagementController;
 use App\Http\Controllers\FavoriteController;
@@ -136,6 +137,15 @@ Route::middleware([
         '/documents/archived',
         [DocumentController::class, 'archived']
     )->name('documents.archived');
+
+    // Admin and Super Admin: archive multiple active documents atomically.
+    // Static route must remain above /documents/{document}.
+    Route::patch(
+        '/documents/bulk/archive',
+        BulkDocumentArchiveController::class
+    )
+        ->middleware('throttle:10,1')
+        ->name('documents.bulk-archive');
 
     // Super Admin bulk removal of explicitly selected dummy documents.
     // Static route must remain above /documents/{document}.
