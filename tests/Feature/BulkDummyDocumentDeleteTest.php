@@ -166,7 +166,7 @@ class BulkDummyDocumentDeleteTest extends TestCase
         $this->actingAs($this->superAdmin)
             ->delete(route('documents.bulk-force-destroy'), $this->payload([$one->id, $two->id]))
             ->assertRedirect(route('documents.index'))
-            ->assertSessionHas('success');
+            ->assertSessionHas('success', '2 dokumen terpilih berhasil dihapus permanen.');
 
         $this->assertNull($one->fresh());
         $this->assertNull($two->fresh());
