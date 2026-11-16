@@ -4649,7 +4649,7 @@
                     dropdown.append(
                         createOption(
                             product.name || product.code,
-                            `CT ${product.cycle_time}`,
+                            `CT ${product.cycle_time} menit`,
                             () => {
                                 selectCallback(
                                     product
@@ -5084,7 +5084,7 @@
                     product.name || product.code;
 
                 fromCycleTime.textContent =
-                    `Cycle Time: ${product.cycle_time}`;
+                    `Cycle Time: ${product.cycle_time} menit`;
 
                 closeDropdown(
                     fromOptions,
@@ -5110,7 +5110,7 @@
                     product.name || product.code;
 
                 toCycleTime.textContent =
-                    `Cycle Time: ${product.cycle_time}`;
+                    `Cycle Time: ${product.cycle_time} menit`;
 
                 closeDropdown(
                     toOptions,

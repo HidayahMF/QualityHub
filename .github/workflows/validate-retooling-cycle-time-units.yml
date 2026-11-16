@@ -1,0 +1,39 @@
+name: Validate Retooling Cycle Time units
+
+on:
+  pull_request:
+    paths:
+      - 'resources/views/documents/scan.blade.php'
+      - 'resources/views/documents/show.blade.php'
+      - 'tests/Feature/RetoolingCycleTimeMinutesUiTest.php'
+      - '.github/workflows/validate-retooling-cycle-time-units.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  minute-labels:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, fileinfo, zip, intl, gd, pdo_sqlite, sqlite3
+          coverage: none
+      - name: Validate test syntax
+        run: php -l tests/Feature/RetoolingCycleTimeMinutesUiTest.php
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Prepare local testing environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+      - name: Test minute labels and unchanged snapshots
+        run: php artisan test --filter=RetoolingCycleTimeMinutesUiTest
+      - name: Compile Blade views
+        run: |
+          php artisan view:cache
+          php artisan view:clear
