@@ -146,6 +146,87 @@ Alpine.data('qualityHubModal', () => ({
     },
 }));
 
+// Explicit, per-page selection for Super Admin dummy-document cleanup.
+// Metadata is collected from server-rendered rows; never infer dummy status.
+Alpine.data('qualityHubBulkDelete', () => ({
+    available: [],
+    selectedIds: [],
+    confirmation: '',
+    acknowledged: false,
+    submitting: false,
+
+    init() {
+        const seen = new Set();
+        this.$el.querySelectorAll('[data-qh-bulk-document]').forEach((input) => {
+            const id = String(input.value);
+            if (!/^\d+$/.test(id) || seen.has(id)) {
+                return;
+            }
+            seen.add(id);
+            this.available.push({
+                id,
+                title: input.dataset.qhDocumentTitle || 'Dokumen tanpa judul',
+                code: input.dataset.qhDocumentCode || 'Tanpa kode',
+            });
+        });
+    },
+
+    get selectedCount() {
+        return this.selectedIds.length;
+    },
+
+    get noSelection() {
+        return this.selectedCount === 0;
+    },
+
+    get selectedDocuments() {
+        return this.available.filter((item) => this.selectedIds.includes(item.id));
+    },
+
+    get allPageSelected() {
+        return this.available.length > 0
+            && this.selectedCount === this.available.length;
+    },
+
+    togglePage(event) {
+        this.selectedIds = event.target.checked
+            ? this.available.map((item) => item.id)
+            : [];
+    },
+
+    clearSelection() {
+        this.selectedIds = [];
+    },
+
+    resetBulkOnOpen(event) {
+        const name = typeof event.detail === 'string'
+            ? event.detail
+            : event.detail?.name;
+        if (name !== 'bulk-document-delete') {
+            return;
+        }
+        this.confirmation = '';
+        this.acknowledged = false;
+        this.submitting = false;
+    },
+
+    get cannotBulkSubmit() {
+        return this.noSelection
+            || this.selectedDocuments.length !== this.selectedCount
+            || !this.acknowledged
+            || this.confirmation.trim() !== 'HAPUS'
+            || this.submitting;
+    },
+
+    submitBulk(event) {
+        if (this.cannotBulkSubmit) {
+            event.preventDefault();
+            return;
+        }
+        this.submitting = true;
+    },
+}));
+
 Alpine.data('qualityHubTypedConfirmation', () => ({
     step: 1,
     confirmation: '',

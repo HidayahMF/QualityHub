@@ -25,18 +25,74 @@ class DocumentPurgeService
         ?string $ipAddress,
         ?string $userAgent
     ): array {
+        return $this->purgeInternal(
+            $documentId,
+            $actor,
+            $ipAddress,
+            $userAgent,
+            false,
+            null
+        );
+    }
+
+    /**
+     * Dedicated Super Admin path for explicitly selected active test documents.
+     * The regular archived-document purge retains its existing guard.
+     *
+     * @return array{failed_file_count: int, preserved_shared_file_count: int}
+     */
+    public function purgeActiveSelection(
+        int $documentId,
+        User $actor,
+        ?string $ipAddress,
+        ?string $userAgent,
+        string $batchId
+    ): array {
+        if (! $actor->isSuperAdmin()) {
+            throw ValidationException::withMessages([
+                'document_ids' => 'Hanya Super Admin yang dapat menghapus massal.',
+            ]);
+        }
+
+        return $this->purgeInternal(
+            $documentId,
+            $actor,
+            $ipAddress,
+            $userAgent,
+            true,
+            $batchId
+        );
+    }
+
+    /** @return array{failed_file_count: int, preserved_shared_file_count: int} */
+    private function purgeInternal(
+        int $documentId,
+        User $actor,
+        ?string $ipAddress,
+        ?string $userAgent,
+        bool $bulkActiveSelection,
+        ?string $batchId
+    ): array {
         $result = DB::transaction(function () use (
             $documentId,
             $actor,
             $ipAddress,
-            $userAgent
+            $userAgent,
+            $bulkActiveSelection,
+            $batchId
         ): array {
             $document = Document::query()
                 ->with('category:id,name')
                 ->lockForUpdate()
                 ->findOrFail($documentId);
 
-            if ($document->is_active) {
+            if ($bulkActiveSelection && ! $document->is_active) {
+                throw ValidationException::withMessages([
+                    'document_ids' => 'Pilihan berubah: hanya dokumen aktif yang dapat dibersihkan dari pustaka.',
+                ]);
+            }
+
+            if (! $bulkActiveSelection && $document->is_active) {
                 throw ValidationException::withMessages([
                     'document' => 'Dokumen aktif harus diarsipkan sebelum dapat dihapus permanen.',
                 ]);
@@ -135,7 +191,9 @@ class DocumentPurgeService
                     'actor_user_name' => $actor->name,
                     'actor_user_email' => $actor->email,
                     'version_count' => count($versionPaths),
-                    'reason' => 'permanent_delete',
+                    'reason' => $bulkActiveSelection ? 'bulk_test_document_cleanup' : 'permanent_delete',
+                    'bulk_operation_id' => $batchId,
+                    'was_active_at_deletion' => (bool) $document->is_active,
                     'deleted_at' => now()->toIso8601String(),
                     'file_cleanup_status' => 'pending',
                     'preserved_shared_file_count' => $sharedCount,

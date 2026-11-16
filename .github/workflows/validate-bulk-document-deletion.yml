@@ -1,0 +1,58 @@
+name: Validate bulk dummy document deletion
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/validate-bulk-document-deletion.yml'
+      - 'app/Http/Controllers/BulkDocumentDeletionController.php'
+      - 'app/Services/DocumentPurgeService.php'
+      - 'resources/views/documents/index.blade.php'
+      - 'resources/js/app.js'
+      - 'routes/web.php'
+      - 'tests/Feature/BulkDummyDocumentDeleteTest.php'
+      - 'tests/Feature/DocumentPermanentDeleteTest.php'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bulk-delete:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, fileinfo, zip, intl, gd, pdo_sqlite, sqlite3
+          coverage: none
+      - name: Validate PHP syntax
+        run: |
+          php -l app/Http/Controllers/BulkDocumentDeletionController.php
+          php -l app/Services/DocumentPurgeService.php
+          php -l tests/Feature/BulkDummyDocumentDeleteTest.php
+          php -l routes/web.php
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Build frontend assets
+        run: |
+          npm ci
+          npm run build
+      - name: Prepare test environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+      - name: Run bulk-deletion security regression
+        run: |
+          php artisan test --filter=BulkDummyDocumentDeleteTest
+          php artisan test --filter=DocumentPermanentDeleteTest
+      - name: Check Blade templates and routes
+        run: |
+          php artisan view:cache
+          php artisan route:list --name=documents.bulk-force-destroy --compact || php artisan route:list --name=documents.bulk-force-destroy
+          php artisan view:clear
