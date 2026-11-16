@@ -298,7 +298,7 @@ class BulkDummyDocumentDeleteTest extends TestCase
 
         $this->assertIsString($css);
         $this->assertStringContainsString(
-            'input:is([data-qh-bulk-document], [data-qh-bulk-select-all]):checked',
+            'input:is([data-qh-bulk-document], [data-qh-bulk-select-all], [data-qh-bulk-confirmation]):checked',
             $css
         );
         $this->assertStringContainsString('background-image: url("data:image/svg+xml,', $css);
@@ -310,6 +310,29 @@ class BulkDummyDocumentDeleteTest extends TestCase
             ->assertOk()
             ->assertSee('data-qh-bulk-select-all', false)
             ->assertSee('data-qh-bulk-document', false);
+    }
+
+    public function test_bulk_modal_is_teleported_above_sticky_topbar_and_stays_scrollable(): void
+    {
+        $this->createDocument('Dummy with long title');
+
+        $this->actingAs($this->superAdmin)
+            ->get(route('documents.index'))
+            ->assertOk()
+            ->assertSee('<template x-teleport="body">', false)
+            ->assertSee('qh-bulk-modal-overlay', false)
+            ->assertSee('qh-bulk-modal-panel', false)
+            ->assertSee('qh-bulk-modal-body', false)
+            ->assertSee('qh-bulk-selected-list', false)
+            ->assertSee('data-qh-bulk-confirmation', false)
+            ->assertSee('Ketik', false);
+
+        $css = file_get_contents(resource_path('css/app.css'));
+        $this->assertIsString($css);
+        $this->assertStringContainsString('z-index: 2147482100 !important;', $css);
+        $this->assertStringContainsString('max-height: calc(100dvh - 32px);', $css);
+        $this->assertStringContainsString('.qh-bulk-modal-body {', $css);
+        $this->assertStringContainsString('input[data-qh-bulk-confirmation]:checked', $css);
     }
 
     public function test_regular_admin_does_not_see_bulk_deletion_interface(): void
