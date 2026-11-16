@@ -170,7 +170,7 @@
 
         <p id="{{ $helpId }}" class="mt-1.5 text-xs text-slate-500">
             @if ($allowCreate)
-                Ketik untuk mencari. Jika belum tersedia, pilih opsi membuat kategori baru lalu tentukan departemennya.
+                Ketik untuk mencari. Jika belum tersedia, pilih opsi membuat kategori baru lalu tentukan divisinya.
             @else
                 Ketik untuk mencari, lalu pilih kategori dari daftar.
             @endif
@@ -211,7 +211,7 @@
                             for="{{ $newDepartmentId }}"
                             class="mb-1.5 block text-sm font-medium text-slate-700"
                         >
-                            Departemen <span class="text-red-500">*</span>
+                            Divisi <span class="text-red-500">*</span>
                         </label>
                         <select
                             id="{{ $newDepartmentId }}"
@@ -219,7 +219,7 @@
                             data-category-new-department
                             class="block w-full rounded-xl border-slate-300 bg-white text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
                         >
-                            <option value="">Pilih departemen</option>
+                            <option value="">Pilih divisi</option>
                             @foreach ($departments as $department)
                                 <option
                                     value="{{ $department->id }}"
@@ -233,7 +233,7 @@
                 </div>
 
                 <p class="mt-2 text-xs text-blue-800">
-                    Kategori baru akan dibuat di departemen yang dipilih.
+                    Kategori baru akan dibuat di divisi yang dipilih.
                 </p>
             </div>
         @endif

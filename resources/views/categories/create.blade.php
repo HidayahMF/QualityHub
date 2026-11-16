@@ -101,7 +101,7 @@
                            font-semibold
                            text-slate-700"
                 >
-                    Departemen
+                    Divisi
 
                     <span class="text-red-500">
                         *
@@ -122,7 +122,7 @@
                 >
 
                     <option value="">
-                        Pilih Departemen
+                        Pilih Divisi
                     </option>
 
 

@@ -120,7 +120,7 @@ return [
         'name' => 'nama lengkap',
         'email' => 'alamat email',
         'employee_id' => 'ID karyawan',
-        'department_id' => 'departemen',
+        'department_id' => 'divisi',
         'password' => 'kata sandi',
         'password_confirmation' => 'konfirmasi kata sandi',
         'current_password' => 'kata sandi saat ini',

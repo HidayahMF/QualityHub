@@ -87,10 +87,10 @@
                     ' menolak akun ',
                     ' mengaktifkan akun ',
                     ' menonaktifkan akun ',
-                    ' membuat departemen ',
-                    ' memperbarui departemen ',
-                    ' mengaktifkan departemen ',
-                    ' menonaktifkan departemen ',
+                    ' membuat divisi ',
+                    ' memperbarui divisi ',
+                    ' mengaktifkan divisi ',
+                    ' menonaktifkan divisi ',
                     ' untuk dokumen ',
                     ' sebagai Revisi ',
                 ],
@@ -393,7 +393,7 @@
                     <div>
 
                         <p class="text-xs font-semibold text-slate-500">
-                            Departemen Aktif
+                            Divisi Aktif
                         </p>
 
                         <p
@@ -736,7 +736,7 @@
                 >
                     <div>
                         <h2 class="font-bold text-slate-900">
-                            Distribusi Departemen
+                            Distribusi Divisi
                         </h2>
 
 
@@ -1066,7 +1066,7 @@
                                     <span>•</span>
 
                                     <span class="truncate">
-                                        {{ $document->category?->department?->name ?? 'Tanpa departemen' }}
+                                        {{ $document->category?->department?->name ?? 'Tanpa divisi' }}
                                     </span>
 
                                     <span>•</span>

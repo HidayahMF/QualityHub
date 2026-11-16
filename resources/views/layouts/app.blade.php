@@ -40,7 +40,7 @@
         @elseif(request()->routeIs('categories.*'))
             Categories · {{ config('app.name', 'BMC QualityHub') }}
         @elseif(request()->routeIs('departments.*'))
-            Department Management · {{ config('app.name', 'BMC QualityHub') }}
+            Divisi · {{ config('app.name', 'BMC QualityHub') }}
         @elseif(request()->routeIs('users.*'))
             User Management · {{ config('app.name', 'BMC QualityHub') }}
         @elseif(request()->routeIs('activity-logs.*'))
@@ -1068,7 +1068,7 @@
 
 
                             <span>
-                                Departments
+                                Divisi
                             </span>
 
                         </a>
@@ -1483,7 +1483,7 @@
 
                             @elseif(request()->routeIs('departments.*'))
 
-                                Department Management
+                                Divisi
 
 
                             @elseif(request()->routeIs('users.*'))
@@ -1569,7 +1569,7 @@
 
                             @elseif(request()->routeIs('departments.*'))
 
-                                Kelola data departemen dan struktur organisasi BMC
+                                Kelola data divisi dan struktur organisasi BMC
 
 
                             @elseif(request()->routeIs('users.*'))

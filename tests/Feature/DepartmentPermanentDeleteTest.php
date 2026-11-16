@@ -24,7 +24,7 @@ class DepartmentPermanentDeleteTest extends TestCase
     private function department(string $code = 'TMP', bool $active = false): Department
     {
         return Department::create([
-            'name' => 'Departemen Percobaan',
+            'name' => 'Divisi Percobaan',
             'code' => $code,
             'description' => 'Khusus pengujian',
             'is_active' => $active,
@@ -40,7 +40,7 @@ class DepartmentPermanentDeleteTest extends TestCase
             'confirmation_code' => $department->code,
         ])
             ->assertRedirect(route('departments.index'))
-            ->assertSessionHas('success', 'Departemen berhasil dihapus permanen.');
+            ->assertSessionHas('success', 'Divisi berhasil dihapus permanen.');
 
         $this->assertDatabaseMissing('departments', ['id' => $department->id]);
 

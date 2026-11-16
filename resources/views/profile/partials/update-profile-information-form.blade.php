@@ -45,7 +45,7 @@
                 <p class="mt-0.5 break-all text-xs font-bold text-slate-800">{{ $user->employee_id ?: '—' }}</p>
             </div>
             <div class="min-w-0">
-                <p class="text-[11px] font-semibold text-slate-500">Departemen</p>
+                <p class="text-[11px] font-semibold text-slate-500">Divisi</p>
                 <p class="mt-0.5 break-words text-xs font-bold text-slate-800">{{ $user->department?->name ?: '—' }}</p>
             </div>
         </div>

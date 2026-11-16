@@ -19,7 +19,7 @@
                    hover:text-blue-700
                    transition"
         >
-            ← Kembali ke Departemen
+            ← Kembali ke Divisi
         </a>
 
 
@@ -50,7 +50,7 @@
                    tracking-tight
                    text-slate-900"
         >
-            Edit Department
+            Edit Divisi
         </h1>
 
 
@@ -61,7 +61,7 @@
                    sm:text-base
                    text-slate-500"
         >
-            Perbarui identitas dan deskripsi departemen tanpa mengubah
+            Perbarui identitas dan deskripsi divisi tanpa mengubah
             hubungan kategori atau pengguna yang sudah tersimpan.
         </p>
 
@@ -145,7 +145,7 @@
                        py-5"
             >
                 <h2 class="font-bold text-slate-900">
-                    Informasi Departemen
+                    Informasi Divisi
                 </h2>
 
                 <p class="mt-1 text-sm text-slate-500">
@@ -164,7 +164,7 @@
                         for="name"
                         class="mb-2 block text-sm font-semibold text-slate-700"
                     >
-                        Nama Departemen
+                        Nama Divisi
                         <span class="text-red-500">*</span>
                     </label>
 
@@ -204,7 +204,7 @@
                         for="code"
                         class="mb-2 block text-sm font-semibold text-slate-700"
                     >
-                        Kode Departemen
+                        Kode Divisi
                         <span class="text-red-500">*</span>
                     </label>
 
@@ -368,7 +368,7 @@
                            tracking-wider
                            text-slate-400"
                 >
-                    Status Departemen
+                    Status Divisi
                 </p>
 
 
@@ -428,8 +428,8 @@
 
 
                 <p class="mt-4 text-sm leading-relaxed text-slate-500">
-                    Status dapat diubah dari halaman pengelolaan departemen.
-                    Departemen aktif yang masih digunakan tidak dapat
+                    Status dapat diubah dari halaman pengelolaan divisi.
+                    Divisi aktif yang masih digunakan tidak dapat
                     dinonaktifkan secara sembarangan.
                 </p>
 
@@ -512,7 +512,7 @@
                                p-4"
                     >
                         <p class="text-sm font-semibold text-amber-900">
-                            Perhatikan relasi departemen
+                            Perhatikan relasi divisi
                         </p>
 
                         <p
@@ -522,7 +522,7 @@
                                    text-amber-700"
                         >
                             Sebagian relasi mungkin masih aktif. Sistem akan
-                            melakukan pemeriksaan ulang sebelum departemen
+                            melakukan pemeriksaan ulang sebelum divisi
                             dapat dinonaktifkan.
                         </p>
                     </div>

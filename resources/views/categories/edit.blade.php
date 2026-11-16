@@ -105,7 +105,7 @@
                            font-semibold
                            text-slate-700"
                 >
-                    Departemen
+                    Divisi
 
                     <span class="text-red-500">
                         *

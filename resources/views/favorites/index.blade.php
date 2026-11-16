@@ -346,7 +346,7 @@
             >
 
                 <option value="">
-                    Semua Departemen
+                    Semua Divisi
                 </option>
 
 
@@ -744,7 +744,7 @@
                             >
 
                                 <span class="text-slate-400">
-                                    Departemen
+                                    Divisi
                                 </span>
 
                                 <span

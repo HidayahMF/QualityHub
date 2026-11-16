@@ -30,9 +30,9 @@
                 <input id="email" name="email" type="email" required value="{{ old('email') }}" maxlength="255" autocomplete="off" class="mt-2 w-full rounded-xl border-slate-200">
             </div>
             <div>
-                <label for="department_id" class="block text-sm font-semibold text-slate-700">Departemen</label>
+                <label for="department_id" class="block text-sm font-semibold text-slate-700">Divisi</label>
                 <select id="department_id" name="department_id" required class="mt-2 w-full rounded-xl border-slate-200">
-                    <option value="">Pilih Departemen</option>
+                    <option value="">Pilih Divisi</option>
                     @foreach($departments as $department)
                         <option value="{{ $department->id }}" @selected(old('department_id') == $department->id)>{{ $department->name }}</option>
                     @endforeach
