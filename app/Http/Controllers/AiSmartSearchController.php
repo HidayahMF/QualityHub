@@ -387,6 +387,15 @@ class AiSmartSearchController extends Controller
             }
 
             $matched[] = $dateLabel;
+        } elseif (
+            ($entities['day'] ?? null) !== null
+            && ($entities['month'] ?? null) !== null
+        ) {
+            $matched[] = 'Tanggal ' . $entities['day']
+                . ' Bulan ' . $entities['month']
+                . (($entities['year'] ?? null) !== null
+                    ? ' ' . $entities['year']
+                    : '');
         } elseif (($entities['month'] ?? null) !== null) {
             $matched[] = 'Bulan ' . $entities['month']
                 . (($entities['year'] ?? null) !== null

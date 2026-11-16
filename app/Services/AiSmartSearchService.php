@@ -299,8 +299,26 @@ class AiSmartSearchService
             }
         }
 
+        $day = $entities['day'] ?? null;
         $month = $entities['month'] ?? null;
         $year = $entities['year'] ?? null;
+
+        if ($day !== null && (! is_int($day) || $day < 1 || $day > 31)) {
+            throw new InvalidLocalAiResponseException(
+                'Local AI day entity is invalid.'
+            );
+        }
+
+        if (
+            $day !== null
+            && $month === null
+            && ($entities['date_from'] ?? null) === null
+            && ($entities['date_to'] ?? null) === null
+        ) {
+            throw new InvalidLocalAiResponseException(
+                'Local AI day entity requires a month or exact date.'
+            );
+        }
 
         if ($month !== null && (! is_int($month) || $month < 1 || $month > 12)) {
             throw new InvalidLocalAiResponseException(
@@ -354,6 +372,7 @@ class AiSmartSearchService
             'brake_part_number' => $entities['brake_part_number'] ?? null,
             'date_from' => $entities['date_from'] ?? null,
             'date_to' => $entities['date_to'] ?? null,
+            'day' => $day,
             'month' => $month,
             'year' => $year,
             'relative_date' => $relativeDate,

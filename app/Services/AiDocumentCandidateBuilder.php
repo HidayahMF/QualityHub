@@ -291,6 +291,10 @@ class AiDocumentCandidateBuilder
             ($entities['date_from'] ?? null) === null
             && ($entities['date_to'] ?? null) === null
         ) {
+            if (($entities['day'] ?? null) !== null) {
+                $query->whereDay('document_date', (int) $entities['day']);
+            }
+
             if (($entities['month'] ?? null) !== null) {
                 $query->whereMonth('document_date', (int) $entities['month']);
             }
