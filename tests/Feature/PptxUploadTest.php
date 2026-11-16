@@ -336,7 +336,7 @@ class PptxUploadTest extends TestCase
         $this->actingAs($this->admin)
             ->get(route('documents.create'))
             ->assertOk()
-            ->assertSee('accept=".pdf,.xls,.xlsx,.doc,.docx,.pptx,.csv,.txt"', false);
+            ->assertSee('accept=".pdf,.xls,.xlsx,.doc,.docx,.ppt,.pptx,.csv,.txt"', false);
 
         $create = file_get_contents(resource_path('views/documents/create.blade.php'));
         $revisions = file_get_contents(resource_path('views/documents/revisions/create.blade.php'));
