@@ -1679,7 +1679,7 @@ id="smartfind-document-type"
     {{-- ========================================================= --}}
 
     <section
-        @if(auth()->user()?->isSuperAdmin()) x-data="qualityHubBulkDelete" @endif
+        @if(auth()->user()?->isAdmin()) x-data="qualityHubBulkDelete" @endif
         class="bg-white
 
                rounded-2xl
@@ -1831,7 +1831,7 @@ id="smartfind-document-type"
         {{-- DOCUMENT TABLE --}}
         {{-- ===================================================== --}}
 
-        @if($documents->count() && auth()->user()?->isSuperAdmin())
+        @if($documents->count() && auth()->user()?->isAdmin())
             <div data-qh-bulk-toolbar class="flex flex-wrap items-center justify-between gap-3 border-b border-blue-100 bg-blue-50/40 px-5 py-3">
                 <label class="inline-flex cursor-pointer items-center gap-2 text-xs font-semibold text-blue-900">
                     <input type="checkbox"
@@ -1850,11 +1850,18 @@ id="smartfind-document-type"
                             class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">
                         Batalkan Pilihan
                     </button>
+                    <button type="button" x-on:click="$dispatch('open-modal', 'bulk-document-archive')"
+                            x-bind:disabled="noSelection"
+                            class="rounded-lg bg-blue-800 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40">
+                        Arsipkan (<span x-text="selectedCount">0</span>)
+                    </button>
+                    @if(auth()->user()?->isSuperAdmin())
                     <button type="button" x-on:click="$dispatch('open-modal', 'bulk-document-delete')"
                             x-bind:disabled="noSelection"
                             class="rounded-lg bg-red-700 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40">
                         Hapus Permanen (<span x-text="selectedCount">0</span>)
                     </button>
+                    @endif
                 </div>
             </div>
         @endif
@@ -1926,8 +1933,8 @@ id="smartfind-document-type"
 
                     <article class="p-4 sm:p-5 hover:bg-blue-50/30 transition">
                         <div class="flex items-start gap-3">
-                            @if(auth()->user()?->isSuperAdmin())
-                                <label class="mt-1 inline-flex flex-shrink-0 cursor-pointer items-center" title="Pilih dokumen untuk penghapusan massal">
+                            @if(auth()->user()?->isAdmin())
+                                <label class="mt-1 inline-flex flex-shrink-0 cursor-pointer items-center" title="Pilih dokumen untuk aksi massal">
                                     <input type="checkbox" value="{{ $document->id }}" x-model="selectedIds"
                                            data-qh-bulk-document data-qh-document-title="{{ $document->title }}"
                                            data-qh-document-code="{{ $document->document_code ?? '' }}"
@@ -2268,8 +2275,8 @@ id="smartfind-document-type"
                                                gap-3"
                                     >
 
-                                        @if(auth()->user()?->isSuperAdmin())
-                                            <label class="inline-flex flex-shrink-0 cursor-pointer items-center" title="Pilih dokumen untuk penghapusan massal">
+                                        @if(auth()->user()?->isAdmin())
+                                            <label class="inline-flex flex-shrink-0 cursor-pointer items-center" title="Pilih dokumen untuk aksi massal">
                                                 <input type="checkbox" value="{{ $document->id }}" x-model="selectedIds"
                                                        data-qh-bulk-document data-qh-document-title="{{ $document->title }}"
                                                        data-qh-document-code="{{ $document->document_code ?? '' }}"
