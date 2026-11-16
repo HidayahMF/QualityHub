@@ -155,6 +155,7 @@ class DocumentController extends Controller
             'xls',
             'doc',
             'docx',
+            'ppt',
             'pptx',
             'csv',
             'txt',
@@ -350,14 +351,20 @@ class DocumentController extends Controller
                 // Maksimum 20 MB
                 'max:20480',
 
-                // PowerPoint is an OOXML ZIP container. fileinfo may return
-                // a PowerPoint-specific MIME or a generic ZIP/octet-stream.
-                // Deep signature + PPTX structure validation is mandatory.
-                Rule::when(
-                    strtolower((string) $request->file('file')?->getClientOriginalExtension()) === 'pptx',
-                    'mimetypes:application/vnd.openxmlformats-officedocument.presentationml.presentation,application/zip,application/x-zip-compressed,application/octet-stream',
-                    'mimes:pdf,xls,xlsx,doc,docx,csv,txt'
-                ),
+                // PPT uses OLE/CFB; PPTX uses ZIP/OOXML. Both can have
+                // generic MIME, but each must pass its own deep inspection.
+                // Windows fileinfo may classify legacy OLE as an
+                // unexpected MIME. Defer PPT to the strict CFB parser in
+                // DocumentUploadSecurityService; do not skip validation.
+                ...match (strtolower((string) $request->file('file')?->getClientOriginalExtension())) {
+                    'ppt' => [],
+                    'pptx' => [
+                        'mimetypes:application/vnd.openxmlformats-officedocument.presentationml.presentation,application/zip,application/x-zip-compressed,application/octet-stream',
+                    ],
+                    default => [
+                        'mimes:pdf,xls,xlsx,doc,docx,csv,txt',
+                    ],
+                },
             ],
         ], [
             'file.uploaded' => 'Upload file gagal diterima PHP. Periksa pengaturan upload_max_filesize dan post_max_size pada server.',
@@ -2883,6 +2890,7 @@ class DocumentController extends Controller
                     'xls',
                     'doc',
                     'docx',
+                    'ppt',
                     'pptx',
                     'csv',
                     'txt',

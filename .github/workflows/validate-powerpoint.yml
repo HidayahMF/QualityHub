@@ -1,0 +1,75 @@
+name: Validate PowerPoint uploads
+
+on:
+  pull_request:
+    paths:
+      - 'app/Http/Controllers/DocumentController.php'
+      - 'app/Http/Controllers/DocumentVersionController.php'
+      - 'app/Services/DocumentUploadSecurityService.php'
+      - 'app/Services/LegacyPowerPointInspector.php'
+      - 'config/smartfind_upload_security.php'
+      - 'resources/views/documents/**'
+      - 'tests/Feature/LegacyPptUploadTest.php'
+      - 'tests/Feature/PptxUploadTest.php'
+      - '.github/workflows/validate-powerpoint.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  powerpoint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, fileinfo, zip, intl, gd, pdo_sqlite, sqlite3
+          coverage: none
+      - name: Validate PHP syntax
+        run: |
+          php -l app/Services/LegacyPowerPointInspector.php
+          php -l app/Services/DocumentUploadSecurityService.php
+          php -l app/Http/Controllers/DocumentController.php
+          php -l app/Http/Controllers/DocumentVersionController.php
+          php -l tests/Feature/LegacyPptUploadTest.php
+          php -l tests/Feature/PptxUploadTest.php
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress --optimize-autoloader
+      - name: Set up local testing environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+          php artisan config:clear
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Frontend build
+        run: |
+          npm ci
+          npm run build
+      - name: Feature regression tests (isolated SQLite)
+        run: |
+          php artisan test --filter=LegacyPptUploadTest
+          php artisan test --filter=PptxUploadTest
+          php artisan test --filter=CategoryAssignmentTest
+          php artisan test --filter=DocxPreviewTest
+          php artisan test --filter=SearchableFilterSelectTest
+      - name: Full Laravel regression suite (informational; external MTC schema required)
+        id: full_suite
+        continue-on-error: true
+        run: php artisan test
+      - name: Record full-suite limitations
+        if: steps.full_suite.outcome == 'failure'
+        run: |
+          echo "::warning::Non-blocking full-suite failures: inspect missing external MTC master schema and legacy auth expectations. Targeted PowerPoint regressions remain required."
+          echo "Full Laravel suite did not fully pass in isolated SQLite CI; check run logs. Production master-data tests require a separate controlled test environment." >> "$GITHUB_STEP_SUMMARY"
+      - name: Compile Blade views
+        run: |
+          php artisan view:cache
+          php artisan view:clear

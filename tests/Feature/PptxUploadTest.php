@@ -336,7 +336,7 @@ class PptxUploadTest extends TestCase
         $this->actingAs($this->admin)
             ->get(route('documents.create'))
             ->assertOk()
-            ->assertSee('accept=".pdf,.xls,.xlsx,.doc,.docx,.pptx,.csv,.txt"', false);
+            ->assertSee('accept=".pdf,.xls,.xlsx,.doc,.docx,.ppt,.pptx,.csv,.txt"', false);
 
         $create = file_get_contents(resource_path('views/documents/create.blade.php'));
         $revisions = file_get_contents(resource_path('views/documents/revisions/create.blade.php'));
@@ -345,8 +345,8 @@ class PptxUploadTest extends TestCase
         $this->assertIsString($create);
         $this->assertIsString($revisions);
         $this->assertIsString($details);
-        $this->assertStringContainsString('PowerPoint (PPTX)', $create);
-        $this->assertStringContainsString('PowerPoint (PPTX)', $revisions);
+        $this->assertStringContainsString('PowerPoint (PPT / PPTX)', $create);
+        $this->assertStringContainsString('PowerPoint (PPT / PPTX)', $revisions);
         $this->assertStringNotContainsString("'pptx', 'pdf', 'txt'", $details);
     }
 }

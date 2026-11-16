@@ -1,5 +1,7 @@
 # PPTX Upload / Revision — QA & Security Notes
 
+> Historical PR #13 notes: `.ppt` was unsupported at that time. Legacy `.ppt` support is proposed separately in [PPT_LEGACY_UPLOAD_QA.md](PPT_LEGACY_UPLOAD_QA.md); this section documents the original PPTX release.
+
 **Scope:** New document upload, existing document revisions, document filters, and format display. Separate Draft PR from Department delete / LED changes. No schema migration or new dependency.
 
 ## Formats supported
