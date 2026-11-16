@@ -146,8 +146,8 @@ Alpine.data('qualityHubModal', () => ({
     },
 }));
 
-// Explicit, per-page selection for Super Admin dummy-document cleanup.
-// Metadata is collected from server-rendered rows; never infer dummy status.
+// Per-page selection shared by Admin/Super Admin bulk archive, and Super Admin bulk delete.
+// Metadata comes only from server-rendered rows; authorization is rechecked by each endpoint.
 Alpine.data('qualityHubBulkDelete', () => ({
     available: [],
     selectedIds: [],
