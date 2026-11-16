@@ -168,7 +168,7 @@
             >
 
                 <option value="">
-                    Semua Departemen
+                    Semua Divisi
                 </option>
 
 

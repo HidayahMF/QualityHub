@@ -96,7 +96,7 @@ class CategoryAssignmentService
 
             if (! $category) {
                 throw ValidationException::withMessages([
-                    'category_id' => 'Kategori atau departemen yang dipilih sudah tidak aktif.',
+                    'category_id' => 'Kategori atau divisi yang dipilih sudah tidak aktif.',
                 ]);
             }
 
@@ -109,7 +109,7 @@ class CategoryAssignmentService
 
         if (! $department) {
             throw ValidationException::withMessages([
-                'new_category_department_id' => 'Departemen yang dipilih sudah tidak aktif.',
+                'new_category_department_id' => 'Divisi yang dipilih sudah tidak aktif.',
             ]);
         }
 
@@ -146,7 +146,7 @@ class CategoryAssignmentService
 
         if ($categories->contains('slug', $slug)) {
             throw ValidationException::withMessages([
-                'new_category_name' => 'Slug kategori sudah digunakan oleh nama lain pada departemen ini.',
+                'new_category_name' => 'Slug kategori sudah digunakan oleh nama lain pada divisi ini.',
             ]);
         }
 
@@ -182,7 +182,7 @@ class CategoryAssignmentService
 
             if (! $category) {
                 throw ValidationException::withMessages([
-                    'category_id' => 'Kategori atau departemen yang dipilih sudah tidak aktif.',
+                    'category_id' => 'Kategori atau divisi yang dipilih sudah tidak aktif.',
                 ]);
             }
 
@@ -196,7 +196,7 @@ class CategoryAssignmentService
 
         if (! $department) {
             throw ValidationException::withMessages([
-                'new_category_department_id' => 'Departemen yang dipilih sudah tidak aktif.',
+                'new_category_department_id' => 'Divisi yang dipilih sudah tidak aktif.',
             ]);
         }
 
@@ -225,7 +225,7 @@ class CategoryAssignmentService
 
         if ($categories->contains('slug', $selection['slug'])) {
             throw ValidationException::withMessages([
-                'new_category_name' => 'Slug kategori sudah digunakan oleh nama lain pada departemen ini.',
+                'new_category_name' => 'Slug kategori sudah digunakan oleh nama lain pada divisi ini.',
             ]);
         }
 
@@ -248,7 +248,7 @@ class CategoryAssignmentService
                 !== $this->normalizedName($selection['name'])
             ) {
                 throw ValidationException::withMessages([
-                    'new_category_name' => 'Slug kategori sudah digunakan oleh nama lain pada departemen ini.',
+                    'new_category_name' => 'Slug kategori sudah digunakan oleh nama lain pada divisi ini.',
                 ]);
             }
 

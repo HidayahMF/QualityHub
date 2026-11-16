@@ -637,7 +637,7 @@ class CategoryManagementController extends Controller
                 ) {
                     throw ValidationException::withMessages([
                         'category' =>
-                            'Kategori tidak dapat diaktifkan karena departemennya tidak aktif.',
+                            'Kategori tidak dapat diaktifkan karena divisinya tidak aktif.',
                     ]);
                 }
 

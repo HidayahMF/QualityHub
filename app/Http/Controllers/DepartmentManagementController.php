@@ -16,7 +16,7 @@ use Illuminate\View\View;
 class DepartmentManagementController extends Controller
 {
     /**
-     * Menampilkan daftar departemen.
+     * Menampilkan daftar divisi.
      */
     public function index(Request $request): View
     {
@@ -108,7 +108,7 @@ class DepartmentManagementController extends Controller
     }
 
     /**
-     * Menampilkan formulir tambah departemen.
+     * Menampilkan formulir tambah divisi.
      */
     public function create(): View
     {
@@ -118,7 +118,7 @@ class DepartmentManagementController extends Controller
     }
 
     /**
-     * Menyimpan departemen baru.
+     * Menyimpan divisi baru.
      */
     public function store(
         Request $request
@@ -150,22 +150,22 @@ class DepartmentManagementController extends Controller
             ],
             [
                 'name.required' =>
-                    'Nama departemen wajib diisi.',
+                    'Nama divisi wajib diisi.',
 
                 'name.max' =>
-                    'Nama departemen maksimal 255 karakter.',
+                    'Nama divisi maksimal 255 karakter.',
 
                 'code.required' =>
-                    'Kode departemen wajib diisi.',
+                    'Kode divisi wajib diisi.',
 
                 'code.max' =>
-                    'Kode departemen maksimal 20 karakter.',
+                    'Kode divisi maksimal 20 karakter.',
 
                 'code.regex' =>
-                    'Kode departemen hanya boleh berisi huruf, angka, tanda hubung, dan garis bawah.',
+                    'Kode divisi hanya boleh berisi huruf, angka, tanda hubung, dan garis bawah.',
 
                 'code.unique' =>
-                    'Kode departemen sudah digunakan.',
+                    'Kode divisi sudah digunakan.',
 
                 'description.max' =>
                     'Deskripsi maksimal 2000 karakter.',
@@ -196,7 +196,7 @@ class DepartmentManagementController extends Controller
             action: 'create_department',
             description:
                 Auth::user()->name
-                . ' membuat departemen "'
+                . ' membuat divisi "'
                 . $department->name
                 . '".',
             department: $department
@@ -206,12 +206,12 @@ class DepartmentManagementController extends Controller
             ->route('departments.index')
             ->with(
                 'success',
-                'Departemen berhasil ditambahkan.'
+                'Divisi berhasil ditambahkan.'
             );
     }
 
     /**
-     * Menampilkan formulir edit departemen.
+     * Menampilkan formulir edit divisi.
      */
     public function edit(
         Department $department
@@ -231,7 +231,7 @@ class DepartmentManagementController extends Controller
     }
 
     /**
-     * Memperbarui data departemen.
+     * Memperbarui data divisi.
      */
     public function update(
         Request $request,
@@ -270,22 +270,22 @@ class DepartmentManagementController extends Controller
             ],
             [
                 'name.required' =>
-                    'Nama departemen wajib diisi.',
+                    'Nama divisi wajib diisi.',
 
                 'name.max' =>
-                    'Nama departemen maksimal 255 karakter.',
+                    'Nama divisi maksimal 255 karakter.',
 
                 'code.required' =>
-                    'Kode departemen wajib diisi.',
+                    'Kode divisi wajib diisi.',
 
                 'code.max' =>
-                    'Kode departemen maksimal 20 karakter.',
+                    'Kode divisi maksimal 20 karakter.',
 
                 'code.regex' =>
-                    'Kode departemen hanya boleh berisi huruf, angka, tanda hubung, dan garis bawah.',
+                    'Kode divisi hanya boleh berisi huruf, angka, tanda hubung, dan garis bawah.',
 
                 'code.unique' =>
-                    'Kode departemen sudah digunakan.',
+                    'Kode divisi sudah digunakan.',
 
                 'description.max' =>
                     'Deskripsi maksimal 2000 karakter.',
@@ -329,7 +329,7 @@ class DepartmentManagementController extends Controller
             action: 'update_department',
             description:
                 Auth::user()->name
-                . ' memperbarui departemen "'
+                . ' memperbarui divisi "'
                 . $department->name
                 . '".',
             department: $department,
@@ -357,14 +357,14 @@ class DepartmentManagementController extends Controller
             ->route('departments.index')
             ->with(
                 'success',
-                'Departemen berhasil diperbarui.'
+                'Divisi berhasil diperbarui.'
             );
     }
 
     /**
-     * Mengaktifkan atau menonaktifkan departemen.
+     * Mengaktifkan atau menonaktifkan divisi.
      *
-     * Departemen tidak dapat dinonaktifkan apabila masih memiliki
+     * Divisi tidak dapat dinonaktifkan apabila masih memiliki
      * kategori aktif atau pengguna aktif.
      */
     public function toggleStatus(
@@ -390,7 +390,7 @@ class DepartmentManagementController extends Controller
             if ($hasActiveCategories) {
                 return redirect()->route('departments.index')->withErrors([
                     'department' =>
-                        'Departemen tidak dapat dinonaktifkan karena masih memiliki kategori aktif. Nonaktifkan kategori terkait terlebih dahulu.',
+                        'Divisi tidak dapat dinonaktifkan karena masih memiliki kategori aktif. Nonaktifkan kategori terkait terlebih dahulu.',
                 ]);
             }
 
@@ -406,7 +406,7 @@ class DepartmentManagementController extends Controller
             if ($hasActiveUsers) {
                 return redirect()->route('departments.index')->withErrors([
                     'department' =>
-                        'Departemen tidak dapat dinonaktifkan karena masih memiliki pengguna aktif.',
+                        'Divisi tidak dapat dinonaktifkan karena masih memiliki pengguna aktif.',
                 ]);
             }
         }
@@ -426,11 +426,11 @@ class DepartmentManagementController extends Controller
         $description =
             $department->is_active
                 ? Auth::user()->name
-                    . ' mengaktifkan departemen "'
+                    . ' mengaktifkan divisi "'
                     . $department->name
                     . '".'
                 : Auth::user()->name
-                    . ' menonaktifkan departemen "'
+                    . ' menonaktifkan divisi "'
                     . $department->name
                     . '".';
 
@@ -444,13 +444,13 @@ class DepartmentManagementController extends Controller
         return redirect()->route('departments.index')->with(
             'success',
             $department->is_active
-                ? 'Departemen berhasil diaktifkan.'
-                : 'Departemen berhasil dinonaktifkan.'
+                ? 'Divisi berhasil diaktifkan.'
+                : 'Divisi berhasil dinonaktifkan.'
         );
     }
 
     /**
-     * Hapus permanen hanya departemen nonaktif tanpa relasi kategori/pengguna.
+     * Hapus permanen hanya divisi nonaktif tanpa relasi kategori/pengguna.
      *
      * Validasi diulangi di dalam transaction untuk menghindari perubahan data
      * sejak halaman indeks ditampilkan. Audit tetap disimpan setelah penghapusan.
@@ -466,7 +466,7 @@ class DepartmentManagementController extends Controller
         $validator = Validator::make($request->all(), [
             'confirmation_code' => ['required', 'string', 'max:20'],
         ], [
-            'confirmation_code.required' => 'Ketik kode departemen untuk mengonfirmasi penghapusan.',
+            'confirmation_code.required' => 'Ketik kode divisi untuk mengonfirmasi penghapusan.',
             'confirmation_code.max' => 'Kode konfirmasi tidak valid.',
         ]);
 
@@ -507,7 +507,7 @@ class DepartmentManagementController extends Controller
                     request: $request,
                     action: 'delete_department',
                     description: Auth::user()->name
-                        . ' menghapus permanen departemen "'
+                        . ' menghapus permanen divisi "'
                         . $locked->name . '".',
                     department: $locked,
                     additionalMetadata: [
@@ -530,7 +530,7 @@ class DepartmentManagementController extends Controller
             // Jika ada perubahan relasi bersamaan, biarkan FK mencegah penghapusan.
             if (in_array((string) $exception->getCode(), ['23000', '23503', '19'], true)) {
                 return redirect()->route('departments.index')->withErrors([
-                    'department' => 'Departemen tidak dapat dihapus karena masih digunakan data lain.',
+                    'department' => 'Divisi tidak dapat dihapus karena masih digunakan data lain.',
                 ]);
             }
 
@@ -539,11 +539,11 @@ class DepartmentManagementController extends Controller
 
         if ($result !== 'deleted') {
             $message = match ($result) {
-                'wrong_code' => 'Kode konfirmasi tidak sesuai dengan kode departemen.',
-                'active' => 'Nonaktifkan departemen terlebih dahulu sebelum menghapus permanen.',
-                'categories' => 'Departemen tidak dapat dihapus karena masih memiliki kategori, termasuk kategori nonaktif.',
-                'users' => 'Departemen tidak dapat dihapus karena masih memiliki pengguna, termasuk akun nonaktif.',
-                default => 'Departemen tidak dapat dihapus.',
+                'wrong_code' => 'Kode konfirmasi tidak sesuai dengan kode divisi.',
+                'active' => 'Nonaktifkan divisi terlebih dahulu sebelum menghapus permanen.',
+                'categories' => 'Divisi tidak dapat dihapus karena masih memiliki kategori, termasuk kategori nonaktif.',
+                'users' => 'Divisi tidak dapat dihapus karena masih memiliki pengguna, termasuk akun nonaktif.',
+                default => 'Divisi tidak dapat dihapus.',
             };
 
             return redirect()->route('departments.index')->withErrors(['department' => $message]);
@@ -551,7 +551,7 @@ class DepartmentManagementController extends Controller
 
         return redirect()
             ->route('departments.index')
-            ->with('success', 'Departemen berhasil dihapus permanen.');
+            ->with('success', 'Divisi berhasil dihapus permanen.');
     }
 
     /**

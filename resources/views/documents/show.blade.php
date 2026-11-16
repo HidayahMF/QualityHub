@@ -1406,7 +1406,7 @@
                                        font-semibold
                                        text-slate-400"
                             >
-                                Departemen
+                                Divisi
                             </p>
 
 

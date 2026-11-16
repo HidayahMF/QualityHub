@@ -1403,7 +1403,7 @@ class DocumentController extends Controller
                 ->withInput()
                 ->withErrors([
                     'category_id' =>
-                        'Kategori dan departemen yang dipilih harus dalam status aktif.',
+                        'Kategori dan divisi yang dipilih harus dalam status aktif.',
                 ]);
         }
 
@@ -1817,7 +1817,7 @@ class DocumentController extends Controller
                 ->withErrors([
                     'category_id' =>
                         'Dokumen ini tidak dapat dipulihkan sampai '
-                        . 'kategori dan departemen aktif ditetapkan.',
+                        . 'kategori dan divisi aktif ditetapkan.',
                 ]);
         }
 

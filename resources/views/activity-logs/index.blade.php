@@ -4,18 +4,18 @@
     @php
         $actionLabels = [
                         'activate_category' => 'Aktifkan Kategori',
-                        'activate_department' => 'Aktifkan Departemen',
+                        'activate_department' => 'Aktifkan Divisi',
                         'activate_user' => 'Aktifkan Pengguna',
                         'add_favorite' => 'Tambah Favorit',
                         'approve_user' => 'Setujui Pengguna',
                         'archive_document' => 'Arsipkan Dokumen',
                         'create_category' => 'Tambah Kategori',
-                        'create_department' => 'Tambah Departemen',
+                        'create_department' => 'Tambah Divisi',
                         'deactivate_category' => 'Nonaktifkan Kategori',
-                        'deactivate_department' => 'Nonaktifkan Departemen',
+                        'deactivate_department' => 'Nonaktifkan Divisi',
                         'deactivate_user' => 'Nonaktifkan Pengguna',
                         'delete_category' => 'Hapus Kategori',
-                        'delete_department' => 'Hapus Permanen Departemen',
+                        'delete_department' => 'Hapus Permanen Divisi',
                         'download_document' => 'Unduh Dokumen',
                         'download_document_revision' => 'Unduh Revisi Dokumen',
                         'open_document' => 'Buka Dokumen',
@@ -25,7 +25,7 @@
                         'remove_favorite' => 'Hapus Favorit',
                         'restore_document' => 'Pulihkan Dokumen',
                         'update_category' => 'Perbarui Kategori',
-                        'update_department' => 'Perbarui Departemen',
+                        'update_department' => 'Perbarui Divisi',
                         'update_document' => 'Perbarui Dokumen',
                         'upload_document' => 'Unggah Dokumen',
                         'upload_document_revision' => 'Unggah Revisi Dokumen',
@@ -305,7 +305,7 @@
                                                 </div>
                                                 @if($log->document?->category?->department)
                                                     <div class="min-w-0">
-                                                        <dt class="text-[11px] text-slate-500">Departemen</dt>
+                                                        <dt class="text-[11px] text-slate-500">Divisi</dt>
                                                         <dd class="mt-1 break-words font-semibold text-slate-800">{{ $log->document->category->department->name }}</dd>
                                                     </div>
                                                 @endif
