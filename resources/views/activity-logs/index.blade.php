@@ -339,7 +339,7 @@
                                                     @foreach($metadataWithValues as $key => $value)
                                                         <div class="flex min-w-0 items-start gap-3 py-2">
                                                             <dt class="w-[38%] shrink-0 break-words text-[11px] font-semibold leading-5 text-slate-500">
-                                                                {{ ucwords(str_replace('_', ' ', (string) $key)) }}
+                                                                {{ str_replace('Department', 'Divisi', ucwords(str_replace('_', ' ', (string) $key))) }}
                                                             </dt>
                                                             <dd class="min-w-0 flex-1 break-words text-left text-[12px] font-medium leading-5 text-slate-800">
                                                                 @if(is_array($value))
@@ -368,7 +368,7 @@
                                                     <dl class="max-h-40 divide-y divide-slate-100 overflow-y-auto border-t border-slate-100 px-3" tabindex="0" aria-label="Daftar metadata tanpa nilai">
                                                         @foreach($metadataWithoutValues as $key => $value)
                                                             <div class="flex min-w-0 items-start gap-3 py-1.5">
-                                                                <dt class="w-[38%] shrink-0 break-words text-[11px] leading-5 text-slate-500">{{ ucwords(str_replace('_', ' ', (string) $key)) }}</dt>
+                                                                <dt class="w-[38%] shrink-0 break-words text-[11px] leading-5 text-slate-500">{{ str_replace('Department', 'Divisi', ucwords(str_replace('_', ' ', (string) $key))) }}</dt>
                                                                 <dd class="min-w-0 flex-1 break-words text-left text-[11px] text-slate-400">—</dd>
                                                             </div>
                                                         @endforeach

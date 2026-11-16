@@ -110,6 +110,7 @@ class DivisionTerminologyUiTest extends TestCase
         $this->assertStringContainsString('data-department-confirmation-code', $management);
         $this->assertStringContainsString('name="department_id"', $category);
         $this->assertStringContainsString('Hapus Divisi Permanen?', $management);
+        $this->assertStringContainsString("str_replace('Department', 'Divisi'", file_get_contents(resource_path('views/activity-logs/index.blade.php')));
         $this->assertStringContainsString('Divisi', $layout);
     }
 }
