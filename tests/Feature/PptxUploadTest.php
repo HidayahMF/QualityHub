@@ -345,8 +345,8 @@ class PptxUploadTest extends TestCase
         $this->assertIsString($create);
         $this->assertIsString($revisions);
         $this->assertIsString($details);
-        $this->assertStringContainsString('PowerPoint (PPTX)', $create);
-        $this->assertStringContainsString('PowerPoint (PPTX)', $revisions);
+        $this->assertStringContainsString('PowerPoint (PPT / PPTX)', $create);
+        $this->assertStringContainsString('PowerPoint (PPT / PPTX)', $revisions);
         $this->assertStringNotContainsString("'pptx', 'pdf', 'txt'", $details);
     }
 }
