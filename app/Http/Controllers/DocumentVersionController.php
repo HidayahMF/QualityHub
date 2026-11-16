@@ -150,12 +150,15 @@ class DocumentVersionController extends Controller
                 'nullable',
                 'file',
                 'max:20480',
-                // PowerPoint is an OOXML ZIP container. fileinfo may return
-                // a PowerPoint-specific MIME or a generic ZIP/octet-stream.
-                // Deep signature + PPTX structure validation is mandatory.
+                // Legacy PPT is OLE/CFB; PPTX is ZIP/OOXML.
+                // Both still require independent deep structure checks.
                 Rule::when(
-                    strtolower((string) $request->file('file')?->getClientOriginalExtension()) === 'pptx',
-                    'mimetypes:application/vnd.openxmlformats-officedocument.presentationml.presentation,application/zip,application/x-zip-compressed,application/octet-stream',
+                    in_array(
+                        strtolower((string) $request->file('file')?->getClientOriginalExtension()),
+                        ['ppt', 'pptx'],
+                        true
+                    ),
+                    'mimetypes:application/vnd.ms-powerpoint,application/vnd.ms-office,application/x-ole-storage,application/cdfv2,application/x-cdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/zip,application/x-zip-compressed,application/octet-stream',
                     'mimes:pdf,xls,xlsx,doc,docx,csv,txt'
                 ),
             ],
