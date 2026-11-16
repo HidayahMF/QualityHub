@@ -102,7 +102,7 @@ class LegacyPptUploadTest extends TestCase
             . $this->entry($vba ? '_VBA_PROJECT_CUR' : 'SummaryInformation', 1, $end, 0);
 
         $data = $header . $directory;
-        $data .= str_repeat('PowerPoint slide data', 256); // 4096 bytes, 8 sectors
+        $data .= str_repeat('P', 4096); // 4096 bytes, 8 sectors
         $data .= str_repeat("\0", 512); // synthetic Current User stream sector
 
         $fat = str_repeat(pack('V', $free), 128);
