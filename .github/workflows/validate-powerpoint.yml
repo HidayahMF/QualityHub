@@ -60,6 +60,8 @@ jobs:
           php artisan test --filter=CategoryAssignmentTest
           php artisan test --filter=DocxPreviewTest
           php artisan test --filter=SearchableFilterSelectTest
+      - name: Full Laravel regression suite
+        run: php artisan test
       - name: Compile Blade views
         run: |
           php artisan view:cache
