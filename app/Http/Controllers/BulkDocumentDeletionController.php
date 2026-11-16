@@ -97,6 +97,6 @@ class BulkDocumentDeletionController extends Controller
 
         return redirect()
             ->route('documents.index')
-            ->with('success', $deleted.' dokumen dummy terpilih berhasil dihapus permanen.');
+            ->with('success', $deleted.' dokumen terpilih berhasil dihapus permanen.');
     }
 }
