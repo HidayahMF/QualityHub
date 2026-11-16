@@ -52,3 +52,23 @@ GitHub "Build and publish images" is **not** a PHPUnit or browser test. IT BMC m
 GitHub CI targeted upload regression: **55 passed / 370 assertions** (LegacyPpt 11, PPTX 13, Category 18, DOCX 3, Searchable Filter 10). Syntax, Vite and Blade also passed.
 When running `php artisan test` against in-memory SQLite on GitHub Actions, the broad suite reported **47 failures / 318 passed**. Failures are concentrated in Retooling/Axle/Brake integration that expects external `mtc.LINE` master schema, and older Example/registration tests. These are not automatically attributed to this PPT change. The full-suite step is diagnostic/non-blocking in generic SQLite CI, **not** evidence the entire app is regression-free.
 Before merging, run the affected workflow on the approved local/staging BMC test environment with valid MTC schema, and compare baseline `main` where relevant. Do not patch production Retooling or disabled registration merely to make CI green.
+
+## Windows MIME regression — 16 Nov 2026
+Windows PowerShell local `test/ppt-legacy-pr16` at commit `a38e82f`:
+- Local `LegacyPptUploadTest` reported 2 failures (upload and revision) at Laravel's initial `mimetypes` rule, 9 others passed.
+- `PptxUploadTest`: 13 PASS / 92 assertions; `npm run build`: PASS.
+- Exact Windows MIME returned by fileinfo was **not present in the terminal log** and remains unverified.
+- Fix on this PR: legacy PPT skips *only* Laravel's platform-dependent first-layer `mimetypes` condition. The document security service still requires the real .ppt extension, file-size limit, OLE header, valid CFB FAT and PowerPoint streams, and macro checks.
+- If the Windows MIME is unrecognized by the configured whitelist, fallback is recorded as `ole_structure_verified_mime_fallback` **only after** structural validation succeeds. A renamed fake file must still fail and leave no storage/DB artifacts.
+- New regression cases simulate Windows unknown MIME for a valid OLE PPT and a fake document. PPTX/other formats keep existing MIME rules.
+- Do not claim that real PowerPoint files are accepted until manual upload/download/reopen succeeds on Windows.
+
+Re-run on Windows after `git pull --ff-only origin feature/legacy-powerpoint-ppt-upload-20261116` while on the test branch:
+```powershell
+git fetch origin
+git merge --ff-only origin/feature/legacy-powerpoint-ppt-upload-20261116
+php artisan test --filter=LegacyPptUploadTest
+php artisan test --filter=PptxUploadTest
+npm run build
+```
+Do not reset local `composer.lock` or delete the untracked `code` directory.
