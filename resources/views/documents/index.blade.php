@@ -1835,6 +1835,7 @@ id="smartfind-document-type"
             <div data-qh-bulk-toolbar class="flex flex-wrap items-center justify-between gap-3 border-b border-blue-100 bg-blue-50/40 px-5 py-3">
                 <label class="inline-flex cursor-pointer items-center gap-2 text-xs font-semibold text-blue-900">
                     <input type="checkbox"
+                           data-qh-bulk-select-all
                            x-bind:checked="allPageSelected"
                            x-on:change="togglePage"
                            class="rounded border-blue-300 text-blue-800 focus:ring-blue-500"
