@@ -159,6 +159,12 @@
 
 
 
+    @if(session('warning'))
+        <div role="alert" class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
+            {{ session('warning') }}
+        </div>
+    @endif
+
     {{-- ========================================================= --}}
     {{-- VALIDATION ERROR --}}
     {{-- ========================================================= --}}
@@ -1673,6 +1679,7 @@ id="smartfind-document-type"
     {{-- ========================================================= --}}
 
     <section
+        @if(auth()->user()?->isSuperAdmin()) x-data="qualityHubBulkDelete" @endif
         class="bg-white
 
                rounded-2xl
@@ -1824,6 +1831,33 @@ id="smartfind-document-type"
         {{-- DOCUMENT TABLE --}}
         {{-- ===================================================== --}}
 
+        @if($documents->count() && auth()->user()?->isSuperAdmin())
+            <div data-qh-bulk-toolbar class="flex flex-wrap items-center justify-between gap-3 border-b border-blue-100 bg-blue-50/40 px-5 py-3">
+                <label class="inline-flex cursor-pointer items-center gap-2 text-xs font-semibold text-blue-900">
+                    <input type="checkbox"
+                           x-bind:checked="allPageSelected"
+                           x-on:change="togglePage"
+                           class="rounded border-blue-300 text-blue-800 focus:ring-blue-500"
+                           aria-label="Pilih semua dokumen pada halaman ini">
+                    Pilih semua di halaman ini
+                </label>
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-xs font-medium text-slate-600">
+                        <span x-text="selectedCount">0</span> dipilih (maks. 15)
+                    </span>
+                    <button type="button" x-on:click="clearSelection" x-bind:disabled="noSelection"
+                            class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">
+                        Batalkan Pilihan
+                    </button>
+                    <button type="button" x-on:click="$dispatch('open-modal', 'bulk-document-delete')"
+                            x-bind:disabled="noSelection"
+                            class="rounded-lg bg-red-700 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40">
+                        Hapus Permanen (<span x-text="selectedCount">0</span>)
+                    </button>
+                </div>
+            </div>
+        @endif
+
         @if($documents->count())
 
             <div class="hidden lg:flex items-center justify-between gap-3 px-6 py-3 border-b border-slate-100 bg-slate-50/40">
@@ -1891,6 +1925,15 @@ id="smartfind-document-type"
 
                     <article class="p-4 sm:p-5 hover:bg-blue-50/30 transition">
                         <div class="flex items-start gap-3">
+                            @if(auth()->user()?->isSuperAdmin())
+                                <label class="mt-1 inline-flex flex-shrink-0 cursor-pointer items-center" title="Pilih dokumen untuk penghapusan massal">
+                                    <input type="checkbox" value="{{ $document->id }}" x-model="selectedIds"
+                                           data-qh-bulk-document data-qh-document-title="{{ $document->title }}"
+                                           data-qh-document-code="{{ $document->document_code ?? '' }}"
+                                           aria-label="Pilih dokumen {{ $document->title }}"
+                                           class="rounded border-blue-300 text-blue-800 focus:ring-blue-500">
+                                </label>
+                            @endif
                             <div class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 {{ $fileIconStyle }}">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5Z"/>
@@ -2223,6 +2266,16 @@ id="smartfind-document-type"
                                                items-center
                                                gap-3"
                                     >
+
+                                        @if(auth()->user()?->isSuperAdmin())
+                                            <label class="inline-flex flex-shrink-0 cursor-pointer items-center" title="Pilih dokumen untuk penghapusan massal">
+                                                <input type="checkbox" value="{{ $document->id }}" x-model="selectedIds"
+                                                       data-qh-bulk-document data-qh-document-title="{{ $document->title }}"
+                                                       data-qh-document-code="{{ $document->document_code ?? '' }}"
+                                                       aria-label="Pilih dokumen {{ $document->title }}"
+                                                       class="rounded border-blue-300 text-blue-800 focus:ring-blue-500">
+                                            </label>
+                                        @endif
 
                                         <div
                                             class="w-11
@@ -2937,6 +2990,68 @@ id="smartfind-document-type"
 
             </div>
 
+        @endif
+
+        @if($documents->count() && auth()->user()?->isSuperAdmin())
+            <x-modal name="bulk-document-delete" maxWidth="lg"
+                     containerClass="flex items-center justify-center sm:px-4"
+                     panelClass="relative rounded-2xl border border-blue-100 bg-white shadow-2xl"
+                     backdropClass="bg-slate-950/60 backdrop-blur-[2px]"
+                     labelledBy="bulk-document-delete-title"
+                     describedBy="bulk-document-delete-description" focusable>
+                <div class="h-1.5 bg-blue-800"></div>
+                <form method="POST" action="{{ route('documents.bulk-force-destroy') }}"
+                      x-on:open-modal.window="resetBulkOnOpen"
+                      x-on:submit="submitBulk" class="p-5 sm:p-6">
+                    @csrf
+                    @method('DELETE')
+                    <input type="hidden" name="selected_count" x-bind:value="selectedCount">
+                    <template x-for="item in selectedDocuments" :key="item.id">
+                        <input type="hidden" name="document_ids[]" x-bind:value="item.id">
+                    </template>
+
+                    <p class="text-[11px] font-bold uppercase tracking-widest text-blue-700">Super Admin · Data Uji</p>
+                    <h2 id="bulk-document-delete-title" class="mt-1 text-xl font-bold text-slate-900">Hapus Dokumen Permanen?</h2>
+                    <p id="bulk-document-delete-description" class="mt-2 text-sm text-slate-600">
+                        <strong x-text="selectedCount">0</strong> dokumen terpilih akan dihapus beserta revisi dan file eksklusifnya.
+                        Tindakan ini tidak dapat dibatalkan.
+                    </p>
+
+                    <ul class="mt-4 max-h-44 space-y-1 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm"
+                        aria-label="Daftar dokumen yang akan dihapus">
+                        <template x-for="item in selectedDocuments" :key="item.id">
+                            <li class="border-b border-slate-200 py-1.5 last:border-0">
+                                <span class="block break-words font-semibold text-slate-800" x-text="item.title"></span>
+                                <span class="block text-xs text-slate-500" x-text="item.code"></span>
+                            </li>
+                        </template>
+                    </ul>
+
+                    <label class="mt-4 flex cursor-pointer items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-medium text-amber-900">
+                        <input type="checkbox" name="acknowledge_dummy" value="1" x-model="acknowledged"
+                               class="mt-0.5 rounded border-amber-300 text-blue-800 focus:ring-blue-500">
+                        Saya sudah memeriksa daftar di atas. Semua pilihan adalah data dummy, bukan dokumen produksi BMC.
+                    </label>
+
+                    <label for="bulk-document-delete-confirmation" class="mt-4 block text-sm font-semibold text-slate-800">
+                        Ketik HAPUS untuk konfirmasi
+                    </label>
+                    <input id="bulk-document-delete-confirmation" type="text" name="confirmation"
+                           x-model="confirmation" autocomplete="off" spellcheck="false" placeholder="HAPUS"
+                           class="mt-2 w-full rounded-xl border-slate-300 text-sm focus:border-red-500 focus:ring-red-500">
+
+                    <div class="mt-5 flex flex-col-reverse justify-end gap-2 sm:flex-row">
+                        <button type="button" x-on:click="$dispatch('close')"
+                                class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                            Batal
+                        </button>
+                        <button type="submit" x-bind:disabled="cannotBulkSubmit"
+                                class="rounded-xl bg-red-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-40">
+                            Hapus Permanen (<span x-text="selectedCount">0</span>)
+                        </button>
+                    </div>
+                </form>
+            </x-modal>
         @endif
 
     </section>
