@@ -160,6 +160,65 @@ class LegacyPptUploadTest extends TestCase
         $this->assertSame('passed', $result['macro_check']);
     }
 
+    /**
+     * PHP fileinfo/Windows may assign an unexpected MIME to a genuine
+     * OLE PowerPoint. Strict CFB verification must remain the deciding gate.
+     */
+    public function test_windows_unknown_mime_accepts_only_structurally_verified_ppt(): void
+    {
+        $original = $this->ppt('windows-office.ppt');
+
+        $windowsMimeFile = new class(
+            $original->getRealPath(),
+            $original->getClientOriginalName(),
+            null,
+            null,
+            true
+        ) extends UploadedFile {
+            public function getMimeType(): ?string
+            {
+                return 'application/x-unrecognized-windows-cfb';
+            }
+        };
+
+        $result = app(DocumentUploadSecurityService::class)
+            ->validate($windowsMimeFile);
+
+        $this->assertSame('ppt', $result['extension']);
+        $this->assertSame('ole_compound', $result['signature']);
+        $this->assertSame(
+            'ole_structure_verified_mime_fallback',
+            $result['mime_status']
+        );
+
+        $this->actingAs($this->admin)
+            ->post(route('documents.store'), $this->payload($windowsMimeFile))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('ppt', Document::query()->sole()->file_extension);
+    }
+
+    public function test_unknown_mime_does_not_allow_fake_ppt_without_ole_structure(): void
+    {
+        $path = $this->testDirectory . '/fake-ole.ppt';
+        file_put_contents($path, 'invalid Office file content');
+
+        $spoof = new class($path, 'fake-ole.ppt', null, null, true) extends UploadedFile {
+            public function getMimeType(): ?string
+            {
+                return 'application/x-unrecognized-windows-cfb';
+            }
+        };
+
+        $this->actingAs($this->admin)
+            ->post(route('documents.store'), $this->payload($spoof))
+            ->assertRedirect(route('documents.create'))
+            ->assertSessionHasErrors('file');
+
+        $this->assertDatabaseCount('documents', 0);
+        $this->assertSame([], Storage::disk('bmc_documents')->allFiles());
+    }
+
     public function test_ppt_upload_and_download_retains_original_file_in_private_storage(): void
     {
         $this->actingAs($this->admin)
