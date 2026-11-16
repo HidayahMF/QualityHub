@@ -19,7 +19,7 @@ class DocumentUploadSecurityService
      * - server-side MIME
      * - file signature / magic bytes
      * - struktur OOXML XLSX / DOCX
-     * - struktur OLE XLS / DOC
+     * - struktur OLE XLS / DOC / PPT
      * - text/binary check CSV / TXT
      * - macro payload check
      *
@@ -54,6 +54,7 @@ class DocumentUploadSecurityService
                         'xlsx',
                         'doc',
                         'docx',
+                        'ppt',
                         'pptx',
                         'csv',
                         'txt',
@@ -143,6 +144,11 @@ class DocumentUploadSecurityService
 
                 'docx' =>
                     $this->validateDocx(
+                        $realPath
+                    ),
+
+                'ppt' =>
+                    $this->validateLegacyPpt(
                         $realPath
                     ),
 
@@ -274,6 +280,7 @@ class DocumentUploadSecurityService
                     'xlsx',
                     'doc',
                     'docx',
+                    'ppt',
                     'pptx',
                 ],
                 true
@@ -560,6 +567,31 @@ class DocumentUploadSecurityService
         return [
             'signature' => 'zip_ooxml',
             'structure' => 'pptx',
+            'macro_check' => 'passed',
+        ];
+    }
+
+
+    /**
+     * Legacy .ppt: validate OLE container and actual CFB directory streams.
+     * Never parse/execute slide content or convert it on the server.
+     */
+    private function validateLegacyPpt(string $path): array
+    {
+        $binary = $this->readBinaryForOleValidation($path);
+
+        $this->validateOleMagic($binary, 'PPT');
+        $this->rejectLegacyMacroProject($binary, 'PPT');
+
+        if (! (new LegacyPowerPointInspector())->isPowerPoint($binary)) {
+            $this->reject(
+                'Struktur PowerPoint PPT tidak valid atau mengandung komponen macro/VBA.'
+            );
+        }
+
+        return [
+            'signature' => 'ole_compound',
+            'structure' => 'ppt',
             'macro_check' => 'passed',
         ];
     }
