@@ -364,7 +364,7 @@
 
                     value="{{ request('search') }}"
 
-                    placeholder="Cari nama, ID karyawan, email, departemen..."
+                    placeholder="Cari nama, ID karyawan, email, divisi..."
 
                     class="w-full
                            rounded-xl
@@ -561,7 +561,7 @@
                             </th>
 
                             <th class="px-6 py-4 font-semibold">
-                                Departemen
+                                Divisi
                             </th>
 
                             <th class="px-6 py-4 font-semibold">

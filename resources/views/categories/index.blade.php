@@ -261,7 +261,7 @@
                     type="text"
                     name="search"
                     value="{{ request('search') }}"
-                    placeholder="Cari kategori, departemen, slug..."
+                    placeholder="Cari kategori, divisi, slug..."
 
                     class="w-full
                            rounded-xl
@@ -289,7 +289,7 @@
             >
 
                 <option value="">
-                    Semua Departemen
+                    Semua Divisi
                 </option>
 
                 @foreach($departments as $department)
@@ -428,7 +428,7 @@
                             </th>
 
                             <th class="px-6 py-4">
-                                Departemen
+                                Divisi
                             </th>
 
                             <th class="px-6 py-4">

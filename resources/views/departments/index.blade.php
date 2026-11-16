@@ -43,7 +43,7 @@
                        tracking-tight
                        text-slate-900"
             >
-                Department Management
+                Divisi
             </h1>
 
 
@@ -54,7 +54,7 @@
                        sm:text-base
                        text-slate-500"
             >
-                Kelola data departemen yang digunakan untuk kategori dokumen
+                Kelola data divisi yang digunakan untuk kategori dokumen
                 dan akun pengguna di BMC QualityHub.
             </p>
 
@@ -94,7 +94,7 @@
                 <path d="M5 12h14"/>
             </svg>
 
-            Tambah Departemen
+            Tambah Divisi
         </a>
 
     </section>
@@ -207,7 +207,7 @@
                    shadow-sm"
         >
             <p class="text-sm text-slate-500">
-                Total Departemen
+                Total Divisi
             </p>
 
             <p class="mt-2 text-3xl font-bold text-slate-900">
@@ -225,7 +225,7 @@
                    shadow-sm"
         >
             <p class="text-sm text-slate-500">
-                Departemen Aktif
+                Divisi Aktif
             </p>
 
             <p class="mt-2 text-3xl font-bold text-emerald-700">
@@ -243,7 +243,7 @@
                    shadow-sm"
         >
             <p class="text-sm text-slate-500">
-                Departemen Tidak Aktif
+                Divisi Tidak Aktif
             </p>
 
             <p class="mt-2 text-3xl font-bold text-slate-600">
@@ -284,7 +284,7 @@
                 name="search"
                 value="{{ request('search') }}"
                 maxlength="255"
-                placeholder="Cari nama, kode, atau deskripsi departemen..."
+                placeholder="Cari nama, kode, atau deskripsi divisi..."
 
                 class="w-full
                        rounded-xl
@@ -407,12 +407,12 @@
 
             <div>
                 <h2 class="font-bold text-slate-900">
-                    Daftar Departemen
+                    Daftar Divisi
                 </h2>
 
                 <p class="mt-1 text-sm text-slate-500">
                     {{ number_format($departments->total()) }}
-                    departemen ditemukan.
+                    divisi ditemukan.
                 </p>
             </div>
 
@@ -453,7 +453,7 @@
                                    text-slate-500"
                         >
                             <th class="px-6 py-4 font-semibold">
-                                Departemen
+                                Divisi
                             </th>
 
                             <th class="px-6 py-4 font-semibold">
@@ -703,12 +703,12 @@
                                             ) }}"
 
                                             data-confirm-title="{{ $department->is_active
-                                                ? 'Nonaktifkan Departemen?'
-                                                : 'Aktifkan Departemen?'
+                                                ? 'Nonaktifkan Divisi?'
+                                                : 'Aktifkan Divisi?'
                                             }}"
                                             data-confirm-message="{{ $department->is_active
-                                                ? 'Departemen hanya dapat dinonaktifkan jika tidak memiliki kategori aktif atau pengguna aktif.'
-                                                : 'Departemen akan diaktifkan kembali dan dapat digunakan oleh kategori maupun pengguna.'
+                                                ? 'Divisi hanya dapat dinonaktifkan jika tidak memiliki kategori aktif atau pengguna aktif.'
+                                                : 'Divisi akan diaktifkan kembali dan dapat digunakan oleh kategori maupun pengguna.'
                                             }}"
                                             data-confirm-button="{{ $department->is_active
                                                 ? 'Nonaktifkan'
@@ -749,13 +749,13 @@
 
                                         </form>
 
-                                        {{-- Hapus hanya departemen nonaktif yang sama sekali tidak dipakai. --}}
+                                        {{-- Hapus hanya divisi nonaktif yang sama sekali tidak dipakai. --}}
                                         @if(! $department->is_active && $department->categories_count === 0 && $department->users_count === 0)
                                             <form
                                                 method="POST"
                                                 action="{{ route('departments.destroy', $department) }}"
-                                                data-confirm-title="Hapus Departemen Permanen?"
-                                                data-confirm-message="Departemen {{ $department->name }} ({{ $department->code }}) akan dihapus selamanya. Tindakan ini tidak bisa dibatalkan."
+                                                data-confirm-title="Hapus Divisi Permanen?"
+                                                data-confirm-message="Divisi {{ $department->name }} ({{ $department->code }}) akan dihapus selamanya. Tindakan ini tidak bisa dibatalkan."
                                                 data-confirm-button="Hapus Permanen"
                                                 data-confirm-code="{{ $department->code }}"
                                                 data-confirm-destructive="true"
@@ -767,15 +767,15 @@
                                                 <input type="hidden" name="confirmation_code" value="" data-department-confirmation-code>
                                                 <button type="submit"
                                                     class="rounded-lg bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-rose-600"
-                                                    aria-label="Hapus permanen departemen {{ $department->name }}">
+                                                    aria-label="Hapus permanen divisi {{ $department->name }}">
                                                     Hapus
                                                 </button>
                                             </form>
                                         @else
                                             <button type="button" disabled
-                                                title="Hapus permanen hanya untuk departemen nonaktif tanpa kategori dan tanpa pengguna."
+                                                title="Hapus permanen hanya untuk divisi nonaktif tanpa kategori dan tanpa pengguna."
                                                 class="cursor-not-allowed rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-400"
-                                                aria-label="Hapus permanen tidak tersedia untuk departemen {{ $department->name }}">
+                                                aria-label="Hapus permanen tidak tersedia untuk divisi {{ $department->name }}">
                                                 Hapus
                                             </button>
                                         @endif
@@ -838,7 +838,7 @@
                 </div>
 
                 <p class="mt-4 font-semibold text-slate-700">
-                    Departemen tidak ditemukan.
+                    Divisi tidak ditemukan.
                 </p>
 
                 <p class="mt-1 text-sm text-slate-400">
@@ -931,7 +931,7 @@
                                 Penghapusan permanen tidak dapat dibatalkan.
                             </p>
                             <label for="qh-department-delete-code" class="mt-2 block text-xs font-semibold text-rose-900">
-                                Ketik kode departemen: <span class="font-extrabold" x-text="confirmationCode"></span>
+                                Ketik kode divisi: <span class="font-extrabold" x-text="confirmationCode"></span>
                             </label>
                             <input id="qh-department-delete-code" type="text" x-model="typedCode"
                                 autocomplete="off" autocapitalize="off" spellcheck="false"

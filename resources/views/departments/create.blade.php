@@ -19,7 +19,7 @@
                    hover:text-blue-700
                    transition"
         >
-            ← Kembali ke Departemen
+            ← Kembali ke Divisi
         </a>
 
 
@@ -50,7 +50,7 @@
                    tracking-tight
                    text-slate-900"
         >
-            Add Department
+            Tambah Divisi
         </h1>
 
 
@@ -61,7 +61,7 @@
                    sm:text-base
                    text-slate-500"
         >
-            Tambahkan departemen baru yang nantinya dapat digunakan untuk
+            Tambahkan divisi baru yang nantinya dapat digunakan untuk
             mengelompokkan kategori dokumen dan akun pengguna.
         </p>
 
@@ -133,11 +133,11 @@
                    py-5"
         >
             <h2 class="font-bold text-slate-900">
-                Informasi Departemen
+                Informasi Divisi
             </h2>
 
             <p class="mt-1 text-sm text-slate-500">
-                Nama dan kode akan digunakan sebagai identitas departemen
+                Nama dan kode akan digunakan sebagai identitas divisi
                 di seluruh BMC QualityHub.
             </p>
         </div>
@@ -152,7 +152,7 @@
                     for="name"
                     class="mb-2 block text-sm font-semibold text-slate-700"
                 >
-                    Nama Departemen
+                    Nama Divisi
                     <span class="text-red-500">*</span>
                 </label>
 
@@ -179,7 +179,7 @@
                 >
 
                 <p class="mt-2 text-xs text-slate-400">
-                    Gunakan nama departemen resmi yang mudah dikenali pengguna.
+                    Gunakan nama divisi resmi yang mudah dikenali pengguna.
                 </p>
 
             </div>
@@ -192,7 +192,7 @@
                     for="code"
                     class="mb-2 block text-sm font-semibold text-slate-700"
                 >
-                    Kode Departemen
+                    Kode Divisi
                     <span class="text-red-500">*</span>
                 </label>
 
@@ -245,7 +245,7 @@
                     name="description"
                     rows="5"
                     maxlength="2000"
-                    placeholder="Jelaskan fungsi atau ruang lingkup departemen..."
+                    placeholder="Jelaskan fungsi atau ruang lingkup divisi..."
 
                     class="w-full
                            resize-y
@@ -321,7 +321,7 @@
                        hover:bg-blue-900
                        transition"
             >
-                Simpan Departemen
+                Simpan Divisi
             </button>
 
         </div>

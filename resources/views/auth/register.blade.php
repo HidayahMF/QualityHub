@@ -157,7 +157,7 @@
                 for="department_id"
                 class="block text-sm font-semibold text-slate-700 mb-2">
 
-                Departemen
+                Divisi
 
             </label>
 
@@ -176,7 +176,7 @@
                        transition duration-200">
 
                 <option value="">
-                    Select Departemen
+                    Pilih Divisi
                 </option>
 
                 @foreach ($departments as $department)
