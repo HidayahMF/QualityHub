@@ -99,30 +99,47 @@ class BulkDummyDocumentDeleteTest extends TestCase
         ], $extra);
     }
 
-    public function test_guest_and_non_super_admin_cannot_bulk_delete_active_documents(): void
+    public function test_guest_cannot_bulk_delete_active_documents(): void
     {
         $document = $this->createDocument('Demo record');
-        $url = route('documents.bulk-force-destroy');
 
-        $this->delete($url, $this->payload([$document->id]))
+        $this->delete(route('documents.bulk-force-destroy'), $this->payload([$document->id]))
             ->assertRedirect(route('login'));
-
-        foreach (['admin', 'user', 'viewer'] as $role) {
-            $actor = User::factory()->create([
-                'role' => $role,
-                'account_status' => 'active',
-            ]);
-
-            $this->actingAs($actor)
-                ->delete($url, $this->payload([$document->id]))
-                ->assertForbidden();
-        }
 
         $this->assertNotNull($document->fresh());
         $this->assertTrue(Storage::disk('bmc_documents')->exists($document->file_path));
         $this->assertDatabaseMissing('activity_logs', [
             'action' => 'permanent_delete_document',
         ]);
+    }
+
+    #[DataProvider('nonSuperAdminProvider')]
+    public function test_non_super_admin_cannot_bulk_delete_active_documents(string $role): void
+    {
+        $document = $this->createDocument('Demo record');
+        $actor = User::factory()->create([
+            'role' => $role,
+            'account_status' => 'active',
+        ]);
+
+        $this->actingAs($actor)
+            ->delete(route('documents.bulk-force-destroy'), $this->payload([$document->id]))
+            ->assertForbidden();
+
+        $this->assertNotNull($document->fresh());
+        $this->assertTrue(Storage::disk('bmc_documents')->exists($document->file_path));
+        $this->assertDatabaseMissing('activity_logs', [
+            'action' => 'permanent_delete_document',
+        ]);
+    }
+
+    public static function nonSuperAdminProvider(): array
+    {
+        return [
+            'admin' => ['admin'],
+            'user' => ['user'],
+            'viewer' => ['viewer'],
+        ];
     }
 
     public function test_super_admin_bulk_deletes_selected_active_records_and_versions_with_audit(): void
@@ -261,9 +278,9 @@ class BulkDummyDocumentDeleteTest extends TestCase
         $this->assertNotNull($active->fresh());
     }
 
-    public function test_selection_interface_is_super_admin_only_on_both_device_layouts(): void
+    public function test_super_admin_sees_bulk_selection_interface_on_both_device_layouts(): void
     {
-        $document = $this->createDocument('Sample test record');
+        $this->createDocument('Sample test record');
 
         $this->actingAs($this->superAdmin)
             ->get(route('documents.index'))
@@ -273,12 +290,17 @@ class BulkDummyDocumentDeleteTest extends TestCase
             ->assertSee('bulk-document-delete', false)
             ->assertSee('Hapus Permanen', false)
             ->assertSee('Pilih semua di halaman ini');
+    }
 
-        $user = User::factory()->create([
+    public function test_regular_admin_does_not_see_bulk_deletion_interface(): void
+    {
+        $document = $this->createDocument('Sample test record');
+        $admin = User::factory()->create([
             'role' => 'admin',
             'account_status' => 'active',
         ]);
-        $this->actingAs($user)
+
+        $this->actingAs($admin)
             ->get(route('documents.index'))
             ->assertOk()
             ->assertDontSee('data-qh-bulk-toolbar', false)
@@ -287,4 +309,5 @@ class BulkDummyDocumentDeleteTest extends TestCase
 
         $this->assertNotNull($document->fresh());
     }
+
 }
