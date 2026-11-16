@@ -254,6 +254,46 @@ def _extract_specific_date(query: str) -> date | None:
     return None
 
 
+
+def _extract_day_month(query: str, year: int | None) -> tuple[int, int] | None:
+    """Resolve yearless dates without inventing a year.
+
+    '12 November' matches the 12th of November across all years. A full
+    year, including 'tanggal 12 bulan November tahun 2026', becomes an
+    exact date later in the pipeline.
+    """
+    month_names = "|".join(re.escape(name) for name in MONTHS)
+    named = re.search(
+        rf"\b(\d{{1,2}})\s+(?:bulan\s+)?({month_names})\b",
+        query,
+    )
+
+    if named:
+        day = int(named.group(1))
+        month = MONTHS[named.group(2)]
+    else:
+        # Numeric DD/MM without year is easy to confuse with part numbers.
+        # Require an explicit date marker unless the query is only DD/MM.
+        numeric = re.search(
+            r"\b(?:tanggal|tgl|date)\s+(\d{1,2})[/-](\d{1,2})(?![/-]\d)\b",
+            query,
+        )
+        if numeric is None:
+            numeric = re.fullmatch(r"\s*(\d{1,2})[/-](\d{1,2})\s*", query)
+
+        if numeric is None:
+            return None
+
+        day, month = (int(value) for value in numeric.groups())
+
+    # Year 2000 is intentionally a leap year: yearless '29 Februari'
+    # must remain searchable across historical leap-year documents.
+    if _valid_date(year if year is not None else 2000, month, day) is None:
+        return None
+
+    return day, month
+
+
 def extract_entities(
     query: str,
     known_values: KnownValues | None = None,
@@ -275,6 +315,12 @@ def extract_entities(
     year = _extract_year(normalized_query)
     date_query = unicodedata.normalize("NFKC", query).casefold()
     specific_date = _extract_specific_date(date_query)
+    day_month = _extract_day_month(date_query, year) if specific_date is None else None
+    day = specific_date.day if specific_date is not None else (
+        day_month[0] if day_month is not None else None
+    )
+    if day_month is not None:
+        month = day_month[1]
     relative_date = None
     date_from = None
     date_to = None
@@ -297,9 +343,15 @@ def extract_entities(
         date_to = specific_date
         month = specific_date.month
         year = specific_date.year
+    elif day_month is not None and year is not None:
+        date_from = date(year, day_month[1], day_month[0])
+        date_to = date_from
     elif month is not None and year is not None:
         date_from = date(year, month, 1)
         date_to = date(year, month, calendar.monthrange(year, month)[1])
+
+    if relative_date is not None:
+        day = None
 
     return SearchEntities(
         document_type=document_type,
@@ -315,6 +367,7 @@ def extract_entities(
         ),
         date_from=date_from,
         date_to=date_to,
+        day=day,
         month=month,
         year=year,
         relative_date=relative_date,

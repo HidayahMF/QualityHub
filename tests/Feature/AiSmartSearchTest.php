@@ -216,6 +216,153 @@ class AiSmartSearchTest extends TestCase
         Http::assertSentCount(2);
     }
 
+    public function test_yearless_day_month_filters_exact_day_across_years(): void
+    {
+        $older = $this->createRetoolingDocument(
+            'Retooling 12 November 2025',
+            $this->line1,
+            '2025-11-12'
+        );
+        $newer = $this->createRetoolingDocument(
+            'Retooling 12 November 2026',
+            $this->line1,
+            '2026-11-12'
+        );
+        $this->createRetoolingDocument(
+            'Retooling 13 November 2026',
+            $this->line1,
+            '2026-11-13'
+        );
+        $this->createRetoolingDocument(
+            'Retooling 12 October 2026',
+            $this->line1,
+            '2026-10-12'
+        );
+
+        $entities = $this->entities([
+            'day' => 12,
+            'month' => 11,
+        ]);
+        $expectedIds = [$older->id, $newer->id];
+
+        Http::fake(function (ClientRequest $request) use ($entities, $expectedIds) {
+            if (str_ends_with($request->url(), '/parse')) {
+                return Http::response([
+                    'query' => $request['query'],
+                    'intent' => 'search_document',
+                    'entities' => $entities,
+                ]);
+            }
+
+            $candidates = $request['candidates'];
+            $candidateIds = array_column($candidates, 'document_id');
+
+            $this->assertEqualsCanonicalizing($expectedIds, $candidateIds);
+            $this->assertCount(2, $candidates);
+
+            return Http::response([
+                'query' => $request['query'],
+                'intent' => 'search_document',
+                'entities' => $entities,
+                'results' => array_map(
+                    fn (int $id) => [
+                        'document_id' => $id,
+                        'semantic_score' => 0.88,
+                    ],
+                    $candidateIds
+                ),
+                'model' => 'multilingual-e5-small',
+                'mode' => 'local',
+            ]);
+        });
+
+        $response = $this->actingAs($this->user)
+            ->postJson(route('documents.search.ai'), [
+                'query' => 'cari dokumen tanggal 12 November',
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('count', 2)
+            ->assertJsonPath('entities.day', 12)
+            ->assertJsonPath('entities.month', 11)
+            ->assertJsonPath('entities.year', null)
+            ->assertJsonPath('results.0.matched_by.0', 'Tanggal 12 Bulan 11');
+
+        $this->assertEqualsCanonicalizing(
+            $expectedIds,
+            array_column($response->json('results'), 'id')
+        );
+
+        Http::assertSentCount(2);
+    }
+
+    public function test_day_month_with_year_keeps_exact_date_range(): void
+    {
+        $matching = $this->createRetoolingDocument(
+            'Retooling 12 November 2026',
+            $this->line1,
+            '2026-11-12'
+        );
+        $this->createRetoolingDocument(
+            'Retooling 12 November 2025',
+            $this->line1,
+            '2025-11-12'
+        );
+        $this->createRetoolingDocument(
+            'Retooling 13 November 2026',
+            $this->line1,
+            '2026-11-13'
+        );
+
+        $entities = $this->entities([
+            'date_from' => '2026-11-12',
+            'date_to' => '2026-11-12',
+            'day' => 12,
+            'month' => 11,
+            'year' => 2026,
+        ]);
+
+        Http::fake(function (ClientRequest $request) use ($entities, $matching) {
+            if (str_ends_with($request->url(), '/parse')) {
+                return Http::response([
+                    'query' => $request['query'],
+                    'intent' => 'search_document',
+                    'entities' => $entities,
+                ]);
+            }
+
+            $this->assertCount(1, $request['candidates']);
+            $this->assertSame(
+                $matching->id,
+                $request['candidates'][0]['document_id']
+            );
+
+            return Http::response([
+                'query' => $request['query'],
+                'intent' => 'search_document',
+                'entities' => $entities,
+                'results' => [[
+                    'document_id' => $matching->id,
+                    'semantic_score' => 0.90,
+                ]],
+                'model' => 'multilingual-e5-small',
+                'mode' => 'local',
+            ]);
+        });
+
+        $this->actingAs($this->user)
+            ->postJson(route('documents.search.ai'), [
+                'query' => 'cari dokumen 12 November 2026',
+            ])
+            ->assertOk()
+            ->assertJsonPath('count', 1)
+            ->assertJsonPath('results.0.id', $matching->id)
+            ->assertJsonPath('entities.day', 12)
+            ->assertJsonPath('entities.date_from', '2026-11-12');
+
+        Http::assertSentCount(2);
+    }
+
     public function test_ai_result_ids_are_intersected_with_active_authorized_candidates(): void
     {
         $active = $this->createRetoolingDocument(
@@ -495,6 +642,7 @@ class AiSmartSearchTest extends TestCase
             'brake_part_number' => null,
             'date_from' => null,
             'date_to' => null,
+            'day' => null,
             'month' => null,
             'year' => null,
             'relative_date' => null,

@@ -236,7 +236,11 @@ Parser memakai tanggal referensi dari Laravel dalam timezone aplikasi `Asia/Jaka
 - `minggu lalu`: Senin sampai Minggu pada minggu kalender sebelumnya.
 - `bulan september`: `month=9`; bila tahun tidak disebut, filter bulan berlaku lintas tahun.
 - `september 2026`: rentang `2026-09-01` sampai `2026-09-30`.
-- tanggal eksplisit yang didukung menghasilkan `date_from` dan `date_to` yang sama.
+- `tanggal 12 November`, `tgl 12/11`, atau `12/11`: `day=12`, `month=11`, tanpa tahun → filter tepat pada tanggal 12 November **lintas tahun**, konsisten dengan pencarian bulan tanpa tahun.
+- `tanggal 12 November 2026`, `2026-11-12`, `12/11/2026`, atau `tanggal 12 bulan November tahun 2026`: tanggal spesifik `2026-11-12` (`date_from=date_to`).
+- `29 Februari` tanpa tahun tetap bisa menemukan arsip tahun kabisat.
+- Tanggal diproses dari **metadata tanggal dokumen** `documents.document_date`, bukan pembacaan isi PDF atau gambar. Pada Scan/Capture, tanggal dokumen diisi dari `scan_date`; Retooling juga memiliki `retooling_date` terpisah yang dapat berbeda pada Shift 3.
+- Nama hari saja tanpa bulan/tahun, seperti `tanggal 12`, tidak dipaksakan menjadi tanggal lengkap karena ambigu.
 
 ## 23. Filtering Line dan Product
 

@@ -70,6 +70,7 @@ class SearchEntities(StrictModel):
     brake_part_number: OptionalShortText = None
     date_from: date | None = None
     date_to: date | None = None
+    day: int | None = Field(default=None, ge=1, le=31)
     month: int | None = Field(default=None, ge=1, le=12)
     year: int | None = Field(default=None, ge=1900, le=2100)
     relative_date: Literal["today", "yesterday", "previous_week"] | None = None

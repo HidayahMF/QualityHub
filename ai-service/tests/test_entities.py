@@ -17,6 +17,80 @@ def test_extracts_retooling_line_and_month() -> None:
     assert entities.date_from is None
 
 
+def test_day_month_without_year_is_exact_day_across_years() -> None:
+    entities = extract_entities(
+        "cari dokumen retooling tanggal 12 november",
+        reference_date=date(2026, 11, 16),
+    )
+
+    assert entities.day == 12
+    assert entities.month == 11
+    assert entities.year is None
+    assert entities.date_from is None
+    assert entities.date_to is None
+
+
+def test_numeric_day_month_with_explicit_marker() -> None:
+    entities = extract_entities(
+        "cari dokumen tanggal 12/11",
+        reference_date=date(2026, 11, 16),
+    )
+
+    assert entities.day == 12
+    assert entities.month == 11
+    assert entities.year is None
+    assert entities.date_from is None
+    assert entities.date_to is None
+
+
+def test_day_month_year_is_an_exact_date_even_with_bulan_keyword() -> None:
+    entities = extract_entities(
+        "dokumen tanggal 12 bulan November tahun 2026",
+        reference_date=date(2026, 11, 16),
+    )
+
+    assert entities.day == 12
+    assert entities.month == 11
+    assert entities.year == 2026
+    assert entities.date_from == date(2026, 11, 12)
+    assert entities.date_to == date(2026, 11, 12)
+
+
+def test_existing_full_date_formats_still_match_one_day() -> None:
+    queries = [
+        "dokumen 12 November 2026",
+        "dokumen 2026-11-12",
+        "dokumen 12/11/2026",
+    ]
+    for query in queries:
+        entities = extract_entities(query, reference_date=date(2026, 11, 16))
+        assert entities.day == 12
+        assert entities.month == 11
+        assert entities.year == 2026
+        assert entities.date_from == date(2026, 11, 12)
+        assert entities.date_to == date(2026, 11, 12)
+
+
+def test_february_29_without_year_can_search_past_leap_years() -> None:
+    entities = extract_entities("tanggal 29 Februari")
+    assert entities.day == 29
+    assert entities.month == 2
+    assert entities.year is None
+    assert entities.date_from is None
+
+
+def test_month_only_and_relative_dates_not_reinterpreted_as_specific_day() -> None:
+    month = extract_entities("cari dokumen bulan november")
+    today = extract_entities("cari dokumen hari ini", reference_date=date(2026, 11, 16))
+
+    assert month.day is None
+    assert month.month == 11
+    assert month.year is None
+    assert today.day is None
+    assert today.date_from == date(2026, 11, 16)
+    assert today.date_to == date(2026, 11, 16)
+
+
 def test_extracts_database_product_values_without_inventing_names() -> None:
     known_values = KnownValues(
         products=[
