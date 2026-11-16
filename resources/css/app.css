@@ -3087,7 +3087,7 @@
    An explicit tick avoids missing system check glyph on Windows/Edge.
    Scoped ONLY to Super Admin's bulk selection in All Documents.
    ========================================================================== */
-input:is([data-qh-bulk-document], [data-qh-bulk-select-all]) {
+input:is([data-qh-bulk-document], [data-qh-bulk-select-all], [data-qh-bulk-confirmation]) {
     -webkit-appearance: none !important;
     appearance: none !important;
     display: inline-block;
@@ -3108,18 +3108,99 @@ input:is([data-qh-bulk-document], [data-qh-bulk-select-all]) {
     transition: background-color 130ms ease, border-color 130ms ease;
 }
 
-input:is([data-qh-bulk-document], [data-qh-bulk-select-all]):checked {
+input:is([data-qh-bulk-document], [data-qh-bulk-select-all], [data-qh-bulk-confirmation]):checked {
     border-color: #1d4ed8 !important;
     background-color: #1d4ed8 !important;
     background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M5%2012.5%2010%2017l9-10%22%20fill%3D%22none%22%20stroke%3D%22white%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%223%22%2F%3E%3C%2Fsvg%3E") !important;
 }
 
-input:is([data-qh-bulk-document], [data-qh-bulk-select-all]):focus-visible {
+input:is([data-qh-bulk-document], [data-qh-bulk-select-all], [data-qh-bulk-confirmation]):focus-visible {
     outline: 3px solid #93c5fd;
     outline-offset: 2px;
 }
 
-input:is([data-qh-bulk-document], [data-qh-bulk-select-all]):disabled {
+input:is([data-qh-bulk-document], [data-qh-bulk-select-all], [data-qh-bulk-confirmation]):disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* ==========================================================================
+   PR #18: Bulk delete confirmation modal — always above sticky navigation.
+   Teleported to <body> so content z-index cannot trap the dialog.
+   ========================================================================== */
+.qh-bulk-modal-overlay {
+    z-index: 2147482100 !important;
+    box-sizing: border-box;
+    padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)) !important;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    align-items: center;
+}
+
+.qh-bulk-modal-panel {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 36rem;
+    max-height: calc(100vh - 32px);
+    max-height: calc(100dvh - 32px);
+    margin: auto;
+    overflow: hidden;
+}
+
+.qh-bulk-modal-form {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    max-height: calc(100vh - 38px);
+    max-height: calc(100dvh - 38px);
+    overflow: hidden;
+}
+
+.qh-bulk-modal-header,
+.qh-bulk-modal-footer {
+    flex: 0 0 auto;
+}
+
+.qh-bulk-modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.qh-bulk-selected-list {
+    max-height: min(25vh, 180px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+@media (max-width: 639px) {
+    .qh-bulk-modal-overlay {
+        padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)) !important;
+    }
+    .qh-bulk-modal-panel {
+        max-height: calc(100dvh - 24px);
+    }
+    .qh-bulk-modal-form {
+        max-height: calc(100dvh - 30px);
+    }
+}
+
+@media (max-height: 600px) {
+    .qh-bulk-modal-header {
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+    .qh-bulk-selected-list {
+        max-height: 100px;
+    }
+}
+
+/* Match the table's high-contrast checked-state on the dummy confirmation.
+   Keep the real native checkbox for keyboard, form, and Alpine x-model. */
+.qh-bulk-modal-panel input[data-qh-bulk-confirmation]:checked {
+    border-color: #1d4ed8 !important;
+    background-color: #1d4ed8 !important;
 }
