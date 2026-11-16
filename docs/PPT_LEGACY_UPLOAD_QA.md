@@ -47,3 +47,8 @@ Use safe, non-sensitive, genuine `.ppt` (e.g. `Manajemen-Proyek-Perangkat-Lunak-
 ## Deployment gate
 Draft PR only; do not merge/redeploy until PHP/Blade regression and real Office PPT round-trip PASS.
 GitHub "Build and publish images" is **not** a PHPUnit or browser test. IT BMC must approve production rollout, back up DB/documents first, verify image digest and deployed version, then smoke test.
+
+## Hosted full-suite constraint (16 Nov 2026)
+GitHub CI targeted upload regression: **55 passed / 370 assertions** (LegacyPpt 11, PPTX 13, Category 18, DOCX 3, Searchable Filter 10). Syntax, Vite and Blade also passed.
+When running `php artisan test` against in-memory SQLite on GitHub Actions, the broad suite reported **47 failures / 318 passed**. Failures are concentrated in Retooling/Axle/Brake integration that expects external `mtc.LINE` master schema, and older Example/registration tests. These are not automatically attributed to this PPT change. The full-suite step is diagnostic/non-blocking in generic SQLite CI, **not** evidence the entire app is regression-free.
+Before merging, run the affected workflow on the approved local/staging BMC test environment with valid MTC schema, and compare baseline `main` where relevant. Do not patch production Retooling or disabled registration merely to make CI green.
