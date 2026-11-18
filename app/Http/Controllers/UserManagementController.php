@@ -376,14 +376,20 @@ public function destroy(
         'Anda tidak dapat menghapus akun sendiri.'
     );
 
-    $validated = $request->validate([
-        'confirmation' => ['required', 'string', 'max:20'],
-    ]);
+    // Never redirect delete results to a previous avatar/image URL.
+    // A nested image request can replace Laravel's previous URL in session.
+    try {
+        $validated = $request->validate([
+            'confirmation' => ['required', 'string', 'max:20'],
+        ]);
+    } catch (ValidationException $exception) {
+        throw $exception->redirectTo(route('users.index'));
+    }
 
     if (trim($validated['confirmation']) !== 'HAPUS') {
         throw ValidationException::withMessages([
             'confirmation' => 'Ketik HAPUS untuk mengonfirmasi penghapusan permanen.',
-        ]);
+        ])->redirectTo(route('users.index'));
     }
 
     $deletedName = $user->name;
@@ -445,7 +451,7 @@ public function destroy(
     } catch (QueryException $exception) {
         report($exception);
 
-        return back()->withErrors([
+        return redirect()->route('users.index')->withErrors([
             'user' => 'Akun masih memiliki hubungan data lain sehingga tidak dapat dihapus. Hubungi admin IT.',
         ]);
     }
@@ -463,20 +469,20 @@ public function destroy(
         try {
             $disk = Storage::disk('local');
             if ($disk->exists($photoPath) && ! $disk->delete($photoPath)) {
-                return back()
+                return redirect()->route('users.index')
                     ->with('success', 'Akun '.$deletedName.' berhasil dihapus permanen.')
                     ->with('warning', 'Foto profil lama belum dapat dibersihkan. Hubungi IT.');
             }
         } catch (\Throwable $exception) {
             report($exception);
 
-            return back()
+            return redirect()->route('users.index')
                 ->with('success', 'Akun '.$deletedName.' berhasil dihapus permanen.')
                 ->with('warning', 'Foto profil lama belum dapat dibersihkan. Hubungi IT.');
         }
     }
 
-    return back()->with(
+    return redirect()->route('users.index')->with(
         'success',
         'Akun ' . $deletedName . ' berhasil dihapus permanen.'
     );
