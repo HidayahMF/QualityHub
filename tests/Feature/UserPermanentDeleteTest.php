@@ -261,6 +261,51 @@ class UserPermanentDeleteTest extends TestCase
             ->assertDontSee('delete-user-'.$admin->id, false);
     }
 
+    public function test_delete_redirects_to_users_when_browser_previous_url_is_profile_photo(): void
+    {
+        $admin = $this->superAdmin();
+        $target = $this->employee('active');
+        $avatarUrl = route('users.photo.show', $admin);
+
+        $this->actingAs($admin)
+            ->withHeader('Referer', $avatarUrl)
+            ->delete(route('users.destroy', $target), ['confirmation' => 'HAPUS'])
+            ->assertRedirect(route('users.index'))
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseMissing('users', ['id' => $target->id]);
+    }
+
+    public function test_confirmation_failure_redirects_to_users_not_photo_url(): void
+    {
+        $admin = $this->superAdmin();
+        $target = $this->employee('inactive');
+        $avatarUrl = route('users.photo.show', $admin);
+
+        $this->actingAs($admin)
+            ->withHeader('Referer', $avatarUrl)
+            ->delete(route('users.destroy', $target), ['confirmation' => 'TIDAK'])
+            ->assertRedirect(route('users.index'))
+            ->assertSessionHasErrors('confirmation');
+
+        $this->assertDatabaseHas('users', ['id' => $target->id]);
+    }
+
+    public function test_missing_confirmation_redirects_to_users_not_photo_url(): void
+    {
+        $admin = $this->superAdmin();
+        $target = $this->employee('pending');
+
+        $this->actingAs($admin)
+            ->withHeader('Referer', route('users.photo.show', $admin))
+            ->delete(route('users.destroy', $target))
+            ->assertRedirect(route('users.index'))
+            ->assertSessionHasErrors('confirmation');
+
+        $this->assertDatabaseHas('users', ['id' => $target->id]);
+    }
+
     public function test_user_management_renders_validation_errors(): void
     {
         $admin = $this->superAdmin();
