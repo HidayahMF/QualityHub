@@ -48,7 +48,7 @@ class AdminAccountManagementTest extends TestCase
         ]);
     }
 
-    public function test_super_admin_can_create_active_employee_with_temporary_password(): void
+    public function test_super_admin_can_create_active_employee_without_forced_password_change(): void
     {
         $admin = $this->superAdmin();
         $department = $this->department();
@@ -61,7 +61,7 @@ class AdminAccountManagementTest extends TestCase
         $employee = User::query()->where('email', 'employee.new@example.test')->firstOrFail();
         $this->assertSame('user', $employee->role);
         $this->assertSame('active', $employee->account_status);
-        $this->assertTrue($employee->must_change_password);
+        $this->assertFalse($employee->must_change_password);
         $this->assertTrue(Hash::check(self::TEMP_PASSWORD, $employee->password));
         $this->assertSame(
             1,
@@ -153,7 +153,7 @@ class AdminAccountManagementTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_password_reset_revokes_sessions_and_requires_self_change(): void
+    public function test_password_reset_revokes_sessions_without_forcing_self_change(): void
     {
         config(['session.driver' => 'database']);
 
@@ -182,7 +182,7 @@ class AdminAccountManagementTest extends TestCase
         $target->refresh();
 
         $this->assertTrue(Hash::check(self::TEMP_PASSWORD, $target->password));
-        $this->assertTrue($target->must_change_password);
+        $this->assertFalse($target->must_change_password);
         $this->assertDatabaseMissing('sessions', ['id' => 'old-target-session']);
         $this->assertSame(
             1,
@@ -205,7 +205,7 @@ class AdminAccountManagementTest extends TestCase
         $this->assertSame($oldHash, $target->fresh()->password);
     }
 
-    public function test_temporary_password_redirects_user_to_profile_until_changed(): void
+    public function test_existing_legacy_password_flag_does_not_block_login(): void
     {
         $target = User::factory()->create([
             'role' => 'user',
@@ -217,17 +217,60 @@ class AdminAccountManagementTest extends TestCase
         $this->post(route('login'), [
             'email' => 'BMC_LOGIN_001',
             'password' => 'password',
-        ])->assertRedirect(route('profile.edit'));
+        ])->assertRedirect(route('dashboard', absolute: false));
 
-        $this->get(route('dashboard'))->assertRedirect(route('profile.edit'));
+        $this->assertAuthenticatedAs($target);
+        $this->get(route('dashboard'))->assertOk();
+        $this->get(route('profile.edit'))
+            ->assertOk()
+            ->assertDontSee('Kata sandi sementara wajib diganti');
+    }
 
-        $this->put(route('password.update'), [
-            'current_password' => 'password',
-            'password' => self::TEMP_PASSWORD,
-            'password_confirmation' => self::TEMP_PASSWORD,
-        ])->assertSessionHasNoErrors();
+    public function test_newly_created_employee_can_log_in_and_use_dashboard_immediately(): void
+    {
+        $admin = $this->superAdmin();
+        $department = $this->department();
 
-        $this->assertFalse($target->fresh()->must_change_password);
+        $this->actingAs($admin)
+            ->post(route('users.store'), $this->accountInput($department, [
+                'password' => 'plainpass',
+                'password_confirmation' => 'plainpass',
+            ]))
+            ->assertSessionHasNoErrors();
+
+        $target = User::where('email', 'employee.new@example.test')->firstOrFail();
+        $this->assertFalse($target->must_change_password);
+        $this->post(route('logout'))->assertRedirect(route('login'));
+
+        $this->post(route('login'), [
+            'email' => $target->email,
+            'password' => 'plainpass',
+        ])->assertRedirect(route('dashboard', absolute: false));
+
+        $this->assertAuthenticatedAs($target);
+        $this->get(route('dashboard'))->assertOk();
+    }
+
+    public function test_password_policy_accepts_eight_simple_characters_and_rejects_seven(): void
+    {
+        $admin = $this->superAdmin();
+        $department = $this->department();
+
+        $this->actingAs($admin)
+            ->post(route('users.store'), $this->accountInput($department, [
+                'password' => '1234567',
+                'password_confirmation' => '1234567',
+            ]))->assertSessionHasErrors('password');
+
+        $this->actingAs($admin)
+            ->post(route('users.store'), $this->accountInput($department, [
+                'password' => '12345678',
+                'password_confirmation' => '12345678',
+            ]))->assertSessionHasNoErrors();
+
+        $target = User::where('email', 'employee.new@example.test')->firstOrFail();
+        $this->assertFalse($target->must_change_password);
+        $this->assertTrue(Hash::check('12345678', $target->password));
     }
 
     public function test_public_registration_and_email_reset_are_disabled(): void
