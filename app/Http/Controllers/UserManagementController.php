@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -387,9 +388,11 @@ public function destroy(
     }
 
     $deletedName = $user->name;
+    $photoPath = null;
+    $deletedUserId = (int) $user->id;
 
     try {
-        DB::transaction(function () use ($request, $user, $sessionSecurity) {
+        DB::transaction(function () use ($request, $user, $sessionSecurity, &$photoPath) {
             $target = User::query()
                 ->lockForUpdate()
                 ->findOrFail($user->id);
@@ -406,6 +409,10 @@ public function destroy(
             // company documents, revisions and audit history by nulling the
             // deleted account's references; personal favorites are removed.
             // Super Admin accounts remain protected above.
+
+            // Resolve avatar after commit only; never remove files in a
+            // transaction that could be rolled back.
+            $photoPath = $target->profile_photo_path;
 
             $sessionSecurity->revokeDatabaseSessionsForUser($target);
 
@@ -442,6 +449,32 @@ public function destroy(
         return back()->withErrors([
             'user' => 'Akun masih memiliki hubungan data lain sehingga tidak dapat dihapus. Hubungi admin IT.',
         ]);
+    }
+
+    // Only delete a private avatar belonging to this deleted user.
+    // A failed file cleanup must not reverse a successful database deletion.
+    if (
+        is_string($photoPath)
+        && preg_match(
+            '~\\Aprofile-photos/'.preg_quote((string) $deletedUserId, '~')
+                .'/[0-9a-f-]{36}\\.(jpg|png|webp)\\z~D',
+            $photoPath
+        ) === 1
+    ) {
+        try {
+            $disk = Storage::disk('local');
+            if ($disk->exists($photoPath) && ! $disk->delete($photoPath)) {
+                return back()
+                    ->with('success', 'Akun '.$deletedName.' berhasil dihapus permanen.')
+                    ->with('warning', 'Foto profil lama belum dapat dibersihkan. Hubungi IT.');
+            }
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return back()
+                ->with('success', 'Akun '.$deletedName.' berhasil dihapus permanen.')
+                ->with('warning', 'Foto profil lama belum dapat dibersihkan. Hubungi IT.');
+        }
     }
 
     return back()->with(
