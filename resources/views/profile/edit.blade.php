@@ -18,15 +18,6 @@
             @endif
         </header>
 
-        @if($user->must_change_password)
-            <div role="alert" class="mb-4 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
-                <svg class="h-4 w-4 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path d="m12 3 10 18H2L12 3Z"/><path d="M12 9v4m0 4h.01"/>
-                </svg>
-                Kata sandi sementara wajib diganti sebelum melanjutkan.
-            </div>
-        @endif
-
         <div class="overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-sm shadow-slate-900/5" data-qh-profile-main>
             <div class="grid grid-cols-1 lg:grid-cols-[minmax(270px,0.85fr)_minmax(0,1.55fr)]">
                 {{-- Identity and photo controls; no standalone tall sidebar card. --}}
