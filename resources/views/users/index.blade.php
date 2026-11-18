@@ -207,6 +207,13 @@
 
 
 
+    @if(session('warning'))
+        <div role="status" class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
+            <p class="font-bold">Perhatian</p>
+            <p class="mt-1">{{ session('warning') }}</p>
+        </div>
+    @endif
+
     @if($errors->any())
         <div role="alert" class="mb-6 rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">
             <p class="font-bold">Tindakan tidak dapat diselesaikan.</p>
