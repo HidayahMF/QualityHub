@@ -207,6 +207,17 @@
 
 
 
+    @if($errors->any())
+        <div role="alert" class="mb-6 rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">
+            <p class="font-bold">Tindakan tidak dapat diselesaikan.</p>
+            <ul class="mt-2 list-disc space-y-1 pl-5">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     {{-- ========================================================= --}}
     {{-- STATISTICS --}}
     {{-- ========================================================= --}}
@@ -880,14 +891,7 @@
                                             </a>
                                         @endif
 
-                                        @if(
-    ! $user->isSuperAdmin()
-    && in_array(
-        $user->account_status,
-        ['inactive', 'rejected'],
-        true
-    )
-)
+                                        @if(! $user->isSuperAdmin())
     <button
         type="button"
         x-on:click.prevent="$dispatch('open-modal', 'delete-user-{{ $user->id }}')"
@@ -965,21 +969,14 @@
             />
         @endif
 
-        @if(
-    ! $user->isSuperAdmin()
-    && in_array(
-        $user->account_status,
-        ['inactive', 'rejected'],
-        true
-    )
-)
+        @if(! $user->isSuperAdmin())
     <x-confirmation-modal
         name="delete-user-{{ $user->id }}"
         :action="route('users.destroy', $user)"
         method="DELETE"
         variant="danger"
         title="Hapus Akun Permanen?"
-        description="Akun ini akan dihapus permanen dari QualityHub. Tindakan ini tidak dapat dibatalkan."
+        description="Akun akan dihapus permanen meskipun masih aktif atau pernah digunakan. Sesi login langsung dicabut, favorit pribadi dihapus; dokumen, revisi, dan Activity Log perusahaan tetap tersimpan. Tindakan ini tidak dapat dibatalkan."
         confirmLabel="Lanjutkan"
         typedConfirmation
         typedConfirmLabel="HAPUS PERMANEN"
