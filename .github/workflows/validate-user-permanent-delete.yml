@@ -1,4 +1,4 @@
-name: Validate Super Admin permanent user deletion
+name: Validate User Management & Password Flow
 
 on:
   pull_request:
@@ -7,6 +7,18 @@ on:
       - 'app/Http/Controllers/UserManagementController.php'
       - 'resources/views/users/index.blade.php'
       - 'tests/Feature/UserPermanentDeleteTest.php'
+      - 'app/Http/Controllers/AdminAccountController.php'
+      - 'app/Http/Controllers/Auth/AuthenticatedSessionController.php'
+      - 'app/Http/Middleware/EnsureSessionFreshness.php'
+      - 'app/Providers/AppServiceProvider.php'
+      - 'config/smartfind_security.php'
+      - 'docker-compose.external-db.yml'
+      - 'portainer.env.example'
+      - 'resources/views/users/create.blade.php'
+      - 'resources/views/users/reset-password.blade.php'
+      - 'resources/views/profile/edit.blade.php'
+      - 'tests/Feature/AdminAccountManagementTest.php'
+      - 'tests/Feature/Auth/PasswordUpdateTest.php'
   workflow_dispatch:
 
 permissions:
@@ -27,6 +39,13 @@ jobs:
         run: |
           php -l app/Http/Controllers/UserManagementController.php
           php -l tests/Feature/UserPermanentDeleteTest.php
+          php -l app/Http/Controllers/AdminAccountController.php
+          php -l app/Http/Controllers/Auth/AuthenticatedSessionController.php
+          php -l app/Http/Middleware/EnsureSessionFreshness.php
+          php -l app/Providers/AppServiceProvider.php
+          php -l config/smartfind_security.php
+          php -l tests/Feature/AdminAccountManagementTest.php
+          php -l tests/Feature/Auth/PasswordUpdateTest.php
       - name: Install PHP dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
       - uses: actions/setup-node@v4
@@ -47,6 +66,10 @@ jobs:
           php artisan test --filter=AdminAccountManagementTest
           php artisan test --filter=UserManagementAvatarTest
           php artisan test --filter=DepartmentPermanentDeleteTest
+          php artisan test tests/Feature/Auth/PasswordUpdateTest.php
+          php artisan test tests/Feature/Auth/AuthenticationTest.php
+          php artisan test --filter=AuthSessionHardeningTest
+          php artisan test --filter=ProfileTest
       - name: Compile Blade and inspect user routes
         run: |
           php artisan view:cache
