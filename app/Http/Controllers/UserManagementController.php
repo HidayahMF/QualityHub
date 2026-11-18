@@ -402,28 +402,10 @@ public function destroy(
                 'Anda tidak dapat menghapus akun sendiri.'
             );
 
-            if (! in_array($target->account_status, ['inactive', 'rejected'], true)) {
-                throw ValidationException::withMessages([
-                    'user' => 'Hanya akun tidak aktif atau ditolak yang dapat dihapus permanen.',
-                ]);
-            }
-
-            $hasRelatedData =
-                $target->documents()->exists()
-                || $target->favorites()->exists()
-                || $target->activityLogs()->exists()
-                || DB::table('document_versions')
-                    ->where('uploaded_by', $target->id)
-                    ->exists()
-                || DB::table('documents')
-                    ->where('archived_by', $target->id)
-                    ->exists();
-
-            if ($hasRelatedData) {
-                throw ValidationException::withMessages([
-                    'user' => 'Akun tidak dapat dihapus karena masih memiliki dokumen, revisi, favorit, atau riwayat aktivitas. Gunakan Nonaktifkan untuk mempertahankan data QC.',
-                ]);
-            }
+            // Account deletion is allowed for every status. Foreign keys preserve
+            // company documents, revisions and audit history by nulling the
+            // deleted account's references; personal favorites are removed.
+            // Super Admin accounts remain protected above.
 
             $sessionSecurity->revokeDatabaseSessionsForUser($target);
 
@@ -446,6 +428,7 @@ public function destroy(
                     'target_employee_id' => $target->employee_id,
                     'target_name' => $target->name,
                     'target_email' => $target->email,
+                    'target_role' => $target->role,
                     'before_status' => $target->account_status,
                     'after_status' => 'deleted',
                 ],
