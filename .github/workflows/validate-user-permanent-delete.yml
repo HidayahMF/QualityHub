@@ -1,0 +1,77 @@
+name: Validate User Management & Password Flow
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/validate-user-permanent-delete.yml'
+      - 'app/Http/Controllers/UserManagementController.php'
+      - 'resources/views/users/index.blade.php'
+      - 'tests/Feature/UserPermanentDeleteTest.php'
+      - 'app/Http/Controllers/AdminAccountController.php'
+      - 'app/Http/Controllers/Auth/AuthenticatedSessionController.php'
+      - 'app/Http/Middleware/EnsureSessionFreshness.php'
+      - 'app/Providers/AppServiceProvider.php'
+      - 'config/smartfind_security.php'
+      - 'docker-compose.external-db.yml'
+      - 'portainer.env.example'
+      - 'resources/views/users/create.blade.php'
+      - 'resources/views/users/reset-password.blade.php'
+      - 'resources/views/profile/edit.blade.php'
+      - 'tests/Feature/AdminAccountManagementTest.php'
+      - 'tests/Feature/Auth/PasswordUpdateTest.php'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  user-permanent-delete:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, fileinfo, zip, intl, gd, pdo_sqlite, sqlite3
+          coverage: none
+      - name: PHP syntax checks
+        run: |
+          php -l app/Http/Controllers/UserManagementController.php
+          php -l tests/Feature/UserPermanentDeleteTest.php
+          php -l app/Http/Controllers/AdminAccountController.php
+          php -l app/Http/Controllers/Auth/AuthenticatedSessionController.php
+          php -l app/Http/Middleware/EnsureSessionFreshness.php
+          php -l app/Providers/AppServiceProvider.php
+          php -l config/smartfind_security.php
+          php -l tests/Feature/AdminAccountManagementTest.php
+          php -l tests/Feature/Auth/PasswordUpdateTest.php
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Build frontend
+        run: |
+          npm ci
+          npm run build
+      - name: Prepare isolated test environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+      - name: Test account deletion and regression
+        run: |
+          php artisan test --filter=UserPermanentDeleteTest
+          php artisan test --filter=AdminAccountManagementTest
+          php artisan test --filter=UserManagementAvatarTest
+          php artisan test --filter=DepartmentPermanentDeleteTest
+          php artisan test tests/Feature/Auth/PasswordUpdateTest.php
+          php artisan test tests/Feature/Auth/AuthenticationTest.php
+          php artisan test --filter=AuthSessionHardeningTest
+          php artisan test --filter=ProfileTest
+      - name: Compile Blade and inspect user routes
+        run: |
+          php artisan view:cache
+          php artisan route:list --name=users.destroy
+          php artisan view:clear

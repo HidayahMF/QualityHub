@@ -39,6 +39,38 @@ class PasswordUpdateTest extends TestCase
         );
     }
 
+    public function test_user_can_choose_simple_eight_character_password_in_profile(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->from('/profile')
+            ->put('/password', [
+                'current_password' => 'password',
+                'password' => 'abcdefgh',
+                'password_confirmation' => 'abcdefgh',
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect('/profile');
+
+        $this->assertTrue(Hash::check('abcdefgh', $user->fresh()->password));
+    }
+
+    public function test_profile_rejects_password_shorter_than_eight_characters(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->from('/profile')
+            ->put('/password', [
+                'current_password' => 'password',
+                'password' => 'abcdefg',
+                'password_confirmation' => 'abcdefg',
+            ])
+            ->assertSessionHasErrorsIn('updatePassword', 'password')
+            ->assertRedirect('/profile');
+    }
+
     public function test_correct_password_must_be_provided_to_update_password(): void
     {
         $user = User::factory()->create();

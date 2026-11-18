@@ -3,7 +3,7 @@
         <div>
             <a href="{{ route('users.index') }}" class="text-sm font-semibold text-blue-700 hover:underline">Kembali ke User Management</a>
             <h1 class="mt-3 text-3xl font-bold text-slate-900">Reset Password Pengguna</h1>
-            <p class="mt-2 text-sm text-slate-600">Reset password <strong>{{ $user->name }}</strong> ({{ $user->email }}). Pengguna akan logout dari semua perangkat dan wajib mengganti password sementara saat login.</p>
+            <p class="mt-2 text-sm text-slate-600">Reset password <strong>{{ $user->name }}</strong> ({{ $user->email }}). Seluruh sesi lama akan dicabut. Pengguna langsung dapat login dengan password baru.</p>
         </div>
         @if($errors->any())
             <div role="alert" class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -19,12 +19,12 @@
                 <p class="mt-1 text-xs text-slate-500">Verifikasi identitas administrator sebelum mengubah password akun lain.</p>
             </div>
             <div>
-                <label for="password" class="block text-sm font-semibold text-slate-700">Password Sementara Baru</label>
-                <input id="password" name="password" type="password" required autocomplete="new-password" class="mt-2 w-full rounded-xl border-slate-200">
-                <p class="mt-1 text-xs text-slate-500">Minimal 12 karakter; huruf besar, kecil, angka, dan simbol.</p>
+                <label for="password" class="block text-sm font-semibold text-slate-700">Password Baru</label>
+                <input id="password" name="password" type="password" required minlength="8" autocomplete="new-password" class="mt-2 w-full rounded-xl border-slate-200">
+                <p class="mt-1 text-xs text-slate-500">Minimal 8 karakter. Tidak wajib huruf besar, angka, atau simbol.</p>
             </div>
             <div>
-                <label for="password_confirmation" class="block text-sm font-semibold text-slate-700">Ulangi Password Sementara</label>
+                <label for="password_confirmation" class="block text-sm font-semibold text-slate-700">Konfirmasi Password Baru</label>
                 <input id="password_confirmation" name="password_confirmation" type="password" required autocomplete="new-password" class="mt-2 w-full rounded-xl border-slate-200">
             </div>
             <div class="flex flex-wrap gap-3">

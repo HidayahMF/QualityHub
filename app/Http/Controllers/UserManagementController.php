@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -357,11 +358,10 @@ class UserManagementController extends Controller
     }
 
     /**
- * Hapus akun permanen.
- *
- * Hanya akun non-Super-Admin yang sudah tidak aktif
- * dan tidak memiliki hubungan data penting yang boleh dihapus.
- */
+     * Hapus permanen akun selain Super Admin tanpa membatasi status.
+     * Dokumen, revisi, dan log QC dipertahankan lewat FK nullOnDelete;
+     * favorit pribadi dibersihkan lewat FK cascadeOnDelete.
+     */
 public function destroy(
     Request $request,
     User $user,
@@ -376,20 +376,28 @@ public function destroy(
         'Anda tidak dapat menghapus akun sendiri.'
     );
 
-    $validated = $request->validate([
-        'confirmation' => ['required', 'string', 'max:20'],
-    ]);
+    // Never redirect delete results to a previous avatar/image URL.
+    // A nested image request can replace Laravel's previous URL in session.
+    try {
+        $validated = $request->validate([
+            'confirmation' => ['required', 'string', 'max:20'],
+        ]);
+    } catch (ValidationException $exception) {
+        throw $exception->redirectTo(route('users.index'));
+    }
 
     if (trim($validated['confirmation']) !== 'HAPUS') {
         throw ValidationException::withMessages([
             'confirmation' => 'Ketik HAPUS untuk mengonfirmasi penghapusan permanen.',
-        ]);
+        ])->redirectTo(route('users.index'));
     }
 
     $deletedName = $user->name;
+    $photoPath = null;
+    $deletedUserId = (int) $user->id;
 
     try {
-        DB::transaction(function () use ($request, $user, $sessionSecurity) {
+        DB::transaction(function () use ($request, $user, $sessionSecurity, &$photoPath) {
             $target = User::query()
                 ->lockForUpdate()
                 ->findOrFail($user->id);
@@ -402,28 +410,14 @@ public function destroy(
                 'Anda tidak dapat menghapus akun sendiri.'
             );
 
-            if (! in_array($target->account_status, ['inactive', 'rejected'], true)) {
-                throw ValidationException::withMessages([
-                    'user' => 'Hanya akun tidak aktif atau ditolak yang dapat dihapus permanen.',
-                ]);
-            }
+            // Account deletion is allowed for every status. Foreign keys preserve
+            // company documents, revisions and audit history by nulling the
+            // deleted account's references; personal favorites are removed.
+            // Super Admin accounts remain protected above.
 
-            $hasRelatedData =
-                $target->documents()->exists()
-                || $target->favorites()->exists()
-                || $target->activityLogs()->exists()
-                || DB::table('document_versions')
-                    ->where('uploaded_by', $target->id)
-                    ->exists()
-                || DB::table('documents')
-                    ->where('archived_by', $target->id)
-                    ->exists();
-
-            if ($hasRelatedData) {
-                throw ValidationException::withMessages([
-                    'user' => 'Akun tidak dapat dihapus karena masih memiliki dokumen, revisi, favorit, atau riwayat aktivitas. Gunakan Nonaktifkan untuk mempertahankan data QC.',
-                ]);
-            }
+            // Resolve avatar after commit only; never remove files in a
+            // transaction that could be rolled back.
+            $photoPath = $target->profile_photo_path;
 
             $sessionSecurity->revokeDatabaseSessionsForUser($target);
 
@@ -446,6 +440,7 @@ public function destroy(
                     'target_employee_id' => $target->employee_id,
                     'target_name' => $target->name,
                     'target_email' => $target->email,
+                    'target_role' => $target->role,
                     'before_status' => $target->account_status,
                     'after_status' => 'deleted',
                 ],
@@ -456,12 +451,38 @@ public function destroy(
     } catch (QueryException $exception) {
         report($exception);
 
-        return back()->withErrors([
+        return redirect()->route('users.index')->withErrors([
             'user' => 'Akun masih memiliki hubungan data lain sehingga tidak dapat dihapus. Hubungi admin IT.',
         ]);
     }
 
-    return back()->with(
+    // Only delete a private avatar belonging to this deleted user.
+    // A failed file cleanup must not reverse a successful database deletion.
+    if (
+        is_string($photoPath)
+        && preg_match(
+            '~\\Aprofile-photos/'.preg_quote((string) $deletedUserId, '~')
+                .'/[0-9a-f-]{36}\\.(jpg|png|webp)\\z~D',
+            $photoPath
+        ) === 1
+    ) {
+        try {
+            $disk = Storage::disk('local');
+            if ($disk->exists($photoPath) && ! $disk->delete($photoPath)) {
+                return redirect()->route('users.index')
+                    ->with('success', 'Akun '.$deletedName.' berhasil dihapus permanen.')
+                    ->with('warning', 'Foto profil lama belum dapat dibersihkan. Hubungi IT.');
+            }
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return redirect()->route('users.index')
+                ->with('success', 'Akun '.$deletedName.' berhasil dihapus permanen.')
+                ->with('warning', 'Foto profil lama belum dapat dibersihkan. Hubungi IT.');
+        }
+    }
+
+    return redirect()->route('users.index')->with(
         'success',
         'Akun ' . $deletedName . ' berhasil dihapus permanen.'
     );

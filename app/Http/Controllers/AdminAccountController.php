@@ -85,7 +85,7 @@ class AdminAccountController extends Controller
                 'role' => $validated['role'],
                 'account_status' => 'active',
                 'password' => Hash::make($validated['password']),
-                'must_change_password' => true,
+                'must_change_password' => false,
             ]);
 
             ActivityLog::create([
@@ -106,7 +106,7 @@ class AdminAccountController extends Controller
 
         return redirect()
             ->route('users.index')
-            ->with('success', 'Akun berhasil dibuat. Berikan password sementara secara pribadi dan minta pengguna segera menggantinya.');
+            ->with('success', 'Akun berhasil dibuat dan dapat langsung digunakan. Sampaikan password kepada pemilik akun secara pribadi.');
     }
 
     public function editPassword(User $user): View
@@ -140,7 +140,7 @@ class AdminAccountController extends Controller
 
             $target->forceFill([
                 'password' => Hash::make($validated['password']),
-                'must_change_password' => true,
+                'must_change_password' => false,
                 'remember_token' => Str::random(60),
             ])->save();
 
@@ -167,6 +167,6 @@ class AdminAccountController extends Controller
 
         return redirect()
             ->route('users.index')
-            ->with('success', 'Password sementara berhasil diatur. Seluruh sesi akun dicabut dan pengguna wajib mengganti password ketika login.');
+            ->with('success', 'Password akun berhasil diperbarui. Semua sesi lama dicabut; pengguna dapat login langsung dengan password baru.');
     }
 }
