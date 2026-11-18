@@ -67,15 +67,16 @@ return [
             ),
 
         /*
-        | Password baru / reset / ganti password minimal 12 karakter dan wajib
-        | kombinasi huruf besar-kecil, angka, dan simbol melalui Password::defaults().
+        | Minimum 8 karakter untuk password baru, reset, dan perubahan profil.
+        | Tidak ada keharusan huruf besar, angka, atau simbol. IT dapat
+        | memilih minimum lebih tinggi lewat konfigurasi lingkungan.
         */
         'password_min_length' =>
             max(
-                12,
+                8,
                 (int) env(
                     'SMARTFIND_PASSWORD_MIN_LENGTH',
-                    12
+                    8
                 )
             ),
 
