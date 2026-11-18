@@ -105,6 +105,10 @@ class UserPermanentDeleteTest extends TestCase
 
     public function test_deleting_used_admin_preserves_documents_revisions_and_audit(): void
     {
+        // SessionSecurityService deliberately revokes persisted sessions
+        // only when the configured session driver is database.
+        config(['session.driver' => 'database']);
+
         $admin = $this->superAdmin();
         $target = $this->employee('active', 'admin');
         $document = $this->document($target);
