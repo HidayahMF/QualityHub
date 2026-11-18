@@ -358,11 +358,10 @@ class UserManagementController extends Controller
     }
 
     /**
- * Hapus akun permanen.
- *
- * Hanya akun non-Super-Admin yang sudah tidak aktif
- * dan tidak memiliki hubungan data penting yang boleh dihapus.
- */
+     * Hapus permanen akun selain Super Admin tanpa membatasi status.
+     * Dokumen, revisi, dan log QC dipertahankan lewat FK nullOnDelete;
+     * favorit pribadi dibersihkan lewat FK cascadeOnDelete.
+     */
 public function destroy(
     Request $request,
     User $user,
