@@ -1894,7 +1894,7 @@ id="smartfind-document-type"
                             'Retooling' => 'Instruksi Perubahan',
                             'Laporan Hasil Produksi - Axle Assy' => 'Axle Assy',
                             'Laporan Hasil Produksi - Brake Assy' => 'Brake Assy',
-                            default => null,
+                            default => $scanType ?: null,
                         };
 
                         $qcDetail = match($scanType) {
@@ -2196,7 +2196,7 @@ id="smartfind-document-type"
                                         'Brake Assy',
 
                                     default =>
-                                        null,
+                                        $scanType ?: null,
                                 };
 
                                 $qcDetail = match($scanType) {
