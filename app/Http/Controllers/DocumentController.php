@@ -9,6 +9,7 @@ use App\Models\Department;
 use App\Models\Document;
 use App\Models\DocumentAnalytics;
 use App\Models\DocumentScanMetadata;
+use App\Models\DocumentScanType;
 use App\Models\DocumentVersion;
 use App\Services\CategoryAssignmentService;
 use App\Services\DocumentPurgeService;
@@ -169,16 +170,7 @@ class DocumentController extends Controller
             ->values()
             ->all();
 
-        $scanTypes = [
-            'Retooling' =>
-                'Instruksi Perubahan Type / Retooling',
-
-            'Laporan Hasil Produksi - Axle Assy' =>
-                'Laporan Hasil Produksi - Axle Assy',
-
-            'Laporan Hasil Produksi - Brake Assy' =>
-                'Laporan Hasil Produksi - Brake Assy',
-        ];
+        $scanTypes = $this->documentTypeFilterOptions();
 
         return view(
             'documents.index',
@@ -2694,7 +2686,7 @@ class DocumentController extends Controller
                         'Brake Assy',
 
                     default =>
-                        null,
+                        $scanType ?: null,
                 };
 
                 $qcDetail = match ($scanType) {
@@ -2900,11 +2892,12 @@ class DocumentController extends Controller
             'document_type' => [
                 'nullable',
                 'string',
-                Rule::in([
-                    'Retooling',
-                    'Laporan Hasil Produksi - Axle Assy',
-                    'Laporan Hasil Produksi - Brake Assy',
-                ]),
+                'max:120',
+                // Query the allowed types only when filtering by type.
+                // Most live-search requests do not need this database lookup.
+                ...($request->filled('document_type')
+                    ? [Rule::in(array_keys($this->documentTypeFilterOptions()))]
+                    : []),
             ],
 
             'date_from' => [
@@ -2915,6 +2908,54 @@ class DocumentController extends Controller
             'date_to' =>
                 $dateToRules,
         ]);
+    }
+
+
+    /**
+     * Keep All Documents in sync with the custom types registered in Scan /
+     * Capture. Retain system types and names already used by active documents,
+     * even when their custom master record was later deactivated.
+     *
+     * @return array<string, string> Filter value => display label
+     */
+    private function documentTypeFilterOptions(): array
+    {
+        $types = [
+            'Retooling' => 'Instruksi Perubahan Type / Retooling',
+            'Laporan Hasil Produksi - Axle Assy' => 'Laporan Hasil Produksi - Axle Assy',
+            'Laporan Hasil Produksi - Brake Assy' => 'Laporan Hasil Produksi - Brake Assy',
+        ];
+
+        $activeCustomTypes = DocumentScanType::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->pluck('name');
+
+        // An inactive type may still be attached to active QC documents.
+        // Such documents must remain filterable without reactivating the type.
+        $usedTypes = DocumentScanMetadata::query()
+            ->join(
+                'documents',
+                'documents.id',
+                '=',
+                'document_scan_metadata.document_id'
+            )
+            ->where('documents.is_active', true)
+            ->whereNotNull('document_scan_metadata.scan_type')
+            ->distinct()
+            ->orderBy('document_scan_metadata.scan_type')
+            ->pluck('document_scan_metadata.scan_type');
+
+        foreach ($activeCustomTypes->concat($usedTypes) as $name) {
+            if (! is_string($name) || trim($name) === '') {
+                continue;
+            }
+
+            $types[$name] ??= $name;
+        }
+
+        return $types;
     }
 
 
