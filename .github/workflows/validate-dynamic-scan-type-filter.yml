@@ -1,0 +1,54 @@
+name: Validate dynamic document scan type filters
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/validate-dynamic-scan-type-filter.yml'
+      - 'app/Http/Controllers/DocumentController.php'
+      - 'resources/views/documents/index.blade.php'
+      - 'tests/Feature/DynamicDocumentScanTypeFilterTest.php'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  document-scan-type-filter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, fileinfo, zip, intl, gd, pdo_sqlite, sqlite3
+          coverage: none
+      - name: PHP syntax checks
+        run: |
+          php -l app/Http/Controllers/DocumentController.php
+          php -l tests/Feature/DynamicDocumentScanTypeFilterTest.php
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Build frontend
+        run: |
+          npm ci
+          npm run build
+      - name: Prepare isolated testing environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+      - name: Test dynamic types and existing search filters
+        run: |
+          php artisan test --filter=DynamicDocumentScanTypeFilterTest
+          php artisan test --filter=DocumentScanTypeManagementTest
+          php artisan test --filter=SearchableFilterSelectTest
+          php artisan test --filter=AllDocumentsMinimalUiTest
+      - name: Compile views and inspect routes
+        run: |
+          php artisan view:cache
+          php artisan route:list --name=documents.search.live
+          php artisan view:clear
