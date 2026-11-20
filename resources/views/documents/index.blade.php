@@ -404,7 +404,9 @@
 
                 {{-- SEARCH INPUT --}}
 
-                <div class="relative min-w-0 md:col-span-3">
+                <div class="relative min-w-0 md:col-span-3"
+                     @resize.window="updateLiveSearchPosition()"
+                     @scroll.window="updateLiveSearchPosition()">
 
                     <div
                         class="absolute
@@ -439,10 +441,12 @@
 
                     <input
                         x-model="search"
+                        x-ref="liveSearchInput"
 
-                        @input.debounce.180ms="performSearch()"
+                        @input.debounce.180ms="updateLiveSearchPosition(); performSearch()"
 
                         @focus="
+                            updateLiveSearchPosition();
                             if (hasLiveCriteria()) {
                                 performSearch()
                             }
@@ -545,27 +549,19 @@
                         x-transition:leave-start="opacity-100"
                         x-transition:leave-end="opacity-0"
 
+                        x-ref="liveSearchPanel"
+                        :class="liveSearchAbove ? 'bottom-full mb-2' : 'top-full mt-2'"
                         class="absolute
                                z-50
-
                                left-0
                                right-0
-                               top-full
-
-                               mt-2
-
                                bg-white
-
                                rounded-2xl
-
                                border
                                border-slate-200
-
                                shadow-2xl
                                shadow-slate-900/10
-
-                               overflow-hidden"
-
+                               overflow-y-auto overscroll-contain"
                         x-cloak
                     >
 
@@ -3444,6 +3440,23 @@ id="smartfind-document-type"
                 search:
                     @js(request('search', '')),
 
+                // Keep the live suggestion panel within the visible viewport.
+                liveSearchAbove: false,
+
+                updateLiveSearchPosition() {
+                    const input = this.$refs.liveSearchInput;
+                    const panel = this.$refs.liveSearchPanel;
+                    if (!input || !panel) return;
+
+                    const rect = input.getBoundingClientRect();
+                    const height = window.visualViewport?.height || window.innerHeight;
+                    const below = Math.max(0, height - rect.bottom - 12);
+                    const above = Math.max(0, rect.top - 12);
+                    this.liveSearchAbove = below < 300 && above > below;
+                    const available = this.liveSearchAbove ? above : below;
+                    panel.style.maxHeight = Math.max(60, Math.min(520, available - 8)) + 'px';
+                },
+
                 category:
                     @js((string) request('category', '')),
 
@@ -3637,6 +3650,7 @@ id="smartfind-document-type"
 
                     this.loading = true;
 
+                    this.updateLiveSearchPosition();
                     this.open = true;
 
                     this.error = '';
