@@ -1,0 +1,52 @@
+name: Validate mobile Scan/Capture crop editor
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/validate-mobile-scan-crop.yml'
+      - 'resources/views/documents/scan.blade.php'
+      - 'tests/Feature/ScanManualPhotoEditorTest.php'
+      - 'tests/js/mobile-crop-pointer.test.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-crop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, fileinfo, zip, intl, gd, pdo_sqlite, sqlite3
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies
+        run: |
+          composer install --no-interaction --prefer-dist --no-progress
+          npm ci
+      - name: Verify inline JavaScript and simulate mobile touch gestures
+        run: node --test tests/js/mobile-crop-pointer.test.mjs
+      - name: Build frontend assets
+        run: npm run build
+      - name: Prepare isolated test environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+      - name: Test crop editor and Scan/Capture regressions
+        run: |
+          php artisan test --filter=ScanManualPhotoEditorTest
+          php artisan test --filter=DocumentScanTypeManagementTest
+          php artisan test --filter=DynamicDocumentScanTypeFilterTest
+          php artisan test --filter=RetoolingScanTest
+          php artisan test --filter=AxleBrakeProductionScanTest
+      - name: Compile Blade
+        run: |
+          php artisan view:cache
+          php artisan view:clear
