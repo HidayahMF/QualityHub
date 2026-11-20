@@ -1264,11 +1264,11 @@ class ScanDocumentController extends Controller
 
             report($exception);
 
-            return redirect()->route('documents.scan.create')
-                ->withInput()
-                ->withErrors([
-                    'files' => 'Berkas scan tidak dapat disimpan. Proses dibatalkan dengan aman.',
-                ]);
+            // Always surface a storage failure as an error, not a successful
+            // redirect. The JSON upload client must never claim success here.
+            throw ValidationException::withMessages([
+                'files' => 'Berkas scan tidak dapat disimpan. Proses dibatalkan dengan aman.',
+            ]);
         } finally {
             $pdfService->cleanup($generatedPdfPath);
         }
