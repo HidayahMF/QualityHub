@@ -225,7 +225,8 @@
                                 <button type="button" id="manualCropButton" class="w-full rounded-xl border border-blue-300 bg-white px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-50">
                                     Pilih Area Crop Manual
                                 </button>
-                                <p class="mt-1 text-[11px] leading-4 text-slate-500">Geser kotak crop dan tarik tepi/sudut sesuai bagian foto yang ingin disimpan.</p>
+                                <button type="button" id="undoCropButton" class="mt-2 hidden w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100">Urungkan Crop Terakhir</button>
+                                <p class="mt-1 text-[11px] leading-4 text-slate-500">Geser kotak crop dan tarik tepi/sudut sesuai bagian foto yang ingin disimpan. Di HP, sentuh titik biru untuk mengatur crop.</p>
                             </div>
                         </div>
 
@@ -277,6 +278,7 @@
                                 <div class="qh-crop-caption">
                                     <span>8 titik kontrol • Bisa digeser dengan mouse atau sentuhan</span>
                                     <span>Crop hanya berlaku untuk foto yang sedang dipilih</span>
+                                <button type="button" id="toggleCropZoomButton" class="qh-crop-zoom" aria-pressed="false">Perbesar Preview</button>
                                 </div>
                             </div>
 
@@ -1606,6 +1608,12 @@
     .qh-crop-footer-status { min-width: 0; }
     .qh-crop-status-label { color: #94a3b8; font-size: 9px; font-weight: 800; letter-spacing: .1em; }
     .qh-crop-info { margin-top: 4px; color: #163970; font-size: 12px; font-weight: 750; }
+    .qh-crop-info-warning { color: #b45309; }
+    .qh-crop-zoom { min-height: 40px; border: 1px solid #a8c5f5; border-radius: 10px;
+        padding: 8px 12px; background: #fff; color: #1d4ed8; font-size: 11px; font-weight: 800; cursor: pointer; }
+    .qh-crop-zoom:hover { background: #eaf2ff; }
+    .qh-crop-panel.qh-crop-expanded .qh-crop-preview { flex: 0 0 auto; overflow: visible; }
+    .qh-crop-panel.qh-crop-expanded #manualCropCanvas { max-height: min(78dvh, 800px); }
     .qh-crop-footer-actions { display: flex; flex-wrap: wrap; gap: 9px; }
     .qh-crop-reset, .qh-crop-apply { border-radius: 11px; padding: 11px 17px; font-size: 12px;
         font-weight: 800; transition: background .15s, border-color .15s; cursor: pointer; }
@@ -1616,6 +1624,23 @@
     .qh-crop-apply:hover { background: #1d4ed8; }
     .qh-crop-apply:disabled { opacity: .5; cursor: not-allowed; }
     .qh-crop-overlay :is(button, [data-crop-handle]):focus-visible { outline: 3px solid #60a5fa; outline-offset: 2px; }
+    /* Large touch targets with small visual dots. Targets remain inside the
+       image even when the selection spans its entire width and height. */
+    @media (pointer: coarse) {
+        #manualCropSelection [data-crop-handle] { width: 44px; height: 44px; border: 0;
+            border-radius: 12px; background: transparent; }
+        #manualCropSelection [data-crop-handle]::after { content: ''; position: absolute;
+            top: 50%; left: 50%; width: 17px; height: 17px; transform: translate(-50%, -50%);
+            border: 2px solid #2563eb; border-radius: 5px; background: white; pointer-events: none; }
+        #manualCropSelection [data-crop-handle="nw"] { top: 0; left: 0; }
+        #manualCropSelection [data-crop-handle="n"] { top: 0; left: calc(50% - 22px); }
+        #manualCropSelection [data-crop-handle="ne"] { top: 0; right: 0; }
+        #manualCropSelection [data-crop-handle="e"] { top: calc(50% - 22px); right: 0; }
+        #manualCropSelection [data-crop-handle="se"] { bottom: 0; right: 0; }
+        #manualCropSelection [data-crop-handle="s"] { bottom: 0; left: calc(50% - 22px); }
+        #manualCropSelection [data-crop-handle="sw"] { bottom: 0; left: 0; }
+        #manualCropSelection [data-crop-handle="w"] { top: calc(50% - 22px); left: 0; }
+    }
     @media (max-width: 640px) {
         .qh-crop-panel { border-radius: 17px; max-height: calc(100dvh - 16px); }
         .qh-crop-header { padding: 21px 15px 13px; gap: 8px; }
@@ -1688,6 +1713,7 @@
             const contrastRange = document.getElementById('contrastRange');
             const zoomRange = document.getElementById('zoomRange');
             const manualCropButton = document.getElementById('manualCropButton');
+            const undoCropButton = document.getElementById('undoCropButton');
             const manualCropModal = document.getElementById('manualCropModal');
             const manualCropPhotoName = document.getElementById('manualCropPhotoName');
             const manualCropStage = document.getElementById('manualCropStage');
@@ -1702,6 +1728,8 @@
             const confirmCropButton = document.getElementById('confirmCropButton');
             const cancelCropButton = document.getElementById('cancelCropButton');
             const resetCropButton = document.getElementById('resetCropButton');
+            const toggleCropZoomButton = document.getElementById('toggleCropZoomButton');
+            const manualCropPanel = document.getElementById('manualCropPanel');
             const brightnessValue = document.getElementById('brightnessValue');
             const contrastValue = document.getElementById('contrastValue');
             const zoomValue = document.getElementById('zoomValue');
@@ -1793,6 +1821,7 @@
             let cropSourceIndex = -1;
             let editorBusy = false;
             let cropReturnFocus = null;
+            const cropUndoFiles = new WeakMap(); // one-step undo, tied to the current photo item
             let objectUrl = null;
 
 
