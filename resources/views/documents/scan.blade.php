@@ -225,7 +225,8 @@
                                 <button type="button" id="manualCropButton" class="w-full rounded-xl border border-blue-300 bg-white px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-50">
                                     Pilih Area Crop Manual
                                 </button>
-                                <p class="mt-1 text-[11px] leading-4 text-slate-500">Geser kotak crop dan tarik tepi/sudut sesuai bagian foto yang ingin disimpan.</p>
+                                <button type="button" id="undoCropButton" class="mt-2 hidden w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100">Urungkan Crop Terakhir</button>
+                                <p class="mt-1 text-[11px] leading-4 text-slate-500">Geser kotak crop dan tarik tepi/sudut sesuai bagian foto yang ingin disimpan. Di HP, sentuh titik biru untuk mengatur crop.</p>
                             </div>
                         </div>
 
@@ -277,6 +278,7 @@
                                 <div class="qh-crop-caption">
                                     <span>8 titik kontrol • Bisa digeser dengan mouse atau sentuhan</span>
                                     <span>Crop hanya berlaku untuk foto yang sedang dipilih</span>
+                                <button type="button" id="toggleCropZoomButton" class="qh-crop-zoom" aria-pressed="false">Perbesar Preview</button>
                                 </div>
                             </div>
 
@@ -1606,6 +1608,12 @@
     .qh-crop-footer-status { min-width: 0; }
     .qh-crop-status-label { color: #94a3b8; font-size: 9px; font-weight: 800; letter-spacing: .1em; }
     .qh-crop-info { margin-top: 4px; color: #163970; font-size: 12px; font-weight: 750; }
+    .qh-crop-info-warning { color: #b45309; }
+    .qh-crop-zoom { min-height: 40px; border: 1px solid #a8c5f5; border-radius: 10px;
+        padding: 8px 12px; background: #fff; color: #1d4ed8; font-size: 11px; font-weight: 800; cursor: pointer; }
+    .qh-crop-zoom:hover { background: #eaf2ff; }
+    .qh-crop-panel.qh-crop-expanded .qh-crop-preview { flex: 0 0 auto; overflow: visible; }
+    .qh-crop-panel.qh-crop-expanded #manualCropCanvas { max-height: min(78dvh, 800px); }
     .qh-crop-footer-actions { display: flex; flex-wrap: wrap; gap: 9px; }
     .qh-crop-reset, .qh-crop-apply { border-radius: 11px; padding: 11px 17px; font-size: 12px;
         font-weight: 800; transition: background .15s, border-color .15s; cursor: pointer; }
@@ -1616,6 +1624,23 @@
     .qh-crop-apply:hover { background: #1d4ed8; }
     .qh-crop-apply:disabled { opacity: .5; cursor: not-allowed; }
     .qh-crop-overlay :is(button, [data-crop-handle]):focus-visible { outline: 3px solid #60a5fa; outline-offset: 2px; }
+    /* Large touch targets with small visual dots. Targets remain inside the
+       image even when the selection spans its entire width and height. */
+    @media (pointer: coarse) {
+        #manualCropSelection [data-crop-handle] { width: 44px; height: 44px; border: 0;
+            border-radius: 12px; background: transparent; }
+        #manualCropSelection [data-crop-handle]::after { content: ''; position: absolute;
+            top: 50%; left: 50%; width: 17px; height: 17px; transform: translate(-50%, -50%);
+            border: 2px solid #2563eb; border-radius: 5px; background: white; pointer-events: none; }
+        #manualCropSelection [data-crop-handle="nw"] { top: 0; left: 0; }
+        #manualCropSelection [data-crop-handle="n"] { top: 0; left: calc(50% - 22px); }
+        #manualCropSelection [data-crop-handle="ne"] { top: 0; right: 0; }
+        #manualCropSelection [data-crop-handle="e"] { top: calc(50% - 22px); right: 0; }
+        #manualCropSelection [data-crop-handle="se"] { bottom: 0; right: 0; }
+        #manualCropSelection [data-crop-handle="s"] { bottom: 0; left: calc(50% - 22px); }
+        #manualCropSelection [data-crop-handle="sw"] { bottom: 0; left: 0; }
+        #manualCropSelection [data-crop-handle="w"] { top: calc(50% - 22px); left: 0; }
+    }
     @media (max-width: 640px) {
         .qh-crop-panel { border-radius: 17px; max-height: calc(100dvh - 16px); }
         .qh-crop-header { padding: 21px 15px 13px; gap: 8px; }
@@ -1688,6 +1713,7 @@
             const contrastRange = document.getElementById('contrastRange');
             const zoomRange = document.getElementById('zoomRange');
             const manualCropButton = document.getElementById('manualCropButton');
+            const undoCropButton = document.getElementById('undoCropButton');
             const manualCropModal = document.getElementById('manualCropModal');
             const manualCropPhotoName = document.getElementById('manualCropPhotoName');
             const manualCropStage = document.getElementById('manualCropStage');
@@ -1702,6 +1728,8 @@
             const confirmCropButton = document.getElementById('confirmCropButton');
             const cancelCropButton = document.getElementById('cancelCropButton');
             const resetCropButton = document.getElementById('resetCropButton');
+            const toggleCropZoomButton = document.getElementById('toggleCropZoomButton');
+            const manualCropPanel = document.getElementById('manualCropPanel');
             const brightnessValue = document.getElementById('brightnessValue');
             const contrastValue = document.getElementById('contrastValue');
             const zoomValue = document.getElementById('zoomValue');
@@ -1793,6 +1821,7 @@
             let cropSourceIndex = -1;
             let editorBusy = false;
             let cropReturnFocus = null;
+            const cropUndoFiles = new WeakMap(); // one-step undo, tied to the current photo item
             let objectUrl = null;
 
 
@@ -3085,7 +3114,14 @@
             // Coordinates are normalized to the rotated/filtered canvas.
             // ============================================================
             const clampCrop = (value, min, max) => Math.max(min, Math.min(max, value));
-            const MIN_CROP_FRACTION = 0.025;
+            const MIN_CROP_FRACTION = 0.12;
+            const MIN_CROP_APPLY_AREA = 0.05;
+            const MIN_CROP_APPLY_EDGE = 0.15;
+
+            function updateCropUndoButton() {
+                const item = selectedItems[activePhotoIndex];
+                undoCropButton.classList.toggle('hidden', !item || !cropUndoFiles.has(item));
+            }
 
             function drawCropSelection() {
                 manualCropSelection.style.left = (cropSelection.x * 100) + '%';
@@ -3095,7 +3131,14 @@
 
                 const pixelWidth = Math.max(1, Math.round(cropSelection.w * manualCropCanvas.width));
                 const pixelHeight = Math.max(1, Math.round(cropSelection.h * manualCropCanvas.height));
-                manualCropInfo.textContent = 'Area crop: ' + pixelWidth + ' × ' + pixelHeight + ' piksel. Hanya area dalam kotak biru yang disimpan.';
+                const tooSmall = cropSelection.w < MIN_CROP_APPLY_EDGE
+                    || cropSelection.h < MIN_CROP_APPLY_EDGE
+                    || cropSelection.w * cropSelection.h < MIN_CROP_APPLY_AREA;
+                manualCropInfo.textContent = tooSmall
+                    ? 'Area terlalu kecil. Perbesar kotak sebelum menerapkan crop.'
+                    : 'Area crop: ' + pixelWidth + ' × ' + pixelHeight + ' piksel. Hanya area dalam kotak biru yang disimpan.';
+                manualCropInfo.classList.toggle('qh-crop-info-warning', tooSmall);
+                confirmCropButton.disabled = editorBusy || tooSmall;
             }
 
             function cropPointerPosition(event) {
@@ -3113,6 +3156,9 @@
                     cropSourceIndex = activePhotoIndex;
                     cropSelection = { x: 0, y: 0, w: 1, h: 1 };
                     cropDrag = null;
+                    manualCropPanel.classList.remove('qh-crop-expanded');
+                    toggleCropZoomButton.textContent = 'Perbesar Preview';
+                    toggleCropZoomButton.setAttribute('aria-pressed', 'false');
                     cropReturnFocus = document.activeElement;
                     manualCropPhotoName.textContent = 'Foto ' + (activePhotoIndex + 1) + ' dari ' + selectedItems.length;
                     document.body.classList.add('qh-crop-open');
@@ -3128,6 +3174,7 @@
                 if (editorBusy && !force) return;
                 cropDrag = null;
                 cropSourceIndex = -1;
+                manualCropPanel.classList.remove('qh-crop-expanded');
                 manualCropModal.classList.add('hidden');
                 document.body.classList.remove('qh-crop-open');
                 const target = cropReturnFocus && cropReturnFocus.isConnected
@@ -3137,17 +3184,25 @@
             }
 
             manualCropStage.addEventListener('pointerdown', event => {
-                if (editorBusy) return;
+                if (editorBusy || cropDrag) return;
                 if (event.pointerType === 'mouse' && event.button !== 0) return;
-                event.preventDefault();
 
                 const handle = event.target.closest('[data-crop-handle]')?.dataset.cropHandle || '';
                 const move = !handle && Boolean(event.target.closest('#manualCropSelection'));
+
+                // A missed touch must not replace the existing selection.
+                // The desktop mouse can still create a new selection.
+                if (event.pointerType === 'touch' && !handle && !move) return;
+
+                event.preventDefault();
                 cropDrag = {
                     pointerId: event.pointerId,
                     mode: handle ? 'resize' : (move ? 'move' : 'new'),
                     handle,
                     start: cropPointerPosition(event),
+                    startClientX: event.clientX,
+                    startClientY: event.clientY,
+                    moved: false,
                     initial: { ...cropSelection },
                 };
                 manualCropStage.setPointerCapture(event.pointerId);
@@ -3156,6 +3211,17 @@
             manualCropStage.addEventListener('pointermove', event => {
                 if (editorBusy || !cropDrag || cropDrag.pointerId !== event.pointerId) return;
                 event.preventDefault();
+
+                // Ignore small tap jitter, particularly on touchscreens.
+                const threshold = event.pointerType === 'mouse' ? 3 : 8;
+                if (!cropDrag.moved) {
+                    const distance = Math.hypot(
+                        event.clientX - cropDrag.startClientX,
+                        event.clientY - cropDrag.startClientY
+                    );
+                    if (distance < threshold) return;
+                    cropDrag.moved = true;
+                }
 
                 const point = cropPointerPosition(event);
                 const start = cropDrag.start;
@@ -3197,6 +3263,11 @@
 
             function endCropDrag(event) {
                 if (!cropDrag || cropDrag.pointerId !== event.pointerId) return;
+                if (event.type !== 'pointerup') {
+                    // Revert partial drag on interrupted touch gestures.
+                    cropSelection = { ...cropDrag.initial };
+                    drawCropSelection();
+                }
                 cropDrag = null;
                 if (manualCropStage.hasPointerCapture(event.pointerId)) {
                     manualCropStage.releasePointerCapture(event.pointerId);
@@ -3205,11 +3276,39 @@
 
             manualCropStage.addEventListener('pointerup', endCropDrag);
             manualCropStage.addEventListener('pointercancel', endCropDrag);
+            manualCropStage.addEventListener('lostpointercapture', event => {
+                if (!cropDrag || cropDrag.pointerId !== event.pointerId) return;
+                cropSelection = { ...cropDrag.initial };
+                cropDrag = null;
+                drawCropSelection();
+            });
             resetCropButton.addEventListener('click', () => {
                 cropSelection = { x: 0, y: 0, w: 1, h: 1 };
                 drawCropSelection();
             });
             manualCropButton.addEventListener('click', openManualCrop);
+            toggleCropZoomButton.addEventListener('click', () => {
+                const expanded = manualCropPanel.classList.toggle('qh-crop-expanded');
+                toggleCropZoomButton.textContent = expanded ? 'Ukuran Normal' : 'Perbesar Preview';
+                toggleCropZoomButton.setAttribute('aria-pressed', String(expanded));
+            });
+            undoCropButton.addEventListener('click', () => {
+                if (editorBusy || activePhotoIndex < 0) return;
+                const item = selectedItems[activePhotoIndex];
+                const previousFile = item && cropUndoFiles.get(item);
+                if (!previousFile) return;
+                const projectedTotal = totalSelectedBytes() - item.file.size + previousFile.size;
+                if (projectedTotal > MAX_TOTAL_BYTES) {
+                    alert('Undo tidak dapat dilakukan karena total foto akan melebihi batas penyimpanan.');
+                    return;
+                }
+                releaseItemObjectUrl(item);
+                cropUndoFiles.delete(item);
+                selectedItems[activePhotoIndex] = { ...item, file: previousFile, previewUrl: null };
+                updateMultiPhotoState();
+                showPreview(previousFile);
+                updateCropUndoButton();
+            });
             cancelCropButton.addEventListener('click', () => closeManualCrop());
             manualCropModal.addEventListener('click', event => {
                 if (event.target === manualCropModal) closeManualCrop();
@@ -3256,14 +3355,17 @@
                     const ctx = result.getContext('2d');
                     if (!ctx) throw new Error('Canvas tidak tersedia di browser.');
                     ctx.drawImage(manualCropCanvas, sx, sy, width, height, 0, 0, width, height);
+                    const previousFile = selectedItems[activePhotoIndex].file;
                     await replaceActivePhotoFromCanvas(result);
+                    cropUndoFiles.set(selectedItems[activePhotoIndex], previousFile);
+                    updateCropUndoButton();
                     closeManualCrop(true);
                 } catch (error) {
                     console.error('Manual crop error:', error);
                     alert(error.message || 'Gagal memotong foto.');
                 } finally {
                     editorBusy = false;
-                    confirmCropButton.disabled = false;
+                    drawCropSelection();
                 }
             });
 
@@ -3427,6 +3529,7 @@
                 refreshCaptureSource();
                 const synced = syncFilesToForm();
                 renderPhotoQueue();
+                updateCropUndoButton();
 
                 const count = selectedItems.length;
                 const totalMb = totalSelectedBytes() / 1024 / 1024;
@@ -3452,6 +3555,7 @@
                 activePhotoIndex = index;
                 showPreview(selectedItems[index].file);
                 renderPhotoQueue();
+                updateCropUndoButton();
             }
 
 
