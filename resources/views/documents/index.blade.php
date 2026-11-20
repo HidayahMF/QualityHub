@@ -443,7 +443,8 @@
                         x-model="search"
                         x-ref="liveSearchInput"
 
-                        @input.debounce.180ms="updateLiveSearchPosition(); performSearch()"
+                        @input="updateLiveSearchPosition()"
+                        @input.debounce.180ms="performSearch()"
 
                         @focus="
                             updateLiveSearchPosition();
