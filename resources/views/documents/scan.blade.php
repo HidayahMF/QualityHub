@@ -3287,6 +3287,28 @@
                 drawCropSelection();
             });
             manualCropButton.addEventListener('click', openManualCrop);
+            toggleCropZoomButton.addEventListener('click', () => {
+                const expanded = manualCropPanel.classList.toggle('qh-crop-expanded');
+                toggleCropZoomButton.textContent = expanded ? 'Ukuran Normal' : 'Perbesar Preview';
+                toggleCropZoomButton.setAttribute('aria-pressed', String(expanded));
+            });
+            undoCropButton.addEventListener('click', () => {
+                if (editorBusy || activePhotoIndex < 0) return;
+                const item = selectedItems[activePhotoIndex];
+                const previousFile = item && cropUndoFiles.get(item);
+                if (!previousFile) return;
+                const projectedTotal = totalSelectedBytes() - item.file.size + previousFile.size;
+                if (projectedTotal > MAX_TOTAL_BYTES) {
+                    alert('Undo tidak dapat dilakukan karena total foto akan melebihi batas penyimpanan.');
+                    return;
+                }
+                releaseItemObjectUrl(item);
+                cropUndoFiles.delete(item);
+                selectedItems[activePhotoIndex] = { ...item, file: previousFile, previewUrl: null };
+                updateMultiPhotoState();
+                showPreview(previousFile);
+                updateCropUndoButton();
+            });
             cancelCropButton.addEventListener('click', () => closeManualCrop());
             manualCropModal.addEventListener('click', event => {
                 if (event.target === manualCropModal) closeManualCrop();
@@ -3333,14 +3355,17 @@
                     const ctx = result.getContext('2d');
                     if (!ctx) throw new Error('Canvas tidak tersedia di browser.');
                     ctx.drawImage(manualCropCanvas, sx, sy, width, height, 0, 0, width, height);
+                    const previousFile = selectedItems[activePhotoIndex].file;
                     await replaceActivePhotoFromCanvas(result);
+                    cropUndoFiles.set(selectedItems[activePhotoIndex], previousFile);
+                    updateCropUndoButton();
                     closeManualCrop(true);
                 } catch (error) {
                     console.error('Manual crop error:', error);
                     alert(error.message || 'Gagal memotong foto.');
                 } finally {
                     editorBusy = false;
-                    confirmCropButton.disabled = false;
+                    drawCropSelection();
                 }
             });
 
@@ -3504,6 +3529,7 @@
                 refreshCaptureSource();
                 const synced = syncFilesToForm();
                 renderPhotoQueue();
+                updateCropUndoButton();
 
                 const count = selectedItems.length;
                 const totalMb = totalSelectedBytes() / 1024 / 1024;
@@ -3529,6 +3555,7 @@
                 activePhotoIndex = index;
                 showPreview(selectedItems[index].file);
                 renderPhotoQueue();
+                updateCropUndoButton();
             }
 
 
