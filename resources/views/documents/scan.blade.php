@@ -3114,7 +3114,14 @@
             // Coordinates are normalized to the rotated/filtered canvas.
             // ============================================================
             const clampCrop = (value, min, max) => Math.max(min, Math.min(max, value));
-            const MIN_CROP_FRACTION = 0.025;
+            const MIN_CROP_FRACTION = 0.12;
+            const MIN_CROP_APPLY_AREA = 0.05;
+            const MIN_CROP_APPLY_EDGE = 0.15;
+
+            function updateCropUndoButton() {
+                const item = selectedItems[activePhotoIndex];
+                undoCropButton.classList.toggle('hidden', !item || !cropUndoFiles.has(item));
+            }
 
             function drawCropSelection() {
                 manualCropSelection.style.left = (cropSelection.x * 100) + '%';
@@ -3124,7 +3131,14 @@
 
                 const pixelWidth = Math.max(1, Math.round(cropSelection.w * manualCropCanvas.width));
                 const pixelHeight = Math.max(1, Math.round(cropSelection.h * manualCropCanvas.height));
-                manualCropInfo.textContent = 'Area crop: ' + pixelWidth + ' × ' + pixelHeight + ' piksel. Hanya area dalam kotak biru yang disimpan.';
+                const tooSmall = cropSelection.w < MIN_CROP_APPLY_EDGE
+                    || cropSelection.h < MIN_CROP_APPLY_EDGE
+                    || cropSelection.w * cropSelection.h < MIN_CROP_APPLY_AREA;
+                manualCropInfo.textContent = tooSmall
+                    ? 'Area terlalu kecil. Perbesar kotak sebelum menerapkan crop.'
+                    : 'Area crop: ' + pixelWidth + ' × ' + pixelHeight + ' piksel. Hanya area dalam kotak biru yang disimpan.';
+                manualCropInfo.classList.toggle('qh-crop-info-warning', tooSmall);
+                confirmCropButton.disabled = editorBusy || tooSmall;
             }
 
             function cropPointerPosition(event) {
@@ -3142,6 +3156,9 @@
                     cropSourceIndex = activePhotoIndex;
                     cropSelection = { x: 0, y: 0, w: 1, h: 1 };
                     cropDrag = null;
+                    manualCropPanel.classList.remove('qh-crop-expanded');
+                    toggleCropZoomButton.textContent = 'Perbesar Preview';
+                    toggleCropZoomButton.setAttribute('aria-pressed', 'false');
                     cropReturnFocus = document.activeElement;
                     manualCropPhotoName.textContent = 'Foto ' + (activePhotoIndex + 1) + ' dari ' + selectedItems.length;
                     document.body.classList.add('qh-crop-open');
@@ -3157,6 +3174,7 @@
                 if (editorBusy && !force) return;
                 cropDrag = null;
                 cropSourceIndex = -1;
+                manualCropPanel.classList.remove('qh-crop-expanded');
                 manualCropModal.classList.add('hidden');
                 document.body.classList.remove('qh-crop-open');
                 const target = cropReturnFocus && cropReturnFocus.isConnected
@@ -3166,17 +3184,25 @@
             }
 
             manualCropStage.addEventListener('pointerdown', event => {
-                if (editorBusy) return;
+                if (editorBusy || cropDrag) return;
                 if (event.pointerType === 'mouse' && event.button !== 0) return;
-                event.preventDefault();
 
                 const handle = event.target.closest('[data-crop-handle]')?.dataset.cropHandle || '';
                 const move = !handle && Boolean(event.target.closest('#manualCropSelection'));
+
+                // A missed touch must not replace the existing selection.
+                // The desktop mouse can still create a new selection.
+                if (event.pointerType === 'touch' && !handle && !move) return;
+
+                event.preventDefault();
                 cropDrag = {
                     pointerId: event.pointerId,
                     mode: handle ? 'resize' : (move ? 'move' : 'new'),
                     handle,
                     start: cropPointerPosition(event),
+                    startClientX: event.clientX,
+                    startClientY: event.clientY,
+                    moved: false,
                     initial: { ...cropSelection },
                 };
                 manualCropStage.setPointerCapture(event.pointerId);
@@ -3185,6 +3211,17 @@
             manualCropStage.addEventListener('pointermove', event => {
                 if (editorBusy || !cropDrag || cropDrag.pointerId !== event.pointerId) return;
                 event.preventDefault();
+
+                // Ignore small tap jitter, particularly on touchscreens.
+                const threshold = event.pointerType === 'mouse' ? 3 : 8;
+                if (!cropDrag.moved) {
+                    const distance = Math.hypot(
+                        event.clientX - cropDrag.startClientX,
+                        event.clientY - cropDrag.startClientY
+                    );
+                    if (distance < threshold) return;
+                    cropDrag.moved = true;
+                }
 
                 const point = cropPointerPosition(event);
                 const start = cropDrag.start;
@@ -3226,6 +3263,11 @@
 
             function endCropDrag(event) {
                 if (!cropDrag || cropDrag.pointerId !== event.pointerId) return;
+                if (event.type !== 'pointerup') {
+                    // Revert partial drag on interrupted touch gestures.
+                    cropSelection = { ...cropDrag.initial };
+                    drawCropSelection();
+                }
                 cropDrag = null;
                 if (manualCropStage.hasPointerCapture(event.pointerId)) {
                     manualCropStage.releasePointerCapture(event.pointerId);
@@ -3234,6 +3276,12 @@
 
             manualCropStage.addEventListener('pointerup', endCropDrag);
             manualCropStage.addEventListener('pointercancel', endCropDrag);
+            manualCropStage.addEventListener('lostpointercapture', event => {
+                if (!cropDrag || cropDrag.pointerId !== event.pointerId) return;
+                cropSelection = { ...cropDrag.initial };
+                cropDrag = null;
+                drawCropSelection();
+            });
             resetCropButton.addEventListener('click', () => {
                 cropSelection = { x: 0, y: 0, w: 1, h: 1 };
                 drawCropSelection();
