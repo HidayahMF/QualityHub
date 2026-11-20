@@ -63,7 +63,11 @@ function galleryHarness() {
         retakeButton: ui(),
         saveButton: ui(),
         isCameraImageCandidate: file => file.type?.startsWith('image/'),
-        updateMultiPhotoState: () => {},
+        updateMultiPhotoState: () => {
+            context.saveButton.disabled = context.selectedItems.length === 0
+                || context.galleryPhotoProcessing || context.cameraPhotoProcessing
+                || context.scanUploadInProgress;
+        },
         addPhotos: files => {
             context.selectedItems.push(...files.map(file => ({ file, source: 'upload' })));
             return true;
