@@ -1,0 +1,59 @@
+name: Validate Android/iPhone 50-photo Scan upload
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/validate-scan-50-photo-upload.yml'
+      - 'resources/views/documents/scan.blade.php'
+      - 'app/Http/Controllers/ScanDocumentController.php'
+      - 'docker/php-uploads.ini'
+      - 'tests/Feature/ScanGalleryUploadPerformanceTest.php'
+      - 'tests/js/scan-gallery-upload-performance.test.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scan-50-photo-upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, fileinfo, zip, intl, gd, pdo_sqlite, sqlite3
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: PHP syntax checks
+        run: |
+          php -l app/Http/Controllers/ScanDocumentController.php
+          php -l tests/Feature/ScanGalleryUploadPerformanceTest.php
+      - name: Install dependencies
+        run: |
+          composer install --no-interaction --prefer-dist --no-progress
+          npm ci
+      - name: Test mobile gallery normalization and upload UI
+        run: |
+          node --test tests/js/scan-gallery-upload-performance.test.mjs
+          node --test tests/js/mobile-crop-pointer.test.mjs
+      - name: Build frontend
+        run: npm run build
+      - name: Prepare isolated test environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+      - name: Test 50-photo upload and existing Scan UI
+        run: |
+          php artisan test --filter=ScanGalleryUploadPerformanceTest
+          php artisan test --filter=ScanManualPhotoEditorTest
+          php artisan test --filter=DocumentScanTypeManagementTest
+          php artisan test --filter=DynamicDocumentScanTypeFilterTest
+      - name: Compile Blade templates
+        run: |
+          php artisan view:cache
+          php artisan view:clear

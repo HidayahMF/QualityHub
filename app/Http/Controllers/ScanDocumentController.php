@@ -31,6 +31,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -319,28 +320,45 @@ class ScanDocumentController extends Controller
         MultiPageScanPdfService $pdfService,
         PrivateDocumentStorageService $privateStorage,
         CategoryAssignmentService $categoryAssignment
-    ): RedirectResponse {
+    ): RedirectResponse|JsonResponse {
         try {
-            return $this->storeScan(
+            $result = $this->storeScan(
                 $request,
                 $imageSecurity,
                 $pdfService,
                 $privateStorage,
                 $categoryAssignment
             );
+
+            // Browser upload progress uses JSON to avoid a second GET that
+            // consumes Laravel's flash success/error messages. The existing
+            // non-AJAX form flow and all storage operations remain unchanged.
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'ok' => true,
+                    'redirect' => $result->getTargetUrl(),
+                ]);
+            }
+
+            return $result;
         } catch (ValidationException $exception) {
+            if ($request->expectsJson()) {
+                throw $exception;
+            }
+
             throw $exception->redirectTo(route('documents.scan.create'));
         } catch (Throwable $exception) {
-            // Jangan biarkan kegagalan library, filesystem, atau database menjadi HTTP 500.
-            // Pengguna tetap dikembalikan ke form dan detail teknis dicatat di log.
             report($exception);
+            $message = 'Berkas scan tidak dapat diproses. Periksa konfigurasi penyimpanan dan coba lagi.';
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $message], 500);
+            }
 
             return redirect()
                 ->route('documents.scan.create')
                 ->withInput()
-                ->withErrors([
-                    'files' => 'Berkas scan tidak dapat diproses. Periksa konfigurasi penyimpanan dan coba lagi.',
-                ]);
+                ->withErrors(['files' => $message]);
         }
     }
 
@@ -352,6 +370,8 @@ class ScanDocumentController extends Controller
         CategoryAssignmentService $categoryAssignment
     ): RedirectResponse {
         $this->ensureAdmin();
+        $scanStartedAt = microtime(true);
+        $pdfProcessingMs = 0;
 
         $categoryAssignment->prepareRequest($request);
 
@@ -811,11 +831,13 @@ class ScanDocumentController extends Controller
         $generatedPdfPath = null;
 
         if ($isMultiPhoto) {
+            $pdfStartedAt = microtime(true);
             $pdfResult = $pdfService->build(
                 $files,
                 $securityResults,
                 $validated['title']
             );
+            $pdfProcessingMs = (int) round((microtime(true) - $pdfStartedAt) * 1000);
 
             $generatedPdfPath = $pdfResult['path'];
             $extension = 'pdf';
@@ -839,11 +861,9 @@ class ScanDocumentController extends Controller
         if ($safeBaseName === '') {
             $pdfService->cleanup($generatedPdfPath);
 
-            return redirect()->route('documents.scan.create')
-                ->withInput()
-                ->withErrors([
-                    'file_name' => 'Nama file tidak menghasilkan nama yang valid.',
-                ]);
+            throw ValidationException::withMessages([
+                'file_name' => 'Nama file tidak menghasilkan nama yang valid.',
+            ]);
         }
 
         $displayFileName = $safeBaseName . '.' . $extension;
@@ -1249,14 +1269,24 @@ class ScanDocumentController extends Controller
 
             report($exception);
 
-            return redirect()->route('documents.scan.create')
-                ->withInput()
-                ->withErrors([
-                    'files' => 'Berkas scan tidak dapat disimpan. Proses dibatalkan dengan aman.',
-                ]);
+            // Always surface a storage failure as an error, not a successful
+            // redirect. The JSON upload client must never claim success here.
+            throw ValidationException::withMessages([
+                'files' => 'Berkas scan tidak dapat disimpan. Proses dibatalkan dengan aman.',
+            ]);
         } finally {
             $pdfService->cleanup($generatedPdfPath);
         }
+
+        // No filenames, document content or user identifiers in performance
+        // logs. Operators can compare Android/iPhone batches without exposing QC.
+        Log::info('qualityhub.scan.upload_completed', [
+            'photo_count' => $sourceCount,
+            'source_bytes' => $sourceTotalBytes,
+            'output_bytes' => $verifiedFileSize,
+            'pdf_ms' => $pdfProcessingMs,
+            'total_request_ms' => (int) round((microtime(true) - $scanStartedAt) * 1000),
+        ]);
 
         return redirect()
             ->route('documents.scan.create')

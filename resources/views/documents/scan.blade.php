@@ -399,6 +399,11 @@
                     <p id="cameraProcessingStatus" role="status" aria-live="polite" class="mt-2 hidden text-center text-xs font-medium text-blue-700">
                         Memproses foto kamera agar siap diunggah...
                     </p>
+                    <div id="galleryProcessingStatus" role="status" aria-live="polite" class="mt-3 hidden rounded-xl border border-blue-200 bg-blue-50 px-3 py-2.5">
+                        <p id="galleryProcessingText" class="text-xs font-semibold text-blue-900">Menyiapkan foto galeri...</p>
+                        <progress id="galleryProcessingProgress" value="0" max="100" class="mt-2 h-2 w-full accent-blue-600"></progress>
+                        <p class="mt-1 text-[11px] text-blue-700">Foto diperkecil satu per satu agar upload di Android/iPhone lebih ringan. Urutan halaman tetap sama.</p>
+                    </div>
 
                 </div>
             </section>
@@ -1203,6 +1208,11 @@
                     >
                         Simpan Berkas QC
                     </button>
+                    <div id="scanUploadStatus" role="status" aria-live="polite" class="mt-3 hidden rounded-xl border border-blue-200 bg-blue-50 px-3 py-3">
+                        <p id="scanUploadText" class="text-xs font-semibold text-blue-900">Mengirim foto...</p>
+                        <progress id="scanUploadProgress" value="0" max="100" class="mt-2 h-2 w-full accent-blue-600"></progress>
+                        <p id="scanUploadNote" class="mt-1 text-[11px] text-blue-700">Jangan tutup halaman sampai dokumen selesai disimpan.</p>
+                    </div>
 
                 </div>
 
@@ -1521,6 +1531,8 @@
     .qh-photo-card { box-sizing: border-box; width: 100%; min-width: 0; padding: 12px;
         border: 1px solid #d5e4f7; border-radius: 15px; background: #fff;
         cursor: pointer; transition: border-color .18s, box-shadow .18s; }
+    /* Skip layout/paint for off-screen cards when 50–100 photos are queued. */
+    .qh-photo-card { content-visibility: auto; contain-intrinsic-size: auto 170px; }
     .qh-photo-card:hover { border-color: #93c5fd; }
     .qh-photo-card-active { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,.12); }
     .qh-photo-main { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
@@ -1685,6 +1697,13 @@
             const cameraInput = document.getElementById('cameraInput');
             const cameraProcessingStatus = document.getElementById('cameraProcessingStatus');
             const uploadInput = document.getElementById('uploadInput');
+            const galleryProcessingStatus = document.getElementById('galleryProcessingStatus');
+            const galleryProcessingText = document.getElementById('galleryProcessingText');
+            const galleryProcessingProgress = document.getElementById('galleryProcessingProgress');
+            const scanUploadStatus = document.getElementById('scanUploadStatus');
+            const scanUploadText = document.getElementById('scanUploadText');
+            const scanUploadProgress = document.getElementById('scanUploadProgress');
+            const scanUploadNote = document.getElementById('scanUploadNote');
             const scanFilesInput = document.getElementById('scanFilesInput');
             const scanDocumentForm = document.getElementById('scanDocumentForm');
             const expectedPhotoCount = document.getElementById('expectedPhotoCount');
@@ -1808,7 +1827,13 @@
             const CAMERA_MAX_SOURCE_BYTES = 80 * 1024 * 1024;
             const CAMERA_MAX_OUTPUT_BYTES = Math.floor(1.6 * 1024 * 1024);
             const CAMERA_MAX_LONG_EDGE = 2600;
+            // Match the existing mobile-camera output target for gallery photos.
+            // This keeps 50 pages under ~80 MiB rather than transmitting full
+            // multi-megapixel source images, without requiring a backend migration.
+            const GALLERY_MAX_OUTPUT_BYTES = CAMERA_MAX_OUTPUT_BYTES;
             let cameraPhotoProcessing = false;
+            let galleryPhotoProcessing = false;
+            let scanUploadInProgress = false;
 
             let selectedItems = [];
             let activePhotoIndex = -1;
@@ -3463,6 +3488,8 @@
 
                     const image = document.createElement('img');
                     image.src = ensureItemObjectUrl(item);
+                    image.loading = 'lazy';
+                    image.decoding = 'async';
                     image.alt = 'Pratinjau Foto ' + (index + 1);
                     image.className = 'qh-photo-thumbnail';
 
@@ -3546,12 +3573,13 @@
                     ? `1 foto dipilih · ${selectedItems[0].file.name} · ${totalMb.toFixed(2)} MB`
                     : `${count} foto dipilih · ${totalMb.toFixed(2)} MB · akan digabung menjadi 1 PDF`;
 
-                saveButton.disabled = !synced;
+                saveButton.disabled = !synced || cameraPhotoProcessing
+                    || galleryPhotoProcessing || scanUploadInProgress;
             }
 
 
             function setActivePhoto(index) {
-                if (editorBusy || !selectedItems[index]) return;
+                if (editorBusy || scanUploadInProgress || !selectedItems[index]) return;
                 activePhotoIndex = index;
                 showPreview(selectedItems[index].file);
                 renderPhotoQueue();
@@ -3560,7 +3588,7 @@
 
 
             function addPhotos(files, source, replaceActive = false) {
-                if (editorBusy) {
+                if (editorBusy || scanUploadInProgress) {
                     alert('Selesaikan proses edit foto yang sedang berjalan terlebih dahulu.');
                     return false;
                 }
@@ -3608,7 +3636,7 @@
 
 
             function removePhoto(index) {
-                if (editorBusy || !selectedItems[index]) return;
+                if (editorBusy || scanUploadInProgress || !selectedItems[index]) return;
                 releaseItemObjectUrl(selectedItems[index]);
                 selectedItems.splice(index, 1);
 
@@ -3635,7 +3663,7 @@
 
 
             function movePhoto(index, direction) {
-                if (editorBusy) return;
+                if (editorBusy || scanUploadInProgress) return;
                 const target = index + direction;
                 if (!selectedItems[index] || target < 0 || target >= selectedItems.length) return;
 
@@ -3654,7 +3682,7 @@
             // ============================================================
             document.querySelectorAll('[data-edit-action]').forEach(button => {
                 button.addEventListener('click', () => {
-                    if (editorBusy) return;
+                    if (editorBusy || scanUploadInProgress) return;
                     const action = button.dataset.editAction;
                     if (action === 'rotate-left') editState.rotation -= 90;
                     if (action === 'rotate-right') editState.rotation += 90;
@@ -4017,6 +4045,12 @@
                     outputHeight = Math.max(1, Math.round(outputHeight * 0.85));
                 }
 
+                // Release decoded megapixel buffers immediately between
+                // photos. This matters on Android with 50 gallery images.
+                canvas.width = 0;
+                canvas.height = 0;
+                image.removeAttribute('src');
+
                 // Jangan diam-diam mengirim file di atas batas yang disepakati.
                 if (!result) {
                     throw new Error('Foto kamera masih terlalu besar. Coba ambil foto dengan resolusi lebih rendah.');
@@ -4035,7 +4069,7 @@
             cameraInput.addEventListener('change', async () => {
                 const file = cameraInput.files && cameraInput.files[0];
                 cameraInput.value = '';
-                if (!file || cameraPhotoProcessing) return;
+                if (!file || cameraPhotoProcessing || galleryPhotoProcessing || scanUploadInProgress) return;
 
                 cameraPhotoProcessing = true;
                 cameraProcessingStatus.classList.remove('hidden');
@@ -4065,52 +4099,235 @@
 
 
             // ============================================================
-            // GALLERY INPUT
+            // GALLERY INPUT — MEMORY-BOUNDED MOBILE NORMALIZATION
             // ============================================================
-            uploadInput.addEventListener('change', () => {
+            async function normalizeGalleryPhoto(file) {
+                if (!isCameraImageCandidate(file)) {
+                    throw new Error('Format gambar tidak didukung: ' + file.name);
+                }
 
-                const files = Array.from(uploadInput.files || []);
+                if (!file.size || file.size > CAMERA_MAX_SOURCE_BYTES) {
+                    throw new Error('Ukuran foto tidak valid atau melebihi 80 MB: ' + file.name);
+                }
 
-                if (files.length === 0) {
+                // Avoid needless decoding/re-encoding of already-small JPEGs.
+                // The backend still validates MIME, signature and dimensions.
+                if (
+                    file.type.toLowerCase() === 'image/jpeg'
+                    && file.size <= GALLERY_MAX_OUTPUT_BYTES
+                ) {
+                    return file;
+                }
+
+                // Reuse the camera's proven 2600px/1.6MB white-background
+                // normalizer, sequentially: never decode 50 photos at once.
+                const converted = await normalizeNativeCameraPhoto(file);
+                const name = (file.name || 'scan-qc').replace(/\.[^.]+$/, '').slice(0, 120);
+                return new File([converted], name + '-scan.jpg', {
+                    type: 'image/jpeg',
+                    lastModified: file.lastModified || Date.now(),
+                });
+            }
+
+            async function prepareGalleryPhotos(files) {
+                if (galleryPhotoProcessing || cameraPhotoProcessing || scanUploadInProgress) {
                     return;
                 }
 
-                addPhotos(files, 'upload', false);
+                if (selectedItems.length + files.length > MAX_PHOTOS) {
+                    alert('Total foto akan melebihi batas ' + MAX_PHOTOS + ' halaman.');
+                    return;
+                }
 
-                // Memungkinkan user memilih file yang sama lagi sebagai halaman lain.
+                galleryPhotoProcessing = true;
+                uploadInput.disabled = true;
+                openCameraButton.disabled = true;
+                retakeButton.disabled = true;
+                saveButton.disabled = true;
+                galleryProcessingProgress.classList.remove('hidden');
+                galleryProcessingStatus.classList.remove('hidden');
+                galleryProcessingProgress.value = 0;
+
+                let succeeded = false;
+                let currentIndex = 0;
+                let originalsBytes = 0;
+                const prepared = [];
+
+                try {
+                    for (const file of files) {
+                        currentIndex++;
+                        galleryProcessingText.textContent =
+                            'Menyiapkan foto ' + currentIndex + ' dari ' + files.length + '...';
+                        // Yield to the browser to paint progress and service taps.
+                        await new Promise(resolve => window.setTimeout(resolve, 0));
+                        const safeFile = await normalizeGalleryPhoto(file);
+                        prepared.push(safeFile);
+                        originalsBytes += file.size;
+                        galleryProcessingProgress.value = Math.round(currentIndex / files.length * 100);
+                    }
+
+                    if (!addPhotos(prepared, 'upload', false)) {
+                        throw new Error('Foto tidak dapat ditambahkan. Periksa batas total 200 MB.');
+                    }
+
+                    const totalMb = (originalsBytes / 1048576).toFixed(1);
+                    const finalMb = (prepared.reduce((sum, f) => sum + f.size, 0) / 1048576).toFixed(1);
+                    galleryProcessingText.textContent = 'Selesai: ' + files.length + ' foto disiapkan (' + totalMb
+                        + ' MB menjadi ' + finalMb + ' MB).';
+                    succeeded = true;
+                } catch (error) {
+                    console.error('Gallery scan photo normalization failed:', error);
+                    galleryProcessingText.textContent =
+                        'Foto ' + currentIndex + ' gagal diproses. ' + (error.message || 'Coba pilih ulang foto.');
+                    galleryProcessingProgress.classList.add('hidden');
+                } finally {
+                    galleryPhotoProcessing = false;
+                    uploadInput.disabled = false;
+                    openCameraButton.disabled = false;
+                    retakeButton.disabled = false;
+                    updateMultiPhotoState();
+                    if (succeeded) {
+                        // Keep the size comparison readable, but no permanent busy state.
+                        galleryProcessingStatus.setAttribute('data-completed', 'true');
+                    }
+                }
+            }
+
+            uploadInput.addEventListener('change', async () => {
+                const files = Array.from(uploadInput.files || []);
+                // Allow selecting the same images as additional pages later.
                 uploadInput.value = '';
-
+                if (files.length === 0) return;
+                await prepareGalleryPhotos(files);
             });
 
 
             // ============================================================
-            // FINAL FORM SUBMIT
+            // FINAL FORM SUBMIT — ACTUAL UPLOAD PROGRESS
             // ============================================================
+            function setUploadProgress(text, percent = null, note = '') {
+                scanUploadStatus.classList.remove('hidden');
+                scanUploadText.textContent = text;
+                if (percent === null) {
+                    // Indeterminate stage: Laravel is validating/building/storing
+                    // the PDF, so claiming a made-up percentage would be wrong.
+                    scanUploadProgress.removeAttribute('value');
+                } else {
+                    scanUploadProgress.value = Math.max(0, Math.min(100, percent));
+                }
+                scanUploadNote.textContent = note ||
+                    'Jangan tutup halaman sampai dokumen selesai disimpan.';
+            }
+
+            function scanUploadFailed(message) {
+                scanUploadInProgress = false;
+                uploadInput.disabled = false;
+                openCameraButton.disabled = false;
+                retakeButton.disabled = false;
+                saveButton.textContent = 'Simpan Berkas QC';
+                setUploadProgress(
+                    'Upload belum berhasil: ' + message,
+                    0,
+                    'Foto masih ada di halaman ini. Periksa All Documents sebelum mencoba lagi jika koneksi terputus.'
+                );
+                scanUploadProgress.classList.add('hidden');
+                updateMultiPhotoState();
+            }
+
             scanDocumentForm.addEventListener('submit', event => {
-                if (cameraPhotoProcessing) {
-                    event.preventDefault();
-                    alert('Foto kamera masih diproses. Tunggu sampai selesai sebelum menyimpan.');
+                event.preventDefault();
+                if (scanUploadInProgress) return;
+
+                if (cameraPhotoProcessing || galleryPhotoProcessing) {
+                    alert('Foto masih diproses. Selesaikan persiapan foto terlebih dahulu.');
                     return;
                 }
 
                 if (selectedItems.length === 0) {
-                    event.preventDefault();
                     alert('Pilih minimal satu foto berkas QC.');
                     return;
                 }
 
                 if (!syncFilesToForm()) {
-                    event.preventDefault();
                     alert('Daftar foto tidak dapat disiapkan untuk upload. Coba pilih ulang foto.');
                     return;
                 }
 
                 expectedPhotoCount.value = String(selectedItems.length);
+                const payload = new FormData(scanDocumentForm);
+                const xhr = new XMLHttpRequest();
 
+                scanUploadInProgress = true;
+                uploadInput.disabled = true;
+                openCameraButton.disabled = true;
+                retakeButton.disabled = true;
                 saveButton.disabled = true;
-                saveButton.textContent = selectedItems.length > 1
-                    ? 'Menggabungkan foto & menyimpan...'
-                    : 'Menyimpan berkas...';
+                saveButton.textContent = 'Mengirim foto...';
+                scanUploadProgress.classList.remove('hidden');
+                setUploadProgress('Mengirim ' + selectedItems.length + ' foto ke server...', 0);
+
+                xhr.open('POST', scanDocumentForm.action, true);
+                xhr.timeout = 360000;
+                xhr.setRequestHeader('Accept', 'application/json');
+
+                xhr.upload.addEventListener('progress', progress => {
+                    if (!progress.lengthComputable) return;
+                    const percent = Math.round(progress.loaded / progress.total * 100);
+                    setUploadProgress('Mengirim foto ke server... ' + percent + '%', percent);
+                });
+
+                xhr.upload.addEventListener('load', () => {
+                    saveButton.textContent = 'Membuat PDF & menyimpan...';
+                    setUploadProgress(
+                        'Foto terkirim. Server sedang membuat PDF dan menyimpan dokumen...',
+                        null,
+                        'Proses PDF berjalan di server. Persentase tahap ini tidak tersedia; jangan tutup halaman.'
+                    );
+                });
+
+                xhr.addEventListener('load', () => {
+                    let result = {};
+                    try {
+                        result = JSON.parse(xhr.responseText || '{}');
+                    } catch (_) {
+                        // If middleware returns HTML, show an explicit error.
+                    }
+
+                    if (xhr.status >= 200 && xhr.status < 300 && result.ok === true) {
+                        setUploadProgress('Berkas berhasil disimpan. Membuka kembali Scan / Capture...', 100);
+                        // Preserve Laravel success flash from the JSON POST.
+                        // A fresh GET uses the current LAN host, not APP_URL.
+                        window.location.reload();
+                        return;
+                    }
+
+                    const firstError = result.errors
+                        ? Object.values(result.errors).flat().find(value => typeof value === 'string')
+                        : null;
+                    const message = firstError || result.message
+                        || (xhr.status === 413
+                            ? 'Total upload melebihi batas server (HTTP 413).'
+                            : 'Server menolak upload (HTTP ' + xhr.status + ').');
+                    scanUploadFailed(message);
+                });
+
+                xhr.addEventListener('error', () => {
+                    scanUploadFailed('Koneksi terputus saat mengirim foto.');
+                });
+
+                xhr.addEventListener('timeout', () => {
+                    scanUploadFailed('Proses terlalu lama. Periksa jaringan dan status server.');
+                });
+
+                xhr.addEventListener('abort', () => {
+                    scanUploadFailed('Pengiriman dibatalkan.');
+                });
+
+                try {
+                    xhr.send(payload);
+                } catch (error) {
+                    scanUploadFailed(error.message || 'Browser tidak dapat mengirim berkas.');
+                }
             });
 
 
