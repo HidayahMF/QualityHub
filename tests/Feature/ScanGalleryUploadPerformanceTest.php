@@ -5,7 +5,7 @@ namespace Tests\Feature;
 use App\Models\Category;
 use App\Models\Department;
 use App\Models\Document;
-use App\Models\DocumentScanMetadata;
+use App\Models\DocumentVersion;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -130,8 +130,11 @@ class ScanGalleryUploadPerformanceTest extends TestCase
         $pdfHeader = Storage::disk('bmc_documents')->get($document->file_path);
         $this->assertStringStartsWith('%PDF-', $pdfHeader);
 
-        $metadata = DocumentScanMetadata::query()->sole();
-        $this->assertSame(50, (int) $metadata->photo_count);
+        // Photo count belongs to the immutable revision snapshot, not
+        // the document_scan_metadata table.
+        $snapshot = DocumentVersion::query()->sole()->metadata_snapshot;
+        $this->assertSame(50, (int) ($snapshot['scan_metadata']['photo_count'] ?? 0));
+        $this->assertSame(50, (int) ($snapshot['scan_security']['source_image_count'] ?? 0));
         $this->assertDatabaseCount('documents', 1);
         $this->assertDatabaseCount('document_versions', 1);
     }
