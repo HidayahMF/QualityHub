@@ -4195,33 +4195,131 @@
 
 
             // ============================================================
-            // FINAL FORM SUBMIT
+            // FINAL FORM SUBMIT — ACTUAL UPLOAD PROGRESS
             // ============================================================
+            function setUploadProgress(text, percent = null, note = '') {
+                scanUploadStatus.classList.remove('hidden');
+                scanUploadText.textContent = text;
+                if (percent === null) {
+                    // Indeterminate stage: Laravel is validating/building/storing
+                    // the PDF, so claiming a made-up percentage would be wrong.
+                    scanUploadProgress.removeAttribute('value');
+                } else {
+                    scanUploadProgress.value = Math.max(0, Math.min(100, percent));
+                }
+                scanUploadNote.textContent = note ||
+                    'Jangan tutup halaman sampai dokumen selesai disimpan.';
+            }
+
+            function scanUploadFailed(message) {
+                scanUploadInProgress = false;
+                uploadInput.disabled = false;
+                openCameraButton.disabled = false;
+                retakeButton.disabled = false;
+                saveButton.textContent = 'Simpan Berkas QC';
+                setUploadProgress(
+                    'Upload belum berhasil: ' + message,
+                    0,
+                    'Foto masih ada di halaman ini. Periksa All Documents sebelum mencoba lagi jika koneksi terputus.'
+                );
+                scanUploadProgress.classList.add('hidden');
+                updateMultiPhotoState();
+            }
+
             scanDocumentForm.addEventListener('submit', event => {
-                if (cameraPhotoProcessing) {
-                    event.preventDefault();
-                    alert('Foto kamera masih diproses. Tunggu sampai selesai sebelum menyimpan.');
+                event.preventDefault();
+                if (scanUploadInProgress) return;
+
+                if (cameraPhotoProcessing || galleryPhotoProcessing) {
+                    alert('Foto masih diproses. Selesaikan persiapan foto terlebih dahulu.');
                     return;
                 }
 
                 if (selectedItems.length === 0) {
-                    event.preventDefault();
                     alert('Pilih minimal satu foto berkas QC.');
                     return;
                 }
 
                 if (!syncFilesToForm()) {
-                    event.preventDefault();
                     alert('Daftar foto tidak dapat disiapkan untuk upload. Coba pilih ulang foto.');
                     return;
                 }
 
                 expectedPhotoCount.value = String(selectedItems.length);
+                const payload = new FormData(scanDocumentForm);
+                const xhr = new XMLHttpRequest();
 
+                scanUploadInProgress = true;
+                uploadInput.disabled = true;
+                openCameraButton.disabled = true;
+                retakeButton.disabled = true;
                 saveButton.disabled = true;
-                saveButton.textContent = selectedItems.length > 1
-                    ? 'Menggabungkan foto & menyimpan...'
-                    : 'Menyimpan berkas...';
+                saveButton.textContent = 'Mengirim foto...';
+                scanUploadProgress.classList.remove('hidden');
+                setUploadProgress('Mengirim ' + selectedItems.length + ' foto ke server...', 0);
+
+                xhr.open('POST', scanDocumentForm.action, true);
+                xhr.timeout = 360000;
+                xhr.setRequestHeader('Accept', 'application/json');
+
+                xhr.upload.addEventListener('progress', progress => {
+                    if (!progress.lengthComputable) return;
+                    const percent = Math.round(progress.loaded / progress.total * 100);
+                    setUploadProgress('Mengirim foto ke server... ' + percent + '%', percent);
+                });
+
+                xhr.upload.addEventListener('load', () => {
+                    saveButton.textContent = 'Membuat PDF & menyimpan...';
+                    setUploadProgress(
+                        'Foto terkirim. Server sedang membuat PDF dan menyimpan dokumen...',
+                        null,
+                        'Proses PDF berjalan di server. Persentase tahap ini tidak tersedia; jangan tutup halaman.'
+                    );
+                });
+
+                xhr.addEventListener('load', () => {
+                    let result = {};
+                    try {
+                        result = JSON.parse(xhr.responseText || '{}');
+                    } catch (_) {
+                        // If middleware returns HTML, show an explicit error.
+                    }
+
+                    if (xhr.status >= 200 && xhr.status < 300 && result.ok === true) {
+                        setUploadProgress('Berkas berhasil disimpan. Membuka kembali Scan / Capture...', 100);
+                        // Preserve Laravel success flash from the JSON POST.
+                        // A fresh GET uses the current LAN host, not APP_URL.
+                        window.location.reload();
+                        return;
+                    }
+
+                    const firstError = result.errors
+                        ? Object.values(result.errors).flat().find(value => typeof value === 'string')
+                        : null;
+                    const message = firstError || result.message
+                        || (xhr.status === 413
+                            ? 'Total upload melebihi batas server (HTTP 413).'
+                            : 'Server menolak upload (HTTP ' + xhr.status + ').');
+                    scanUploadFailed(message);
+                });
+
+                xhr.addEventListener('error', () => {
+                    scanUploadFailed('Koneksi terputus saat mengirim foto.');
+                });
+
+                xhr.addEventListener('timeout', () => {
+                    scanUploadFailed('Proses terlalu lama. Periksa jaringan dan status server.');
+                });
+
+                xhr.addEventListener('abort', () => {
+                    scanUploadFailed('Pengiriman dibatalkan.');
+                });
+
+                try {
+                    xhr.send(payload);
+                } catch (error) {
+                    scanUploadFailed(error.message || 'Browser tidak dapat mengirim berkas.');
+                }
             });
 
 
