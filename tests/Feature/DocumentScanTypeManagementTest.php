@@ -64,6 +64,25 @@ class DocumentScanTypeManagementTest extends TestCase
         // Names are inserted as text, not untrusted HTML.
         $this->assertStringContainsString("label.textContent = String(item.label || item.value || '').trim()", $html);
         $this->assertStringContainsString('Nonaktifkan Jenis Dokumen?', $html);
+        $this->assertStringContainsString('loadedDeleteScanTypes', $html);
+        $this->assertStringContainsString("if (!response.ok || response.redirected)", $html);
+    }
+
+    public function test_admin_does_not_see_super_admin_only_deactivation_button(): void
+    {
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'account_status' => 'active',
+        ]);
+
+        $html = $this->actingAs($admin)
+            ->get(route('documents.scan.create'))
+            ->assertOk()
+            ->baseResponse
+            ->getContent();
+
+        $this->assertStringContainsString('id="addScanTypeButton"', $html);
+        $this->assertStringNotContainsString('id="deleteScanTypeButton"', $html);
     }
 
     public function test_scan_type_endpoint_can_list_many_active_custom_types(): void
