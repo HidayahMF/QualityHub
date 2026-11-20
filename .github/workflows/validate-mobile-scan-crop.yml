@@ -44,8 +44,9 @@ jobs:
           php artisan test --filter=ScanManualPhotoEditorTest
           php artisan test --filter=DocumentScanTypeManagementTest
           php artisan test --filter=DynamicDocumentScanTypeFilterTest
-          php artisan test --filter=RetoolingScanTest
-          php artisan test --filter=AxleBrakeProductionScanTest
+          # Retooling/Axle/Brake require the separate MTC/PPIC master DB.
+          # They are covered by dedicated CI and are not runnable on isolated
+          # SQLite without those external schemas.
       - name: Compile Blade
         run: |
           php artisan view:cache
