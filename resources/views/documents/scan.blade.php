@@ -4061,7 +4061,7 @@
             cameraInput.addEventListener('change', async () => {
                 const file = cameraInput.files && cameraInput.files[0];
                 cameraInput.value = '';
-                if (!file || cameraPhotoProcessing) return;
+                if (!file || cameraPhotoProcessing || galleryPhotoProcessing || scanUploadInProgress) return;
 
                 cameraPhotoProcessing = true;
                 cameraProcessingStatus.classList.remove('hidden');
@@ -4091,21 +4091,106 @@
 
 
             // ============================================================
-            // GALLERY INPUT
+            // GALLERY INPUT — MEMORY-BOUNDED MOBILE NORMALIZATION
             // ============================================================
-            uploadInput.addEventListener('change', () => {
+            async function normalizeGalleryPhoto(file) {
+                if (!isCameraImageCandidate(file)) {
+                    throw new Error('Format gambar tidak didukung: ' + file.name);
+                }
 
-                const files = Array.from(uploadInput.files || []);
+                if (!file.size || file.size > CAMERA_MAX_SOURCE_BYTES) {
+                    throw new Error('Ukuran foto tidak valid atau melebihi 80 MB: ' + file.name);
+                }
 
-                if (files.length === 0) {
+                // Avoid needless decoding/re-encoding of already-small JPEGs.
+                // The backend still validates MIME, signature and dimensions.
+                if (
+                    file.type.toLowerCase() === 'image/jpeg'
+                    && file.size <= GALLERY_MAX_OUTPUT_BYTES
+                ) {
+                    return file;
+                }
+
+                // Reuse the camera's proven 2600px/1.6MB white-background
+                // normalizer, sequentially: never decode 50 photos at once.
+                const converted = await normalizeNativeCameraPhoto(file);
+                const name = (file.name || 'scan-qc').replace(/\.[^.]+$/, '').slice(0, 120);
+                return new File([converted], name + '-scan.jpg', {
+                    type: 'image/jpeg',
+                    lastModified: file.lastModified || Date.now(),
+                });
+            }
+
+            async function prepareGalleryPhotos(files) {
+                if (galleryPhotoProcessing || cameraPhotoProcessing || scanUploadInProgress) {
                     return;
                 }
 
-                addPhotos(files, 'upload', false);
+                if (selectedItems.length + files.length > MAX_PHOTOS) {
+                    alert('Total foto akan melebihi batas ' + MAX_PHOTOS + ' halaman.');
+                    return;
+                }
 
-                // Memungkinkan user memilih file yang sama lagi sebagai halaman lain.
+                galleryPhotoProcessing = true;
+                uploadInput.disabled = true;
+                openCameraButton.disabled = true;
+                retakeButton.disabled = true;
+                saveButton.disabled = true;
+                galleryProcessingProgress.classList.remove('hidden');
+                galleryProcessingStatus.classList.remove('hidden');
+                galleryProcessingProgress.value = 0;
+
+                let succeeded = false;
+                let currentIndex = 0;
+                let originalsBytes = 0;
+                const prepared = [];
+
+                try {
+                    for (const file of files) {
+                        currentIndex++;
+                        galleryProcessingText.textContent =
+                            'Menyiapkan foto ' + currentIndex + ' dari ' + files.length + '...';
+                        // Yield to the browser to paint progress and service taps.
+                        await new Promise(resolve => window.setTimeout(resolve, 0));
+                        const safeFile = await normalizeGalleryPhoto(file);
+                        prepared.push(safeFile);
+                        originalsBytes += file.size;
+                        galleryProcessingProgress.value = Math.round(currentIndex / files.length * 100);
+                    }
+
+                    if (!addPhotos(prepared, 'upload', false)) {
+                        throw new Error('Foto tidak dapat ditambahkan. Periksa batas total 200 MB.');
+                    }
+
+                    const totalMb = (originalsBytes / 1048576).toFixed(1);
+                    const finalMb = (prepared.reduce((sum, f) => sum + f.size, 0) / 1048576).toFixed(1);
+                    galleryProcessingText.textContent = 'Selesai: ' + files.length + ' foto disiapkan (' + totalMb
+                        + ' MB menjadi ' + finalMb + ' MB).';
+                    succeeded = true;
+                } catch (error) {
+                    console.error('Gallery scan photo normalization failed:', error);
+                    galleryProcessingText.textContent =
+                        'Foto ' + currentIndex + ' gagal diproses. ' + (error.message || 'Coba pilih ulang foto.');
+                    galleryProcessingProgress.classList.add('hidden');
+                } finally {
+                    galleryPhotoProcessing = false;
+                    uploadInput.disabled = false;
+                    openCameraButton.disabled = false;
+                    retakeButton.disabled = false;
+                    updateMultiPhotoState();
+                    if (succeeded) {
+                        // Keep the size comparison readable, but no permanent busy state.
+                        galleryProcessingStatus.setAttribute('data-completed', 'true');
+                    }
+                }
+            }
+
+            uploadInput.addEventListener('change', async () => {
+                const files = Array.from(uploadInput.files || []);
+                // Allow selecting the same images as additional pages later.
                 uploadInput.value = '';
-
+                if (files.length === 0) return;
+                await prepareGalleryPhotos(files);
             });
 
 
