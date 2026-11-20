@@ -137,6 +137,57 @@ class ScanManualPhotoEditorTest extends TestCase
         $this->assertStringContainsString("cameraStatus.classList.toggle('qh-camera-status-error', isError)", $html);
     }
 
+    public function test_mobile_crop_uses_large_touch_targets_and_does_not_replace_selection_on_missed_touch(): void
+    {
+        $admin = User::factory()->create([
+            'role' => 'super_admin',
+            'account_status' => 'active',
+        ]);
+
+        $html = $this->actingAs($admin)
+            ->get(route('documents.scan.create'))
+            ->assertOk()
+            ->baseResponse
+            ->getContent();
+
+        $this->assertStringContainsString('@media (pointer: coarse)', $html);
+        $this->assertStringContainsString('width: 44px; height: 44px;', $html);
+        $this->assertStringContainsString("if (event.pointerType === 'touch' && !handle && !move) return;", $html);
+        $this->assertStringContainsString("event.pointerType === 'mouse' ? 3 : 8", $html);
+        $this->assertStringContainsString("manualCropStage.addEventListener('pointercancel', endCropDrag)", $html);
+        $this->assertStringContainsString("manualCropStage.addEventListener('lostpointercapture'", $html);
+        $this->assertStringContainsString('cropSelection = { ...cropDrag.initial }', $html);
+        $this->assertStringContainsString('MIN_CROP_FRACTION = 0.12', $html);
+        $this->assertStringContainsString('MIN_CROP_APPLY_AREA = 0.05', $html);
+        $this->assertStringContainsString('confirmCropButton.disabled = editorBusy || tooSmall', $html);
+    }
+
+    public function test_crop_editor_has_mobile_preview_zoom_and_last_crop_undo(): void
+    {
+        $admin = User::factory()->create([
+            'role' => 'super_admin',
+            'account_status' => 'active',
+        ]);
+
+        $html = $this->actingAs($admin)
+            ->get(route('documents.scan.create'))
+            ->assertOk()
+            ->baseResponse
+            ->getContent();
+
+        $this->assertStringContainsString('id="undoCropButton"', $html);
+        $this->assertStringContainsString('Urungkan Crop Terakhir', $html);
+        $this->assertStringContainsString('id="toggleCropZoomButton"', $html);
+        $this->assertStringContainsString('Perbesar Preview', $html);
+        $this->assertStringContainsString("manualCropPanel.classList.toggle('qh-crop-expanded')", $html);
+        $this->assertStringContainsString('cropUndoFiles = new WeakMap()', $html);
+        $this->assertStringContainsString('cropUndoFiles.set(selectedItems[activePhotoIndex], previousFile)', $html);
+        $this->assertStringContainsString('cropUndoFiles.get(item)', $html);
+        $this->assertStringContainsString('showPreview(previousFile)', $html);
+        $this->assertStringContainsString('await replaceActivePhotoFromCanvas(result)', $html);
+        $this->assertStringContainsString('closeManualCrop(true)', $html);
+    }
+
     public function test_employee_cannot_access_scan_editor(): void
     {
         $employee = User::factory()->create([
