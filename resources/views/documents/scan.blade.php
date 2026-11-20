@@ -567,6 +567,7 @@
                                     >
                                         + Tambah Jenis Dokumen
                                     </button>
+                                    @if (auth()->user()->isSuperAdmin())
                                     <button
                                         type="button"
                                         id="deleteScanTypeButton"
@@ -574,6 +575,7 @@
                                     >
                                         Hapus Jenis Dokumen
                                     </button>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -2222,6 +2224,7 @@
             const confirmScanTypeDeleteButton = document.getElementById('confirmScanTypeDeleteButton');
 
             let pendingDeleteType = null;
+            let loadedDeleteScanTypes = [];
 
             function getScanTypeDisplayValue(value) {
                 const option = Array.from(scanType?.options || []).find(item => item.value === value);
@@ -2358,6 +2361,7 @@
                         };
                         scanTypeDeleteConfirmText.textContent = `Anda akan menonaktifkan jenis dokumen "${pendingDeleteType.label}". Dokumen lama tetap aman dan tidak akan terhapus.`;
                         scanTypeDeleteConfirm?.classList.remove('hidden');
+                        scanTypeDeleteConfirm?.scrollIntoView({ block: 'nearest' });
                     });
 
                     scanTypeDeleteOptions.appendChild(button);
@@ -2382,7 +2386,8 @@
                     }
 
                     const data = await response.json().catch(() => ({ results: [] }));
-                    renderDeleteScanTypeList(data.results || []);
+                    loadedDeleteScanTypes = Array.isArray(data.results) ? data.results : [];
+                    renderDeleteScanTypeList(loadedDeleteScanTypes);
                 } catch (error) {
                     scanTypeDeleteEmpty.textContent = error.message || 'Gagal memuat daftar jenis dokumen.';
                     scanTypeDeleteEmpty.classList.remove('hidden');
@@ -2479,22 +2484,10 @@
                     closeDeleteScanTypeModal();
                 }
             });
-            scanTypeDeleteSearch?.addEventListener('input', async event => {
-                const items = await fetch('{{ route('documents.scan.types.index') }}', {
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
-                })
-                    .then(response => response.ok ? response.json() : { results: [] })
-                    .then(data => data.results || [])
-                    .catch(() => []);
-
-                renderDeleteScanTypeList(items.filter(item => {
-                    const label = (item?.label || item?.value || '').trim();
-                    const query = (event.target.value || '').trim().toLowerCase();
-                    return !query || label.toLowerCase().includes(query);
-                }));
+            // Search locally after the initial fetch: fast even with many
+            // types and no stale asynchronous responses replacing recent input.
+            scanTypeDeleteSearch?.addEventListener('input', () => {
+                renderDeleteScanTypeList(loadedDeleteScanTypes);
             });
             confirmScanTypeDeleteButton?.addEventListener('click', async () => {
                 if (!pendingDeleteType?.id) {
@@ -2510,7 +2503,7 @@
                         },
                     });
 
-                    if (!response.ok && !response.redirected) {
+                    if (!response.ok || response.redirected) {
                         const data = await response.json().catch(() => ({}));
                         throw new Error(data?.message || 'Jenis dokumen gagal dinonaktifkan.');
                     }
