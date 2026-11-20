@@ -567,6 +567,7 @@
                                     >
                                         + Tambah Jenis Dokumen
                                     </button>
+                                    @if (auth()->user()->isSuperAdmin())
                                     <button
                                         type="button"
                                         id="deleteScanTypeButton"
@@ -574,6 +575,7 @@
                                     >
                                         Hapus Jenis Dokumen
                                     </button>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -1291,14 +1293,18 @@
     <div
         id="scanTypeDeleteModal"
         class="fixed inset-0 z-[120] hidden bg-slate-950/70 backdrop-blur-sm"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="scanTypeManagerTitle"
+        aria-describedby="scanTypeManagerDescription"
         aria-hidden="true"
     >
-        <div class="flex min-h-full items-center justify-center p-4">
-            <div class="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl">
-                <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+        <div class="flex h-full min-h-0 items-center justify-center p-3 sm:p-5">
+            <div class="flex min-h-0 max-h-[calc(100dvh-24px)] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:max-h-[calc(100dvh-40px)]">
+                <div class="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 px-4 py-4 sm:px-5">
                     <div>
-                        <h3 class="text-sm font-semibold text-slate-900">Kelola Jenis Dokumen Scan</h3>
-                        <p class="mt-1 text-xs text-slate-500">Daftar custom type yang masih aktif dan dapat dinonaktifkan.</p>
+                        <h3 id="scanTypeManagerTitle" class="text-sm font-semibold text-slate-900">Kelola Jenis Dokumen Scan</h3>
+                        <p id="scanTypeManagerDescription" class="mt-1 text-xs text-slate-500">Pilih jenis dokumen tambahan yang ingin dinonaktifkan. Dokumen lama tetap tersimpan.</p>
                     </div>
                     <button
                         type="button"
@@ -1310,7 +1316,7 @@
                     </button>
                 </div>
 
-                <div class="space-y-4 p-5">
+                <div class="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 sm:p-5">
                     <div>
                         <label for="scanTypeDeleteSearch" class="mb-1.5 block text-sm font-medium text-slate-700">
                             Cari jenis dokumen...
@@ -1323,13 +1329,13 @@
                         >
                     </div>
 
-                    <div id="scanTypeDeleteOptions" class="space-y-2"></div>
+                    <div id="scanTypeDeleteOptions" class="max-h-[45dvh] space-y-2 overflow-y-auto overscroll-contain pr-1" role="region" aria-label="Daftar jenis dokumen aktif" tabindex="0"></div>
                     <div id="scanTypeDeleteEmpty" class="hidden rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-sm text-slate-500">
                         Belum ada Jenis Dokumen Scan tambahan yang dapat dihapus.
                     </div>
 
                     <div id="scanTypeDeleteConfirm" class="hidden rounded-xl border border-rose-200 bg-rose-50 p-4">
-                        <p class="text-sm font-semibold text-slate-900">Hapus Jenis Dokumen?</p>
+                        <p class="text-sm font-semibold text-slate-900">Nonaktifkan Jenis Dokumen?</p>
                         <p id="scanTypeDeleteConfirmText" class="mt-2 text-sm text-slate-600"></p>
                         <div class="mt-4 flex justify-end gap-2">
                             <button
@@ -1344,7 +1350,7 @@
                                 id="confirmScanTypeDeleteButton"
                                 class="rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-700"
                             >
-                                Hapus Jenis Dokumen
+                                Nonaktifkan Jenis Dokumen
                             </button>
                         </div>
                     </div>
@@ -1430,6 +1436,7 @@
     .edit-action:hover { border-color:#93c5fd; background:#eff6ff; color:#1d4ed8; }
     /* QualityHub camera overlay — outside the sidebar/header stacking context. */
     body.qh-camera-open { overflow: hidden !important; }
+    body.qh-scan-type-manage-open { overflow: hidden !important; }
     .qh-camera-overlay { position: fixed !important; inset: 0 !important; z-index: 2147483000 !important;
         align-items: center; justify-content: center; padding: clamp(9px, 2vw, 22px);
         background: rgba(10, 27, 62, .74); backdrop-filter: blur(5px); overscroll-behavior: contain; }
@@ -2202,6 +2209,11 @@
             const scanTypeOptionsList = document.getElementById('scanTypeOptions');
             const deleteScanTypeButton = document.getElementById('deleteScanTypeButton');
             const scanTypeDeleteModal = document.getElementById('scanTypeDeleteModal');
+            // Keep this dialog above sidebar, sticky header and overflow-clipped Scan layout.
+            if (scanTypeDeleteModal) {
+                document.body.appendChild(scanTypeDeleteModal);
+            }
+            let scanTypeDeleteReturnFocus = null;
             const closeScanTypeDeleteModalButton = document.getElementById('closeScanTypeDeleteModalButton');
             const cancelScanTypeDeleteButton = document.getElementById('cancelScanTypeDeleteButton');
             const scanTypeDeleteSearch = document.getElementById('scanTypeDeleteSearch');
@@ -2212,6 +2224,7 @@
             const confirmScanTypeDeleteButton = document.getElementById('confirmScanTypeDeleteButton');
 
             let pendingDeleteType = null;
+            let loadedDeleteScanTypes = [];
 
             function getScanTypeDisplayValue(value) {
                 const option = Array.from(scanType?.options || []).find(item => item.value === value);
@@ -2331,11 +2344,14 @@
                     const button = document.createElement('button');
                     button.type = 'button';
                     button.dataset.typeId = String(item.id ?? '');
-                    button.className = 'flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left text-sm text-slate-700 transition hover:border-rose-200 hover:bg-rose-50';
-                    button.innerHTML = `
-                        <span>${(item.label || item.value || '').trim()}</span>
-                        <span class="font-semibold text-rose-600">Nonaktifkan</span>
-                    `;
+                    button.className = 'flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left text-sm text-slate-700 transition hover:border-rose-200 hover:bg-rose-50';
+                    const label = document.createElement('span');
+                    label.className = 'min-w-0 flex-1 break-words';
+                    label.textContent = String(item.label || item.value || '').trim();
+                    const action = document.createElement('span');
+                    action.className = 'shrink-0 font-semibold text-rose-600';
+                    action.textContent = 'Nonaktifkan';
+                    button.append(label, action);
 
                     button.addEventListener('click', () => {
                         pendingDeleteType = {
@@ -2345,6 +2361,7 @@
                         };
                         scanTypeDeleteConfirmText.textContent = `Anda akan menonaktifkan jenis dokumen "${pendingDeleteType.label}". Dokumen lama tetap aman dan tidak akan terhapus.`;
                         scanTypeDeleteConfirm?.classList.remove('hidden');
+                        scanTypeDeleteConfirm?.scrollIntoView({ block: 'nearest' });
                     });
 
                     scanTypeDeleteOptions.appendChild(button);
@@ -2369,7 +2386,8 @@
                     }
 
                     const data = await response.json().catch(() => ({ results: [] }));
-                    renderDeleteScanTypeList(data.results || []);
+                    loadedDeleteScanTypes = Array.isArray(data.results) ? data.results : [];
+                    renderDeleteScanTypeList(loadedDeleteScanTypes);
                 } catch (error) {
                     scanTypeDeleteEmpty.textContent = error.message || 'Gagal memuat daftar jenis dokumen.';
                     scanTypeDeleteEmpty.classList.remove('hidden');
@@ -2381,11 +2399,13 @@
                     return;
                 }
 
+                scanTypeDeleteReturnFocus = document.activeElement;
                 scanTypeDeleteModal.classList.remove('hidden');
                 scanTypeDeleteModal.setAttribute('aria-hidden', 'false');
+                document.body.classList.add('qh-scan-type-manage-open');
                 scanTypeDeleteSearch.value = '';
+                scanTypeDeleteSearch?.focus();
                 await loadDeleteScanTypeList();
-                setTimeout(() => scanTypeDeleteSearch?.focus(), 50);
             }
 
             function closeDeleteScanTypeModal() {
@@ -2395,8 +2415,13 @@
 
                 scanTypeDeleteModal.classList.add('hidden');
                 scanTypeDeleteModal.setAttribute('aria-hidden', 'true');
+                document.body.classList.remove('qh-scan-type-manage-open');
                 scanTypeDeleteConfirm?.classList.add('hidden');
                 pendingDeleteType = null;
+                if (scanTypeDeleteReturnFocus && typeof scanTypeDeleteReturnFocus.focus === 'function') {
+                    scanTypeDeleteReturnFocus.focus();
+                }
+                scanTypeDeleteReturnFocus = null;
             }
 
             if (scanTypeSearchInput && scanTypeOptionsList) {
@@ -2453,22 +2478,16 @@
                     closeDeleteScanTypeModal();
                 }
             });
-            scanTypeDeleteSearch?.addEventListener('input', async event => {
-                const items = await fetch('{{ route('documents.scan.types.index') }}', {
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
-                })
-                    .then(response => response.ok ? response.json() : { results: [] })
-                    .then(data => data.results || [])
-                    .catch(() => []);
-
-                renderDeleteScanTypeList(items.filter(item => {
-                    const label = (item?.label || item?.value || '').trim();
-                    const query = (event.target.value || '').trim().toLowerCase();
-                    return !query || label.toLowerCase().includes(query);
-                }));
+            document.addEventListener('keydown', event => {
+                if (event.key === 'Escape' && scanTypeDeleteModal && !scanTypeDeleteModal.classList.contains('hidden')) {
+                    event.preventDefault();
+                    closeDeleteScanTypeModal();
+                }
+            });
+            // Search locally after the initial fetch: fast even with many
+            // types and no stale asynchronous responses replacing recent input.
+            scanTypeDeleteSearch?.addEventListener('input', () => {
+                renderDeleteScanTypeList(loadedDeleteScanTypes);
             });
             confirmScanTypeDeleteButton?.addEventListener('click', async () => {
                 if (!pendingDeleteType?.id) {
@@ -2484,7 +2503,7 @@
                         },
                     });
 
-                    if (!response.ok && !response.redirected) {
+                    if (!response.ok || response.redirected) {
                         const data = await response.json().catch(() => ({}));
                         throw new Error(data?.message || 'Jenis dokumen gagal dinonaktifkan.');
                     }

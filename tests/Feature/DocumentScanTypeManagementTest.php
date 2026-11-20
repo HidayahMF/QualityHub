@@ -36,6 +36,76 @@ class DocumentScanTypeManagementTest extends TestCase
         $this->assertStringContainsString('Surat Pemeriksaan Dimensi', $html);
     }
 
+    public function test_scan_type_management_dialog_stays_accessible_with_many_options(): void
+    {
+        $superAdmin = User::factory()->create([
+            'role' => 'super_admin',
+            'account_status' => 'active',
+        ]);
+
+        $html = $this->actingAs($superAdmin)
+            ->get(route('documents.scan.create'))
+            ->assertOk()
+            ->baseResponse
+            ->getContent();
+
+        // The full-screen dialog must be portalled out of the sidebar/layout
+        // and keep its title/close button visible when the result list is long.
+        $this->assertStringContainsString('id="scanTypeDeleteModal"', $html);
+        $this->assertStringContainsString('aria-labelledby="scanTypeManagerTitle"', $html);
+        $this->assertStringContainsString('max-h-[calc(100dvh-24px)]', $html);
+        $this->assertStringContainsString('max-h-[45dvh]', $html);
+        $this->assertStringContainsString('overscroll-contain', $html);
+        $this->assertStringContainsString('document.body.appendChild(scanTypeDeleteModal)', $html);
+        $this->assertStringContainsString('qh-scan-type-manage-open', $html);
+        $this->assertStringContainsString('scanTypeDeleteReturnFocus.focus()', $html);
+        $this->assertStringContainsString("event.key === 'Escape' && scanTypeDeleteModal", $html);
+
+        // Names are inserted as text, not untrusted HTML.
+        $this->assertStringContainsString("label.textContent = String(item.label || item.value || '').trim()", $html);
+        $this->assertStringContainsString('Nonaktifkan Jenis Dokumen?', $html);
+        $this->assertStringContainsString('loadedDeleteScanTypes', $html);
+        $this->assertStringContainsString("if (!response.ok || response.redirected)", $html);
+    }
+
+    public function test_admin_does_not_see_super_admin_only_deactivation_button(): void
+    {
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'account_status' => 'active',
+        ]);
+
+        $html = $this->actingAs($admin)
+            ->get(route('documents.scan.create'))
+            ->assertOk()
+            ->baseResponse
+            ->getContent();
+
+        $this->assertStringContainsString('id="addScanTypeButton"', $html);
+        $this->assertStringNotContainsString('id="deleteScanTypeButton"', $html);
+    }
+
+    public function test_scan_type_endpoint_can_list_many_active_custom_types(): void
+    {
+        $superAdmin = User::factory()->create([
+            'role' => 'super_admin',
+            'account_status' => 'active',
+        ]);
+
+        for ($number = 1; $number <= 30; $number++) {
+            DocumentScanType::query()->create([
+                'name' => sprintf('Jenis Dokumen Uji %02d', $number),
+                'is_active' => true,
+                'sort_order' => 500,
+            ]);
+        }
+
+        $this->actingAs($superAdmin)
+            ->getJson(route('documents.scan.types.index'))
+            ->assertOk()
+            ->assertJsonCount(30, 'results');
+    }
+
     public function test_fresh_scan_page_starts_with_empty_scan_type_and_empty_generated_values(): void
     {
         $admin = User::factory()->create([
