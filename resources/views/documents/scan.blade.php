@@ -1695,6 +1695,13 @@
             const cameraInput = document.getElementById('cameraInput');
             const cameraProcessingStatus = document.getElementById('cameraProcessingStatus');
             const uploadInput = document.getElementById('uploadInput');
+            const galleryProcessingStatus = document.getElementById('galleryProcessingStatus');
+            const galleryProcessingText = document.getElementById('galleryProcessingText');
+            const galleryProcessingProgress = document.getElementById('galleryProcessingProgress');
+            const scanUploadStatus = document.getElementById('scanUploadStatus');
+            const scanUploadText = document.getElementById('scanUploadText');
+            const scanUploadProgress = document.getElementById('scanUploadProgress');
+            const scanUploadNote = document.getElementById('scanUploadNote');
             const scanFilesInput = document.getElementById('scanFilesInput');
             const scanDocumentForm = document.getElementById('scanDocumentForm');
             const expectedPhotoCount = document.getElementById('expectedPhotoCount');
@@ -1818,7 +1825,13 @@
             const CAMERA_MAX_SOURCE_BYTES = 80 * 1024 * 1024;
             const CAMERA_MAX_OUTPUT_BYTES = Math.floor(1.6 * 1024 * 1024);
             const CAMERA_MAX_LONG_EDGE = 2600;
+            // Match the existing mobile-camera output target for gallery photos.
+            // This keeps 50 pages under ~80 MiB rather than transmitting full
+            // multi-megapixel source images, without requiring a backend migration.
+            const GALLERY_MAX_OUTPUT_BYTES = CAMERA_MAX_OUTPUT_BYTES;
             let cameraPhotoProcessing = false;
+            let galleryPhotoProcessing = false;
+            let scanUploadInProgress = false;
 
             let selectedItems = [];
             let activePhotoIndex = -1;
@@ -3473,6 +3486,8 @@
 
                     const image = document.createElement('img');
                     image.src = ensureItemObjectUrl(item);
+                    image.loading = 'lazy';
+                    image.decoding = 'async';
                     image.alt = 'Pratinjau Foto ' + (index + 1);
                     image.className = 'qh-photo-thumbnail';
 
@@ -3556,7 +3571,8 @@
                     ? `1 foto dipilih · ${selectedItems[0].file.name} · ${totalMb.toFixed(2)} MB`
                     : `${count} foto dipilih · ${totalMb.toFixed(2)} MB · akan digabung menjadi 1 PDF`;
 
-                saveButton.disabled = !synced;
+                saveButton.disabled = !synced || cameraPhotoProcessing
+                    || galleryPhotoProcessing || scanUploadInProgress;
             }
 
 
