@@ -399,6 +399,11 @@
                     <p id="cameraProcessingStatus" role="status" aria-live="polite" class="mt-2 hidden text-center text-xs font-medium text-blue-700">
                         Memproses foto kamera agar siap diunggah...
                     </p>
+                    <div id="galleryProcessingStatus" role="status" aria-live="polite" class="mt-3 hidden rounded-xl border border-blue-200 bg-blue-50 px-3 py-2.5">
+                        <p id="galleryProcessingText" class="text-xs font-semibold text-blue-900">Menyiapkan foto galeri...</p>
+                        <progress id="galleryProcessingProgress" value="0" max="100" class="mt-2 h-2 w-full accent-blue-600"></progress>
+                        <p class="mt-1 text-[11px] text-blue-700">Foto diperkecil satu per satu agar upload di Android/iPhone lebih ringan. Urutan halaman tetap sama.</p>
+                    </div>
 
                 </div>
             </section>
@@ -1203,6 +1208,11 @@
                     >
                         Simpan Berkas QC
                     </button>
+                    <div id="scanUploadStatus" role="status" aria-live="polite" class="mt-3 hidden rounded-xl border border-blue-200 bg-blue-50 px-3 py-3">
+                        <p id="scanUploadText" class="text-xs font-semibold text-blue-900">Mengirim foto...</p>
+                        <progress id="scanUploadProgress" value="0" max="100" class="mt-2 h-2 w-full accent-blue-600"></progress>
+                        <p id="scanUploadNote" class="mt-1 text-[11px] text-blue-700">Jangan tutup halaman sampai dokumen selesai disimpan.</p>
+                    </div>
 
                 </div>
 
