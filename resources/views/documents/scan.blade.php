@@ -1531,6 +1531,8 @@
     .qh-photo-card { box-sizing: border-box; width: 100%; min-width: 0; padding: 12px;
         border: 1px solid #d5e4f7; border-radius: 15px; background: #fff;
         cursor: pointer; transition: border-color .18s, box-shadow .18s; }
+    /* Skip layout/paint for off-screen cards when 50–100 photos are queued. */
+    .qh-photo-card { content-visibility: auto; contain-intrinsic-size: auto 170px; }
     .qh-photo-card:hover { border-color: #93c5fd; }
     .qh-photo-card-active { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,.12); }
     .qh-photo-main { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
@@ -3577,7 +3579,7 @@
 
 
             function setActivePhoto(index) {
-                if (editorBusy || !selectedItems[index]) return;
+                if (editorBusy || scanUploadInProgress || !selectedItems[index]) return;
                 activePhotoIndex = index;
                 showPreview(selectedItems[index].file);
                 renderPhotoQueue();
@@ -3586,7 +3588,7 @@
 
 
             function addPhotos(files, source, replaceActive = false) {
-                if (editorBusy) {
+                if (editorBusy || scanUploadInProgress) {
                     alert('Selesaikan proses edit foto yang sedang berjalan terlebih dahulu.');
                     return false;
                 }
@@ -3634,7 +3636,7 @@
 
 
             function removePhoto(index) {
-                if (editorBusy || !selectedItems[index]) return;
+                if (editorBusy || scanUploadInProgress || !selectedItems[index]) return;
                 releaseItemObjectUrl(selectedItems[index]);
                 selectedItems.splice(index, 1);
 
@@ -3661,7 +3663,7 @@
 
 
             function movePhoto(index, direction) {
-                if (editorBusy) return;
+                if (editorBusy || scanUploadInProgress) return;
                 const target = index + direction;
                 if (!selectedItems[index] || target < 0 || target >= selectedItems.length) return;
 
@@ -3680,7 +3682,7 @@
             // ============================================================
             document.querySelectorAll('[data-edit-action]').forEach(button => {
                 button.addEventListener('click', () => {
-                    if (editorBusy) return;
+                    if (editorBusy || scanUploadInProgress) return;
                     const action = button.dataset.editAction;
                     if (action === 'rotate-left') editState.rotation -= 90;
                     if (action === 'rotate-right') editState.rotation += 90;
