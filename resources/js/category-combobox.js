@@ -26,6 +26,47 @@ const initializeCategoryCombobox = (root) => {
     let activeIndex = -1;
     let visibleOptions = [];
 
+    // Move the dropdown above overflow-hidden document cards. Search remains
+    // inside the original form and still controls the native category_id select.
+    document.body.appendChild(listbox);
+    listbox.classList.remove('absolute', 'z-40', 'mt-1', 'w-full');
+    listbox.style.position = 'fixed';
+    listbox.style.zIndex = '2147482000';
+    listbox.style.marginTop = '0';
+    listbox.style.boxSizing = 'border-box';
+
+    const positionListbox = () => {
+        if (listbox.classList.contains('hidden')) return;
+        if (!search.isConnected || !listbox.isConnected) {
+            listbox.classList.add('hidden');
+            return;
+        }
+
+        const rect = search.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.visualViewport?.height || window.innerHeight;
+        if (rect.bottom < 0 || rect.top > viewportHeight) {
+            listbox.classList.add('hidden');
+            search.setAttribute('aria-expanded', 'false');
+            return;
+        }
+
+        const width = Math.max(0, Math.min(rect.width, viewportWidth - 24));
+        const left = Math.max(12, Math.min(rect.left, viewportWidth - width - 12));
+        const below = Math.max(0, viewportHeight - rect.bottom - 12);
+        const above = Math.max(0, rect.top - 12);
+        const openAbove = below < 220 && above > below;
+        const available = openAbove ? above : below;
+        const height = Math.max(48, Math.min(256, available - 8));
+
+        listbox.style.width = width + 'px';
+        listbox.style.left = left + 'px';
+        listbox.style.maxHeight = height + 'px';
+        listbox.style.top = (openAbove
+            ? Math.max(8, rect.top - height - 6)
+            : Math.min(viewportHeight - 8, rect.bottom + 6)) + 'px';
+    };
+
     const selectedLabel = () => {
         const option = select.selectedOptions[0];
 
@@ -40,7 +81,8 @@ const initializeCategoryCombobox = (root) => {
         listbox.classList.toggle('hidden', !open);
         search.setAttribute('aria-expanded', open ? 'true' : 'false');
 
-        if (!open) {
+        if (open) positionListbox();
+        else {
             activeIndex = -1;
             search.removeAttribute('aria-activedescendant');
         }
@@ -300,10 +342,14 @@ const initializeCategoryCombobox = (root) => {
     });
 
     document.addEventListener('mousedown', (event) => {
-        if (!root.contains(event.target)) {
+        if (!root.contains(event.target) && !listbox.contains(event.target)) {
             setOpen(false);
         }
     });
+    // Reposition on viewport changes (including nested content scroll).
+    window.addEventListener('resize', positionListbox);
+    window.addEventListener('scroll', positionListbox, true);
+    window.visualViewport?.addEventListener('resize', positionListbox);
 };
 
 export const initializeCategoryComboboxes = () => {
