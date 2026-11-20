@@ -42,7 +42,7 @@
     :name="$name"
     maxWidth="md"
     containerClass="flex items-center justify-center sm:px-4"
-    panelClass="relative rounded-3xl border border-blue-100 bg-white shadow-2xl shadow-blue-950/20"
+    panelClass="relative max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain rounded-3xl border border-blue-100 bg-white shadow-2xl shadow-blue-950/20"
     backdropClass="bg-slate-950/45 backdrop-blur-[2px]"
     :labelledBy="$titleId"
     :describedBy="$descriptionId"
