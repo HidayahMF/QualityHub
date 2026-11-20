@@ -1,0 +1,63 @@
+name: Validate responsive QualityHub overlays
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/validate-responsive-overlays.yml'
+      - 'resources/css/app.css'
+      - 'resources/js/category-combobox.js'
+      - 'resources/views/layouts/app.blade.php'
+      - 'resources/views/components/modal.blade.php'
+      - 'resources/views/components/confirmation-modal.blade.php'
+      - 'resources/views/departments/index.blade.php'
+      - 'resources/views/documents/index.blade.php'
+      - 'resources/views/documents/scan.blade.php'
+      - 'tests/Feature/ResponsiveOverlayUiTest.php'
+      - 'tests/js/responsive-viewport-ui.test.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  responsive-overlays:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, fileinfo, zip, intl, gd, pdo_sqlite, sqlite3
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies
+        run: |
+          composer install --no-interaction --prefer-dist --no-progress
+          npm ci
+      - name: Check JavaScript and viewport regression signals
+        run: |
+          node --check resources/js/category-combobox.js
+          node --test tests/js/responsive-viewport-ui.test.mjs
+      - name: Compile frontend
+        run: npm run build
+      - name: Prepare isolated test environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+      - name: Test UI and related role/business regressions
+        run: |
+          php artisan test --filter=ResponsiveOverlayUiTest
+          php artisan test --filter=DocumentScanTypeManagementTest
+          php artisan test --filter=DepartmentConfirmationButtonUiTest
+          php artisan test --filter=CategoryManagementTest
+          php artisan test --filter=CategoryAssignmentTest
+          php artisan test --filter=BulkDocumentArchiveTest
+          php artisan test --filter=SearchableFilterSelectTest
+      - name: Compile Blade templates
+        run: |
+          php artisan view:cache
+          php artisan view:clear

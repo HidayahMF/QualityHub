@@ -1230,13 +1230,16 @@
     <div
         id="scanTypeModal"
         class="fixed inset-0 z-[120] hidden bg-slate-950/70 backdrop-blur-sm"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="scanTypeCreateTitle"
         aria-hidden="true"
     >
-        <div class="flex min-h-full items-center justify-center p-4">
-            <div class="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
-                <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+        <div class="flex h-full min-h-0 items-center justify-center p-3 sm:p-5">
+            <div class="flex max-h-[calc(100dvh-24px)] min-h-0 w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:max-h-[calc(100dvh-40px)]">
+                <div class="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 px-4 py-4 sm:px-5">
                     <div>
-                        <h3 class="text-sm font-semibold text-slate-900">Tambah Jenis Dokumen Scan</h3>
+                        <h3 id="scanTypeCreateTitle" class="text-sm font-semibold text-slate-900">Tambah Jenis Dokumen Scan</h3>
                         <p class="mt-1 text-xs text-slate-500">Jenis dokumen baru akan tersedia untuk dipilih di formulir.</p>
                     </div>
                     <button
@@ -1249,7 +1252,7 @@
                     </button>
                 </div>
 
-                <form id="scanTypeForm" class="space-y-4 p-5">
+                <form id="scanTypeForm" class="min-h-0 space-y-4 overflow-y-auto overscroll-contain p-4 sm:p-5">
                     <div>
                         <label for="new_scan_type_name" class="mb-1.5 block text-sm font-medium text-slate-700">
                             Nama Jenis Dokumen
@@ -1437,6 +1440,7 @@
     /* QualityHub camera overlay — outside the sidebar/header stacking context. */
     body.qh-camera-open { overflow: hidden !important; }
     body.qh-scan-type-manage-open { overflow: hidden !important; }
+    body.qh-scan-type-create-open { overflow: hidden !important; }
     .qh-camera-overlay { position: fixed !important; inset: 0 !important; z-index: 2147483000 !important;
         align-items: center; justify-content: center; padding: clamp(9px, 2vw, 22px);
         background: rgba(10, 27, 62, .74); backdrop-filter: blur(5px); overscroll-behavior: contain; }
@@ -1722,6 +1726,11 @@
             const saveButton = document.getElementById('saveButton');
             const addScanTypeButton = document.getElementById('addScanTypeButton');
             const scanTypeModal = document.getElementById('scanTypeModal');
+            // Same top-level overlay strategy as crop/camera; no sidebar clipping.
+            if (scanTypeModal) {
+                document.body.appendChild(scanTypeModal);
+            }
+            let scanTypeCreateReturnFocus = null;
             const closeScanTypeModalButton = document.getElementById('closeScanTypeModalButton');
             const cancelScanTypeButton = document.getElementById('cancelScanTypeButton');
             const scanTypeForm = document.getElementById('scanTypeForm');
@@ -2056,9 +2065,11 @@
                     return;
                 }
 
+                scanTypeCreateReturnFocus = document.activeElement;
                 scanTypeModal.classList.remove('hidden');
                 scanTypeModal.setAttribute('aria-hidden', 'false');
-                setTimeout(() => newScanTypeName?.focus(), 50);
+                document.body.classList.add('qh-scan-type-create-open');
+                newScanTypeName?.focus();
             }
 
             function closeScanTypeModal() {
@@ -2068,9 +2079,14 @@
 
                 scanTypeModal.classList.add('hidden');
                 scanTypeModal.setAttribute('aria-hidden', 'true');
+                document.body.classList.remove('qh-scan-type-create-open');
                 scanTypeFormError?.classList.add('hidden');
                 scanTypeFormError.textContent = '';
                 scanTypeForm?.reset();
+                if (scanTypeCreateReturnFocus && typeof scanTypeCreateReturnFocus.focus === 'function') {
+                    scanTypeCreateReturnFocus.focus();
+                }
+                scanTypeCreateReturnFocus = null;
             }
 
             addScanTypeButton?.addEventListener('click', openScanTypeModal);
@@ -2078,6 +2094,12 @@
             cancelScanTypeButton?.addEventListener('click', closeScanTypeModal);
             scanTypeModal?.addEventListener('click', event => {
                 if (event.target === scanTypeModal) {
+                    closeScanTypeModal();
+                }
+            });
+            document.addEventListener('keydown', event => {
+                if (event.key === 'Escape' && scanTypeModal && !scanTypeModal.classList.contains('hidden')) {
+                    event.preventDefault();
                     closeScanTypeModal();
                 }
             });

@@ -3,7 +3,7 @@
     'show' => false,
     'maxWidth' => '2xl',
     'containerClass' => '',
-    'panelClass' => 'bg-white rounded-lg shadow-xl',
+    'panelClass' => 'bg-white rounded-lg shadow-xl overflow-hidden',
     'backdropClass' => 'bg-gray-500 opacity-75',
     'labelledBy' => null,
     'describedBy' => null,
@@ -57,7 +57,7 @@ $maxWidth = [
 
     <div
         x-show="show"
-        class="mb-6 overflow-hidden transform transition-all sm:w-full {{ $maxWidth }} sm:mx-auto {{ $panelClass }}"
+        class="mb-6 transform transition-all sm:w-full {{ $maxWidth }} sm:mx-auto {{ $panelClass }}"
         x-transition:enter="ease-out duration-300"
         x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
         x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"

@@ -866,7 +866,7 @@
         x-on:keydown.escape.window="close"
         x-show="open"
         x-cloak
-        class="fixed inset-0 z-[100] flex items-center justify-center p-4"
+        class="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto overscroll-contain p-3 sm:p-4"
         role="dialog"
         aria-modal="true"
         aria-labelledby="qualityhub-confirm-title"
@@ -886,7 +886,7 @@
             x-transition:leave="transition ease-in duration-150"
             x-transition:leave-start="opacity-100 scale-100 translate-y-0"
             x-transition:leave-end="opacity-0 scale-95 translate-y-2"
-            class="relative w-full max-w-md overflow-hidden rounded-3xl border border-blue-100 bg-white shadow-2xl shadow-blue-950/20"
+            class="relative max-h-[calc(100dvh-24px)] w-full max-w-md overflow-y-auto overscroll-contain rounded-3xl border border-blue-100 bg-white shadow-2xl shadow-blue-950/20 sm:max-h-[calc(100dvh-32px)]"
         >
             <div class="h-1.5 w-full bg-blue-800"></div>
 
