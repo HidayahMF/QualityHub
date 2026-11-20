@@ -4045,6 +4045,12 @@
                     outputHeight = Math.max(1, Math.round(outputHeight * 0.85));
                 }
 
+                // Release decoded megapixel buffers immediately between
+                // photos. This matters on Android with 50 gallery images.
+                canvas.width = 0;
+                canvas.height = 0;
+                image.removeAttribute('src');
+
                 // Jangan diam-diam mengirim file di atas batas yang disepakati.
                 if (!result) {
                     throw new Error('Foto kamera masih terlalu besar. Coba ambil foto dengan resolusi lebih rendah.');
