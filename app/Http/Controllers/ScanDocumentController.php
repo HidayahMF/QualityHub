@@ -319,28 +319,45 @@ class ScanDocumentController extends Controller
         MultiPageScanPdfService $pdfService,
         PrivateDocumentStorageService $privateStorage,
         CategoryAssignmentService $categoryAssignment
-    ): RedirectResponse {
+    ): RedirectResponse|JsonResponse {
         try {
-            return $this->storeScan(
+            $result = $this->storeScan(
                 $request,
                 $imageSecurity,
                 $pdfService,
                 $privateStorage,
                 $categoryAssignment
             );
+
+            // Browser upload progress uses JSON to avoid a second GET that
+            // consumes Laravel's flash success/error messages. The existing
+            // non-AJAX form flow and all storage operations remain unchanged.
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'ok' => true,
+                    'redirect' => $result->getTargetUrl(),
+                ]);
+            }
+
+            return $result;
         } catch (ValidationException $exception) {
+            if ($request->expectsJson()) {
+                throw $exception;
+            }
+
             throw $exception->redirectTo(route('documents.scan.create'));
         } catch (Throwable $exception) {
-            // Jangan biarkan kegagalan library, filesystem, atau database menjadi HTTP 500.
-            // Pengguna tetap dikembalikan ke form dan detail teknis dicatat di log.
             report($exception);
+            $message = 'Berkas scan tidak dapat diproses. Periksa konfigurasi penyimpanan dan coba lagi.';
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $message], 500);
+            }
 
             return redirect()
                 ->route('documents.scan.create')
                 ->withInput()
-                ->withErrors([
-                    'files' => 'Berkas scan tidak dapat diproses. Periksa konfigurasi penyimpanan dan coba lagi.',
-                ]);
+                ->withErrors(['files' => $message]);
         }
     }
 
@@ -839,11 +856,9 @@ class ScanDocumentController extends Controller
         if ($safeBaseName === '') {
             $pdfService->cleanup($generatedPdfPath);
 
-            return redirect()->route('documents.scan.create')
-                ->withInput()
-                ->withErrors([
-                    'file_name' => 'Nama file tidak menghasilkan nama yang valid.',
-                ]);
+            throw ValidationException::withMessages([
+                'file_name' => 'Nama file tidak menghasilkan nama yang valid.',
+            ]);
         }
 
         $displayFileName = $safeBaseName . '.' . $extension;
