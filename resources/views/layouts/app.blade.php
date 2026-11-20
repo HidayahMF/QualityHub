@@ -2425,7 +2425,6 @@
         <main
             class="qualityhub-content
                    relative
-                   z-10
                    flex-1
 
                    p-5
