@@ -31,6 +31,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -369,6 +370,8 @@ class ScanDocumentController extends Controller
         CategoryAssignmentService $categoryAssignment
     ): RedirectResponse {
         $this->ensureAdmin();
+        $scanStartedAt = microtime(true);
+        $pdfProcessingMs = 0;
 
         $categoryAssignment->prepareRequest($request);
 
@@ -828,11 +831,13 @@ class ScanDocumentController extends Controller
         $generatedPdfPath = null;
 
         if ($isMultiPhoto) {
+            $pdfStartedAt = microtime(true);
             $pdfResult = $pdfService->build(
                 $files,
                 $securityResults,
                 $validated['title']
             );
+            $pdfProcessingMs = (int) round((microtime(true) - $pdfStartedAt) * 1000);
 
             $generatedPdfPath = $pdfResult['path'];
             $extension = 'pdf';
@@ -1272,6 +1277,16 @@ class ScanDocumentController extends Controller
         } finally {
             $pdfService->cleanup($generatedPdfPath);
         }
+
+        // No filenames, document content or user identifiers in performance
+        // logs. Operators can compare Android/iPhone batches without exposing QC.
+        Log::info('qualityhub.scan.upload_completed', [
+            'photo_count' => $sourceCount,
+            'source_bytes' => $sourceTotalBytes,
+            'output_bytes' => $verifiedFileSize,
+            'pdf_ms' => $pdfProcessingMs,
+            'total_request_ms' => (int) round((microtime(true) - $scanStartedAt) * 1000),
+        ]);
 
         return redirect()
             ->route('documents.scan.create')
