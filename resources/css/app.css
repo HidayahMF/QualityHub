@@ -391,12 +391,8 @@
             font-size: 0.825rem;
         }
 
-        .qualityhub-content [role="dialog"],
-        .qualityhub-content [role="dialog"] > div,
-        .qualityhub-content [role="dialog"] [class~="bg-white"] {
-            max-width: calc(100vw - 1rem);
-            width: min(100%, calc(100vw - 1rem));
-        }
+        /* Dialog overlays must fill the viewport; their panels already
+           define max-width and safe gutters. Do not size backdrops as panels. */
 
         .qualityhub-content .overflow-x-auto,
         .qualityhub-content .overflow-x-scroll {
